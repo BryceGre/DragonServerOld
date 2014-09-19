@@ -524,7 +524,7 @@ public class ClientHandler {
             args.put("body", message[1]);
         }
         mServData.Game.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mServData.Module.doHook("on_message", args);
+        mServData.Module.doHook("message", args);
     }
 
     @OnError

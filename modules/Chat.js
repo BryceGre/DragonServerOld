@@ -24,13 +24,14 @@ Chat.server = {
 /***** functions *****/
 //onInit: Called when the server is started, or the module is installed
 Chat.server.onInit = function() {
-    Module.addHook("server_start");
+    Module.addHook("message");
 }
 
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 Chat.server.onHook = function(hook, args) {
-    if (hook == "server_start") {
+    if (hook == "message" && args.head == "chat") {
+        Game.socket.sendAllOther("chat:" + args.body);
     }
 }
 
@@ -51,6 +52,7 @@ Chat.client = {
 Chat.client.onInit = function() {
     Module.addHook("game_load");
     Module.addHook("world_load");
+    Module.addHook("message");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
@@ -59,6 +61,11 @@ Chat.client.onHook = function(hook, args) {
         Chat.client.createUI();
     } else if (hook == "world_load") {
         $(this.window).dialog("open");
+    } else if (hook == "message") {
+        if (args.head == "chat") {
+            $("#chat-area").append(args.body);
+            $("#chat-area").scrollTop($("#chat-area").prop("scrollHeight"));
+        }
     }
 }
 
@@ -82,11 +89,18 @@ Chat.client.createUI = function() {
             Chat.client.sendMsg();
         }
     });
+    
+    Game.menus["Chat"] = function() {
+        $("#chat").dialog("open");
+    };
 }
 
 Chat.client.sendMsg = function() {
     if (Chat.client.message != "") {
-        $("#chat-area").append(Game.world.user.name + ": \"" + Chat.client.message + "\"<br>");
+        var msg = Game.world.user.name + ": \"" + Chat.client.message + "\"<br>";
+        Game.socket.send("chat:" + msg)
+        
+        $("#chat-area").append(msg);
         $("#chat-area").scrollTop($("#chat-area").prop("scrollHeight"));
 
         $("#chat-box").val("");
