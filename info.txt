@@ -1,0 +1,67 @@
+Reserved Module Names:
+--Game
+--Module
+--UI
+--User
+--Player
+--NPC
+--Tile
+--Point
+--Tween
+--Sizzle
+
+Classes:
+--Server:
+  --DataModel - a buildable model for making a database table
+  --Entry - represents an entry (row) in the database
+  --Table - represents a table in the database
+  --Tile - represents a single tile
+  --Data - represents all game data, save tile and account data
+  --World - represents the table consisting of all tiles
+  --Module - holds functions to use to manipulate modules
+--Client
+  --User - represents the user currently using the client
+  --Player - represents a player that is not the current user
+  --NPC - represents a non-player character
+  --Tile - represents a single tile
+  --Point - represents a single point (x, y, floor)
+--Note: The functions inside both Module classes are the same for client and server,
+		however, the functions and propertes for the Tile classes differ greatly.
+
+Built-In Hooks:
+--Server:
+  --server_start
+  --server_stop
+  --pre_message
+  --on_message
+  --admin_message
+  --create_char
+--Client:
+  --game_load - all scripts and modules loaded
+    --args: { admin : boolean }
+  --on_update - called each update (consistent timing)
+    --args: { admin : boolean }
+  --raw_update - called each frame (unconsistent timing)
+    --args: { admin : boolean, elapsed : number }
+  --pre_draw - called before drawing each frame
+    --args: { admin : boolean, elapsed : number }
+  --draw_fa - called after the fringe anim layer of a tile is drawn
+  --pre_draw_tile - called before a tile begins to draw drawn
+  --draw_gr - called after the ground layer of a tile is drawn
+  --draw_m1 - called after the mask 1 layer of a tile is drawn
+  --draw_m2 - called after the mask 2 layer of a tile is drawn
+  --draw_ma - called after the mask anim layer of a tile is drawn
+  --draw_f1 - called after the fringe 1 layer of a tile is drawn
+  --draw_f2 - called after the fringe 2 layer of a tile is drawn
+  --draw_fa - called after the fringe anim layer of a tile is drawn
+  --post_draw_tile - called after a tile is fully drawn
+    --args: { admin : boolean, x : number, y : number, floor : number, tile : Tile }
+  --pre_draw_user - called before the user is drawn
+  --post_draw_user - called after the user is drawn
+    --args: { user : User }
+  --pre_draw_player - called before a player is drawn
+  --post_draw_player - called after a player is drawn
+    --args: { player : Player }
+  --post_draw - called after drawing each frame
+    --args: { admin : boolean, elapsed : number }
+

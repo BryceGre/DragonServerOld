@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+    <head>
+        <!-- Metadata -->
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <!-- Stylesheets -->
+        <link href="css/basic/jquery-ui.css" type="text/css" rel="stylesheet" />
+        <link href="css/style.css" type="text/css" rel="stylesheet" />
+        <!-- Libraries -->
+        <script src="js/lib/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/lib/jquery-ui.js" type="text/javascript" charset="utf-8"></script>
+        <!-- Config -->
+        <script src="config.js" type="text/javascript" charset="utf-8"></script>
+        <!-- Script -->
+        <script src="js/Common.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/GameJS.js" type="text/javascript" charset="utf-8"></script>
+    </head>
+    <body>
+        <canvas id="game">
+            Sorry, your browser does not support the &lt;canvas&gt; element.
+        </canvas>
+        <canvas id="tiletest" style="display:none;"></canvas>
+
+        <div>
+            <button id="menubutton"> </button>
+            <ul id="menu">
+
+            </ul>
+        </div>
+        <div id="ui">
+            <div id="login-form" style="font-size:20px;" title="Login">
+                <form>
+                    <fieldset>
+                        <label for="name">Username:</label>
+                        <input type="text" name="name" id="name" pattern="[A-Za-z0-9]{3,16}" class="text ui-widget-content ui-corner-all" />
+                        <label for="password">Password:</label>
+                        <input type="password" name="password" id="password" pattern="[A-Za-z0-9]{5,16}" value="" class="text ui-widget-content ui-corner-all" />
+                    </fieldset>
+                </form>
+            </div>
+            <!-- <div id="register-form" title="Register">
+              <form>
+              <fieldset>
+                  <label for="name">Username:</label>
+                  <input type="text" name="name" id="name" pattern="[A-Za-z0-9]{3,16}" class="text ui-widget-content ui-corner-all" />
+                  <label for="email">Email:</label>
+                  <input type="email" name="email" id="email" value="" class="text ui-widget-content ui-corner-all" />
+                  <label for="password">Password:</label>
+                  <input type="password" name="password" id="password" pattern="[A-Za-z0-9]{5,16}" value="" class="text ui-widget-content ui-corner-all" />
+              </fieldset>
+              </form>
+            </div> -->
+        </div>
+    </body>
+</html>

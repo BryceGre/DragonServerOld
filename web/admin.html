@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+    <head>
+        <!-- Metadata -->
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <!-- Stylesheets -->
+        <link href="css/basic/jquery-ui.css" type="text/css" rel="stylesheet" />
+        <link href="css/chosen.css" type="text/css" rel="stylesheet" />
+        <link href="css/style.css" type="text/css" rel="stylesheet" />
+        <!-- Libraries -->
+        <script src="js/lib/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/lib/jquery-ui.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/lib/chosen.js" type="text/javascript" charset="utf-8"></script>
+        <!-- Config -->
+        <script src="config.js" type="text/javascript" charset="utf-8"></script>
+        <!-- Scripts -->
+        <script src="js/Common.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/AdminJS.js" type="text/javascript" charset="utf-8"></script>
+    </head>
+    <body>
+        <canvas id="game"> <!--  style="border:5px solid red;"> -->
+            Sorry, your browser does not support the &lt;canvas&gt; element.
+        </canvas>
+        <canvas id="tiletest" style="display:none;"></canvas>
+
+        <div>
+            <button id="menubutton"> </button>
+            <ul id="menu">
+
+            </ul>
+        </div>
+        <div id="ui">
+            <div id="login-form" style="font-size:20px;" title="Login">
+                <form>
+                    <fieldset>
+                        <label for="name">Username:</label>
+                        <input type="text" name="name" id="name" pattern="[A-Za-z0-9]{3,16}" class="text ui-widget-content ui-corner-all" />
+                        <label for="password">Password:</label>
+                        <input type="password" name="password" id="password" pattern="[A-Za-z0-9]{5,16}" value="" class="text ui-widget-content ui-corner-all" />
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+        <!-- <button id="map-editor-save">Save</button> -->
+        <div id="controls">
+            <div id="control-floor" class="control" style="position:absolute;left:64px;bottom:8px;width:256px;"></div><div id="control-ftext" class="control" style="left:328px;bottom:4px;">Floor:3</div>
+            <div class="control" style="left:416px;bottom:4px;">X:</div><input type="number" min="-1000000000" max="1000000000" id="control-warp-x" class="control" style="left:432px;" />
+            <div class="control" style="left:560px;bottom:4px;">Y:</div><input type="number" min="-1000000000" max="1000000000" id="control-warp-y" class="control" style="left:576px;" />
+            <button id="control-warp-go" class="control" style="left:704px;bottom:0px;">Warp</button>
+            <div class="control" style="left:800px;bottom:4px;">Width:</div><input type="number" min="0" max="1000000000" id="control-grid-w" class="control" style="left:848px;" />
+            <div class="control" style="left:976px;bottom:4px;">Height:</div><input type="number" min="0" max="1000000000" id="control-grid-h" class="control" style="left:1024px;" />
+            <button id="control-grid-go" class="control" style="left:1088px;bottom:0px;">Set Grid</button>
+            <div class="control" style="left:1280px;bottom:4px;">Hide:</div>
+            <input type="checkbox" id="control-hide-gr" class="control" style="left:1320px;bottom:4px;"><div class="control" style="left:1336px;bottom:4px;">Gr</div>
+            <input type="checkbox" id="control-hide-m1" class="control" style="left:1360px;bottom:4px;"><div class="control" style="left:1376px;bottom:4px;">M1</div>
+            <input type="checkbox" id="control-hide-m2" class="control" style="left:1400px;bottom:4px;"><div class="control" style="left:1416px;bottom:4px;">M2</div>
+            <input type="checkbox" id="control-hide-ma" class="control" style="left:1440px;bottom:4px;"><div class="control" style="left:1456px;bottom:4px;">MA</div>
+            <input type="checkbox" id="control-hide-f1" class="control" style="left:1480px;bottom:4px;"><div class="control" style="left:1496px;bottom:4px;">F1</div>
+            <input type="checkbox" id="control-hide-f2" class="control" style="left:1520px;bottom:4px;"><div class="control" style="left:1536px;bottom:4px;">F2</div>
+            <input type="checkbox" id="control-hide-fa" class="control" style="left:1560px;bottom:4px;"><div class="control" style="left:1576px;bottom:4px;">FA</div>
+            <input type="checkbox" id="control-hide-li" class="control" style="left:1600px;bottom:4px;"><div class="control" style="left:1616px;bottom:4px;">LI</div>
+        </div>
+    </body>
+</html>
