@@ -38,13 +38,13 @@ _Game.loadWorld = function(string) {
     _Game.gameTime = entities.time;
 
     var n = entities.user;
-    _Game.world.user = new User(n.x, n.y, n.f, n.s);
+    _Game.world.user = new User(n.n, n.x, n.y, n.f, n.s);
     _Game.userID = n.id;
 
     var players = entities.players;
     for (var i = 0; i < players.length; i++) {
         var n = players[i];
-        _Game.world.players[n.id] = new Player(n.id, n.x, n.y, n.f, n.s);
+        _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
     }
     
     var npcs = entities.npcs;
@@ -625,7 +625,7 @@ _Game.onMessage = function(data) {
             break;
         case "enter":
             var n = JSON.parse(message[1]);
-            _Game.world.players[n.id] = new Player(n.id, n.x, n.y, n.f, n.s);
+            _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
             break;
         case "leave":
             delete _Game.world.players[parseInt(message[1])];
@@ -649,7 +649,7 @@ _Game.onMessage = function(data) {
         case "move":
             var n = JSON.parse(message[1]);
             if (!_Game.world.players[n.id]) {
-                _Game.world.players[n.id] = new Player(n.id, n.x, n.y, n.f, n.s);
+                _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
             } else {
                 _Game.world.players[n.id].resetLastPoint();
                 _Game.world.players[n.id].x = n.x;

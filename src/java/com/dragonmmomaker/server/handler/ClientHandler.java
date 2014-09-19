@@ -20,7 +20,6 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
@@ -203,6 +202,7 @@ public class ClientHandler {
                 DRow pchar = mServData.Game.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
 
                 int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+                String pName = (String) pchar.get("name");
                 int pID = (Integer) pchar.get("id");
                 int pX = (Integer) pchar.get("x");
                 int pY = (Integer) pchar.get("y");
@@ -214,6 +214,7 @@ public class ClientHandler {
                 //user
                 JsonObject user = new JsonObject();
                 user.add("id", pID);
+                user.add("n", pName);
                 user.add("x", pX);
                 user.add("y", pY);
                 user.add("f", pFloor);
@@ -228,6 +229,7 @@ public class ClientHandler {
                         DRow ichar = mServData.Game.Data.get("characters").get(icharID);
                         JsonObject ochar = new JsonObject();
                         ochar.add("id", (Integer) ichar.get("id"));
+                        ochar.add("n", (String) pchar.get("name"));
                         ochar.add("x", (Integer) ichar.get("x"));
                         ochar.add("y", (Integer) ichar.get("y"));
                         ochar.add("f", ((Integer) ichar.get("floor")).shortValue());
@@ -267,6 +269,7 @@ public class ClientHandler {
 
                 newmsg = new JsonObject();
                 newmsg.add("id", pID);
+                newmsg.add("n", pName);
                 newmsg.add("x", pX);
                 newmsg.add("y", pY);
                 newmsg.add("f", pFloor);
@@ -291,6 +294,7 @@ public class ClientHandler {
                     DRow pchar = mServData.Game.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
                     int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
                     int pID = (Integer) pchar.get("id");
+                    String pName = (String) pchar.get("name");
                     int pX = (Integer) pchar.get("x");
                     int pY = (Integer) pchar.get("y");
                     short pFloor = ((Integer) pchar.get("floor")).shortValue();
@@ -362,6 +366,7 @@ public class ClientHandler {
                     newmsg = new JsonObject();
                     newmsg.add("id", pID);
                     newmsg.add("dir", new Integer(pDir));
+                    newmsg.add("n", pName);
                     newmsg.add("x", pX);
                     newmsg.add("y", pY);
                     newmsg.add("f", pFloor);
@@ -527,10 +532,10 @@ public class ClientHandler {
         //TODO:onError
     }
 
-    public Set<Async> getRemotes() {
-        Set<Async> remotes = new LinkedHashSet<Async>();
+    public Set<Session> getRemotes() {
+        Set<Session> remotes = new LinkedHashSet();
         for (ClientHandler con : mClients) {
-            remotes.add(con.mSession.getAsyncRemote());
+            remotes.add(con.mSession);
         }
         return remotes;
     }
@@ -607,12 +612,16 @@ public class ClientHandler {
                 charData.put("y", pY);
                 charData.put("floor", nF);
                 pChar.putAll(charData);
+                
+                int pID = (Integer) pChar.get("id");
+                String pName = (String) pChar.get("name");
 
                 for (ClientHandler con : mClients) {
                     JsonObject newmsg = new JsonObject();
 
                     if (!con.equals(this)) {
-                        newmsg.add("id", (Integer) pChar.get("id"));
+                        newmsg.add("id", pID);
+                        newmsg.add("n", pName);
                     }
                     newmsg.add("x", pX);
                     newmsg.add("y", pY);
@@ -661,7 +670,7 @@ public class ClientHandler {
         if (mSession == null) {
                 if (other.mSession != null)
                         return false;
-        } else if (mSession.getId() != other.mSession.getId())
+        } else if (!mSession.getId().equals(other.mSession.getId()))
                 return false;
         return true;
     }

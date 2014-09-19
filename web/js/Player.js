@@ -1,7 +1,7 @@
 _Game.userID = 0;
 
 //User is the local player
-function User(x, y, floor, sprite) {
+function User(name, x, y, floor, sprite) {
     this.direction = 0;
     this.facing = 0;
     this.nextDir = 0;
@@ -9,6 +9,7 @@ function User(x, y, floor, sprite) {
     this.lastOffset = 0;
     this.sprinting = false;
     this.command = 0;
+    this.name = name;
     this.x = parseInt(x);
     this.y = parseInt(y);
     this.floor = parseInt(floor);
@@ -82,7 +83,7 @@ function User(x, y, floor, sprite) {
 }
 
 //A Player is any player other than the local user
-function Player(id, x, y, floor, sprite) {
+function Player(id, name, x, y, floor, sprite) {
     this.direction = 0;
     this.facing = 0;
     this.moved = 0;
@@ -90,6 +91,7 @@ function Player(id, x, y, floor, sprite) {
     this.sprinting = false;
     this.command = 0;
     this.id = parseInt(id);
+    this.name = name;
     this.x = parseInt(x);
     this.y = parseInt(y);
     this.floor = parseInt(floor);

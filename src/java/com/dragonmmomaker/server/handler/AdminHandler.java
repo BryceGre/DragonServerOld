@@ -18,7 +18,6 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
@@ -238,10 +237,10 @@ public class AdminHandler {
         //TODO: onError
     }
 
-    public Set<Async> getRemotes() {
-        Set<Async> remotes = new LinkedHashSet<Async>();
+    public Set<Session> getRemotes() {
+        Set<Session> remotes = new LinkedHashSet();
         for (AdminHandler con : mClients) {
-            remotes.add(con.mSession.getAsyncRemote());
+            remotes.add(con.mSession);
         }
         return remotes;
     }

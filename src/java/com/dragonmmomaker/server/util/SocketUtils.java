@@ -8,7 +8,6 @@ package com.dragonmmomaker.server.util;
 
 import java.util.Set;
 
-import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 
 /**
@@ -17,9 +16,9 @@ import javax.websocket.Session;
  */
 public class SocketUtils {
     private Session mSession;
-    private Set<RemoteEndpoint.Async> mClients;
+    private Set<Session> mClients;
 
-    public SocketUtils(Session pSession, Set<RemoteEndpoint.Async> pClients) {
+    public SocketUtils(Session pSession, Set<Session> pClients) {
         mSession = pSession;
         mClients = pClients;
     }
@@ -29,8 +28,24 @@ public class SocketUtils {
     }
 
     public void sendAll(String pMessage) {
-        for (RemoteEndpoint.Async a : mClients) {
-            a.sendText(pMessage);
+        for (Session a : mClients) {
+            a.getAsyncRemote().sendText(pMessage);
         }
+    }
+    
+    public void sendAllOther(String pMessage) {
+        for (Session a : mClients) {
+            if (!a.getId().equals(mSession.getId())) {
+                a.getAsyncRemote().sendText(pMessage);
+            }
+        }
+    }
+    
+    public void sendRange(String pMessage) {
+        //TODO: range
+    }
+    
+    public void sendRangeOther(String pMessage) {
+        //TODO: range
     }
 }

@@ -69,12 +69,13 @@ Chat.client.createUI = function() {
         window.localStorage.setItem("ui-chat-o", 5);
     }
     //create the ui
-    this.window = UI.NewWindow("chat", "Chat", "33%", 360);
-    $("#chat").css("overflow-y", "hidden"); //hide overflow
-    UI.AddDiv(this.window, "area", "", false, {"style": 'display:block;margin:4px auto;height:256px;overflow-y:scroll;'});
+    this.window = UI.NewWindow("chat", "Chat", "33%", 352);
+    $("#chat").css("overflowY", "hidden");
+    UI.AddDiv(this.window, "area", "", false, {"style": 'display:block;margin:4px auto;height:264px;overflow-y:scroll;'});
     UI.AddInput(this.window, "box", "", function() {
         Chat.client.message = $("#chat-box").val();
-    }, false, {"style": 'display:block;width:50%;margin:4px 0px;'});
+    }, false, {"style": 'display:inline-block;float:left;width:79%;margin:4px 0px;'});
+    UI.AddButton(this.window, "send", "Send", Chat.client.sendMsg, false, {"style": 'display:inline-block;float:right;width:19%;margin:4px 0px;'})
     
     $("#chat-box").keyup(function(e) {
         if (e.keyCode === 13) {
@@ -85,7 +86,7 @@ Chat.client.createUI = function() {
 
 Chat.client.sendMsg = function() {
     if (Chat.client.message != "") {
-        $("#chat-area").append(Chat.client.message + "<br>");
+        $("#chat-area").append(Game.world.user.name + ": \"" + Chat.client.message + "\"<br>");
         $("#chat-area").scrollTop($("#chat-area").prop("scrollHeight"));
 
         $("#chat-box").val("");
