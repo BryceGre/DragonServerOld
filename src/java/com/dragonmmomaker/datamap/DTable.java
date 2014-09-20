@@ -143,14 +143,21 @@ public class DTable implements Map<Object, DRow> {
         if (mBase.isClosed()) return null;
         if (id != null) {
             //arg0 is a number, check the id column
-            String sql = "INSERT INTO " + mName + " (id) VALUES (?)";
-            try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
-                statement.setInt(1, id);
-                statement.setQueryTimeout(60);
+            DRow row = new DRow(id, this);
+            if (!row.containsKey("id")) {
+                //row doesn't exist, create it.
+                String sql = "INSERT INTO " + mName + " (id) VALUES (?)";
+                try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
+                    statement.setInt(1, id);
+                    statement.setQueryTimeout(60);
 
-                statement.executeUpdate();
-            } catch (SQLException e) { }
-            return new DRow(id, this);
+                    statement.executeUpdate();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                return new DRow(id, this);
+            }
+            return row;
         } else if (arg0 != null) {
             //arg0 is an object, use the key column
             DRow row = new DRow(arg0.toString(), this);

@@ -146,8 +146,11 @@ public class DRow extends HashMap<Object, Object> {
                 
                 mKey = arg1.toString();
             } catch (SQLException e) {
+                e.printStackTrace();
                 return null;
             }
+            super.put("key", arg1.toString());
+            return old;
         }
         if (!super.containsKey(arg0.toString().toLowerCase())) {
             String sql = "ALTER TABLE " + mTable.getName() + " ADD " + arg0.toString().toLowerCase() + " BYTEA";
@@ -176,6 +179,10 @@ public class DRow extends HashMap<Object, Object> {
         }
 
         return old;
+    }
+    
+    Object unmanagedPut(Object arg0, Object arg1) {
+        return super.put(arg0.toString().toLowerCase(), arg1);
     }
     
     @Override
