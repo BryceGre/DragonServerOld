@@ -226,19 +226,23 @@ _Game.onDraw = function(elapsed) {
     var queue = new Array();
 
     // draw players
+    var w = Math.floor(_Game.images.sprites[_Game.world.user.sprite].width / 4);
+    var h = Math.floor(_Game.images.sprites[_Game.world.user.sprite].height / 4);
     queue[_Game.world.user.y] = new Array();
     queue[_Game.world.user.y].push({
         type: "user", args: {"user": _Game.world.user},
         sprite: _Game.images.sprites[_Game.world.user.sprite],
         offset: _Game.world.user.getSpriteOffset(),
-        width: 32, height: 64,
-        x: (_Game.canvas.width / 2) - (32 - 32),
-        y: (_Game.canvas.height / 2) - (64 - 32)
+        width: w, height: h,
+        x: (_Game.canvas.width / 2) - ((w/2) - (TILE_SIZE/2)),
+        y: (_Game.canvas.height / 2) - (h - TILE_SIZE)
     });
     for (key in _Game.world.players) {
         if (_Game.world.players[key].floor == _Game.world.user.floor) {
-            var playerX = ((_Game.world.players[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - (32 - 32);
-            var playerY = ((_Game.world.players[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (64 - 32);
+            var w = Math.floor(_Game.images.sprites[_Game.world.players[key].sprite].width / 4);
+            var h = Math.floor(_Game.images.sprites[_Game.world.players[key].sprite].height / 4);
+            var playerX = ((_Game.world.players[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
+            var playerY = ((_Game.world.players[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
             if (_Game.world.players[key].direction != 0) {
                 if (_Game.world.players[key].direction == 37) { // left
                     playerX += (TILE_SIZE - _Game.world.players[key].moved);
@@ -258,16 +262,17 @@ _Game.onDraw = function(elapsed) {
                 type: "player", args: {"player": _Game.world.players[key]},
                 sprite: _Game.images.sprites[_Game.world.players[key].sprite],
                 offset: _Game.world.players[key].getSpriteOffset(),
-                width: 32, height: 64,
-                x: playerX,
-                y: playerY
+                width: w, height: h,
+                x: playerX, y: playerY
             });
         }
     }
     for (key in _Game.world.npcs) {
         if (_Game.world.npcs[key].floor == _Game.world.user.floor) {
-            var npcX = ((_Game.world.npcs[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - (32 - 32);
-            var npcY = ((_Game.world.npcs[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (64 - 32);
+            var w = Math.floor(_Game.images.sprites[_Game.world.npcs[key].sprite].width / 4);
+            var h = Math.floor(_Game.images.sprites[_Game.world.npcs[key].sprite].height / 4);
+            var npcX = ((_Game.world.npcs[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
+            var npcY = ((_Game.world.npcs[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
             if (_Game.world.npcs[key].direction != 0) {
                 if (_Game.world.npcs[key].direction == 37) { // left
                     npcX += (TILE_SIZE - _Game.world.npcs[key].moved);
@@ -287,9 +292,8 @@ _Game.onDraw = function(elapsed) {
                 type: "npc", args: {"npc": _Game.world.npcs[key]},
                 sprite: _Game.images.sprites[_Game.world.npcs[key].sprite],
                 offset: _Game.world.npcs[key].getSpriteOffset(),
-                width: 32, height: 64,
-                x: npcX,
-                y: npcY
+                width: w, height: h,
+                x: npcX, y: npcY
             });
         }
     }
@@ -298,7 +302,7 @@ _Game.onDraw = function(elapsed) {
         for (var i=0; i<queue[key].length; i++) {
             var n = queue[key][i];
             Module.doHook("pre_draw_" + n.type, n.args);
-            _Game.context.drawImage(n.sprite, n.offset, 0, n.width, n.height, n.x, n.y, n.width, n.height);
+            _Game.context.drawImage(n.sprite, n.offset.x, n.offset.y, n.width, n.height, n.x, n.y, n.width, n.height);
             Module.doHook("post_draw_" + n.type, n.args);
         }
     }

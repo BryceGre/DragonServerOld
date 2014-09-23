@@ -6,7 +6,7 @@ function User(name, x, y, floor, sprite) {
     this.facing = 0;
     this.nextDir = 0;
     this.moved = 0;
-    this.lastOffset = 0;
+    this.lastOffset = {x:0,y:0};
     this.sprinting = false;
     this.command = 0;
     this.name = name;
@@ -87,7 +87,7 @@ function Player(id, name, x, y, floor, sprite) {
     this.direction = 0;
     this.facing = 0;
     this.moved = 0;
-    this.lastOffset = 0;
+    this.lastOffset = {x:0,y:0};
     this.sprinting = false;
     this.command = 0;
     this.id = parseInt(id);
@@ -110,7 +110,7 @@ function NPC(x, y, floor, sprite) {
     this.direction = 0;
     this.facing = 0;
     this.moved = 0;
-    this.lastOffset = 0;
+    this.lastOffset = {x:0,y:0};
     this.x = parseInt(x);
     this.y = parseInt(y);
     this.floor = parseInt(floor);
@@ -126,27 +126,26 @@ function NPC(x, y, floor, sprite) {
 }
 
 /** "this" must have the following data members: 
+ this.sprite
  this.facing
  this.moved
  this.lastOffset   */
 function getSpriteOffset() {
     if (this.facing != 0) {
-        var offset = 0;
+        var offset = new Object();
+        var width = Math.floor(_Game.images.sprites[this.sprite].width / 4);
+        var height = Math.floor(_Game.images.sprites[this.sprite].height / 4);
         if (this.facing == 37) { //left
-            offset = 7 * 32;
+            offset.y = 1 * height;
         } else if (this.facing == 38) { //up
-            offset = 1 * 32;
+            offset.y = 3 * height;
         } else if (this.facing == 39) { //right
-            offset = 10 * 32;
+            offset.y = 2 * height;
         } else if (this.facing == 40) { //down
-            offset = 4 * 32;
+            offset.y = 0 * height;
         }
-        var stage = Math.floor(this.moved / 8);
-        if (stage == 1) {
-            offset -= 32;
-        } else if (stage == 3) {
-            offset += 32;
-        }
+        var stage = Math.floor(this.moved / (TILE_SIZE / 4));
+        offset.x = stage * width;
         this.lastOffset = offset;
     }
     return this.lastOffset

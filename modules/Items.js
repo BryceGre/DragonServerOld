@@ -28,7 +28,6 @@ Items.server.onInit = function() {
     Module.addHook("on_load"); //player loaded
 }
 
-
 //onHook: Called when an event (that this module is hooked into) is triggered
 Items.server.onHook = function(hook, args) {
     //called when a player loads the world
