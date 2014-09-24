@@ -3,14 +3,13 @@ var _Game = new Object();
 var Game = _Game;
 var _Data = new Object();
 // Common Vars
-_Game.images = new Object();
-_Game.images.tilesets = new Array();
-_Game.images.sprites = new Array();
+_Game.gfx = new Object();
+_Game.tilesets = new Array();
 _Game.modules = new Object();
 _Game.hooks = new Object();
 _Game.menus = new Object();
 // Include Vars
-_Data.includes_requested = 1;
+_Data.includes_requested = 0;
 _Data.includes_loaded = 0;
 _Data.modules_requested = 0;
 _Data.modules_loaded = 0;
@@ -36,6 +35,7 @@ _Game.includeJS = function(name) {
     document.head.appendChild(script);
     // });
     _Data.includes_requested++;
+    $("#load-bar").progressbar("option", "max", _Data.includes_requested);
 }
 
 _Game.includeMod = function(name) {
@@ -55,11 +55,13 @@ _Game.includeMod = function(name) {
 
 _Game.include_loaded = function() {
     _Data.includes_loaded++;
+    $("#load-bar").progressbar("value", _Data.includes_loaded)
     if (_Data.includes_loaded == _Data.includes_requested) {
         console.log("Scripts loaded, loading modules");
         for (var i = 0; i < ModuleList.length; i++) {
             _Game.includeMod(ModuleList[i]);
         }
+        $("#load-text").text("Loading Modules...");
     }
 }
 
@@ -67,6 +69,7 @@ _Game.module_loaded = function() {
     _Data.modules_loaded++;
     if (_Data.modules_loaded == _Data.modules_requested) {
         console.log("Modules loaded. Starting game");
+        $("#load-dialog").dialog({ closeOnEscape: false }).dialog("close");
         _Game.setupConfig();
         _Game.module_onLoaded();
         _Game.onLoaded();
@@ -75,14 +78,15 @@ _Game.module_loaded = function() {
 
 _Game.loadResources = function() {
     for (var i = 0; i <= 9; i++) {
-        _Game.images.tilesets[i] = _Game.loadImage("graphics/Tiles" + i + ".png");
+        _Game.tilesets[i] = _Game.loadImage("GFX/Tiles" + i + ".png");
     }
 
-    for (var i = 1; i <= SPRITE_COUNT; i++) {
-        _Game.images.sprites[i] = _Game.loadImage("graphics/Sprites/" + i + ".png");
+    for (var key in GFX) {
+        _Game.gfx[key] = new Array();
+        for (var i = 1; i < GFX[key]; i++) {
+            _Game.gfx[key][i] = _Game.loadImage("GFX/"+key+"/" + i + ".png");
+        }
     }
-
-    _Game.images.night = _Game.loadImage("graphics/night.png");
 }
 
 _Game.loadImage = function(file) {
@@ -92,6 +96,7 @@ _Game.loadImage = function(file) {
     newImage.onload = _Game.include_loaded;
 
     _Data.includes_requested++;
+    $("#load-bar").progressbar("option", "max", _Data.includes_requested);
     return newImage;
 }
 
@@ -137,26 +142,27 @@ _Game.getPref = function(pref) {
     return JSON.parse(localStorage.getItem(pref));
 }
 
-
-_Game.loadResources();
-
-_Game.includeJS("Game");
-_Game.includeJS("Player");
-_Game.includeJS("World");
-_Game.includeJS("UI");
-_Game.includeJS("SHA");
-_Game.includeJS("Module");
-_Game.includeJS("Data");
-
-$(document).ready(_Game.include_loaded);
-_Game.setPref("FillScreen", InitPrefs['FillScreen']);
-
-for (var key in InitPrefs) {
-    if (_Game.getPref(key) === null) {
-        _Game.setPref(key, InitPrefs[key]);
+$(document).ready(function() {
+    $("#load-dialog").dialog({closeOnEscape: false, autoOpen: true});
+    $("#load-bar").progressbar();
+    
+    _Game.loadResources();
+    
+    _Game.includeJS("Game");
+    _Game.includeJS("Player");
+    _Game.includeJS("World");
+    _Game.includeJS("UI");
+    _Game.includeJS("SHA");
+    _Game.includeJS("Module");
+    _Game.includeJS("Data");
+    
+    _Game.setPref("FillScreen", InitPrefs['FillScreen']);
+    for (var key in InitPrefs) {
+        if (_Game.getPref(key) === null) {
+            _Game.setPref(key, InitPrefs[key]);
+        }
     }
-}
-
+});
 
 var _CP = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
 if (_CP.lineTo) {

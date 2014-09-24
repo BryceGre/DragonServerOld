@@ -133,8 +133,8 @@ function NPC(x, y, floor, sprite) {
 function getSpriteOffset() {
     if (this.facing != 0) {
         var offset = new Object();
-        var width = Math.floor(_Game.images.sprites[this.sprite].width / 4);
-        var height = Math.floor(_Game.images.sprites[this.sprite].height / 4);
+        var width = Math.floor(_Game.gfx.Sprites[this.sprite].width / 4);
+        var height = Math.floor(_Game.gfx.Sprites[this.sprite].height / 4);
         if (this.facing == 37) { //left
             offset.y = 1 * height;
         } else if (this.facing == 38) { //up

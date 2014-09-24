@@ -19,7 +19,7 @@
   </servlet>
   
   <servlet>
-	<servlet-name>graphics</servlet-name>
+	<servlet-name>GFX</servlet-name>
 	<servlet-class>
 	  com.dragonmmomaker.war.FileServlet
 	</servlet-class>
@@ -27,7 +27,7 @@
   </servlet>
   
   <servlet>
-	<servlet-name>audio</servlet-name>
+	<servlet-name>SFX</servlet-name>
 	<servlet-class>
 	  com.dragonmmomaker.war.FileServlet
 	</servlet-class>
@@ -41,13 +41,13 @@
   </servlet-mapping>
   
   <servlet-mapping>
-	<servlet-name>graphics</servlet-name>
-	<url-pattern>/graphics/*</url-pattern>
+	<servlet-name>GFX</servlet-name>
+	<url-pattern>/GFX/*</url-pattern>
   </servlet-mapping>
   
   <servlet-mapping>
-	<servlet-name>audio</servlet-name>
-	<url-pattern>/audio/*</url-pattern>
+	<servlet-name>SFX</servlet-name>
+	<url-pattern>/SFX/*</url-pattern>
   </servlet-mapping>
   
   <servlet-mapping>

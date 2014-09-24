@@ -35,11 +35,14 @@ MapEditor.server.onHook = function(hook, args) {
     if (hook === "npc_act") {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
-            if (npc.behavior == "attack") {
-                args.npc.health -= 20;
-                if (args.npc.health <= 0) {
-                    
-                }
+            if (npc.action == "attack") {
+                var damage = 20;
+                args.npc.health -= damage;
+                //death is taken care of by the npc manager.
+                var msg = new Object();
+                msg.npc = args.npc.iid; //instanceID
+                msg.dam = damage;
+                Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
             }
         }
     }
@@ -59,14 +62,16 @@ Combat.client = {
 //onInit: Called when the client page loads, as this module is loaded
 Combat.client.onInit = function() {
         Data.npc_actions["attack"] = {name: "Attack"};
-        Module.addHook("game_load");
+        Module.addHook("message");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 Combat.client.onHook = function(hook, args) {
-	if (hook == "game_load") {
-		console.log("Game loaded! So says TestMod!");
-	}
+    if (hook == "message") {
+        if (args.head === "npc-damage") {
+            
+        }
+    }
 }
 
 /***** helper *****/

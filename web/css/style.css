@@ -34,6 +34,10 @@ span.ui-dialog-title {
     width:50% !important;
 }
 
+#load-dialog .ui-dialog-titlebar-close {
+    display: none;
+}
+
 #game {
   display:block;
   margin: 0 auto;

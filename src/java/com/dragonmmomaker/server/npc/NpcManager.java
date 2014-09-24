@@ -153,7 +153,6 @@ public class NpcManager {
                 //kill npc
                 if (npc.getHealth() <= 0) {
                     mNpcData.remove(Tile.key(npc.getX(), npc.getY(), npc.getFloor()));
-                    mGameData.Utils.socket.sendAll("npc-die");
                     ClientHandler.sendAllWithTest("npc-die:" + npc.getIid(), (charID) -> {
                         DRow pchar = mGameData.Data.get("characters").get(charID);
                         int dist = Integer.parseInt(mGameData.Config.get("Game").get("draw_distance"));

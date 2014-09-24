@@ -195,7 +195,7 @@ Tile.drawTile = function(tile, chain) {
         if (tile.lis != 0 || tile.lix != 0 || tile.liy != 0) {
             var ctx = tile.li.getContext("2d");
             ctx.clearRect(0, 0, tile.li.width, tile.li.height);
-            ctx.drawImage(_Game.images.tilesets[tile.lis], (tile.lix * TILE_SIZE), (tile.liy * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+            ctx.drawImage(_Game.tilesets[tile.lis], (tile.lix * TILE_SIZE), (tile.liy * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
         }
 
         //Module.doHook("pre_draw", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
@@ -206,7 +206,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.grs > 9) {
                 Tile.autoTile(tile, ctx, "gr", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.grs], (tile.grx * TILE_SIZE), (tile.gry * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.grs], (tile.grx * TILE_SIZE), (tile.gry * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -218,7 +218,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.m1s > 9) {
                 Tile.autoTile(tile, ctx, "m1", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.m1s], (tile.m1x * TILE_SIZE), (tile.m1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.m1s], (tile.m1x * TILE_SIZE), (tile.m1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -230,7 +230,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.m2s > 9) {
                 Tile.autoTile(tile, ctx, "m2", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.m2s], (tile.m2x * TILE_SIZE), (tile.m2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.m2s], (tile.m2x * TILE_SIZE), (tile.m2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -242,7 +242,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.mas > 9) {
                 Tile.autoTile(tile, ctx, "ma", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.mas], (tile.max * TILE_SIZE), (tile.may * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.mas], (tile.max * TILE_SIZE), (tile.may * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -254,7 +254,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.f1s > 9) {
                 Tile.autoTile(tile, ctx, "f1", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.f1s], (tile.f1x * TILE_SIZE), (tile.f1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.f1s], (tile.f1x * TILE_SIZE), (tile.f1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -266,7 +266,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.f2s > 9) {
                 Tile.autoTile(tile, ctx, "f2", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.f2s], (tile.f2x * TILE_SIZE), (tile.f2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.f2s], (tile.f2x * TILE_SIZE), (tile.f2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx, true);
         }
@@ -278,7 +278,7 @@ Tile.drawTile = function(tile, chain) {
             if (tile.fas > 9) {
                 Tile.autoTile(tile, ctx, "fa", chain);
             } else {
-                ctx.drawImage(_Game.images.tilesets[tile.fas], (tile.fax * TILE_SIZE), (tile.fay * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile.fas], (tile.fax * TILE_SIZE), (tile.fay * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
             Tile.copyNight(tile, ctx);
         }
@@ -330,58 +330,58 @@ Tile.autoTile = function(tile, ctx, layer, chain) {
         
         switch(id) {
             case 0:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], (tile[layer+"x"] * TILE_SIZE), (tile[layer+"y"] * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], (tile[layer+"x"] * TILE_SIZE), (tile[layer+"y"] * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 1:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+3) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+3) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
                 break;
             case 2:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
                 break;
             case 3:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 4:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
                 break;
             case 5:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+2) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+2) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+2) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, 0, 0, (TILE_SIZE / 2), TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+2) * TILE_SIZE), (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE);
                 break;
             case 6:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 7:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+0) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 8:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
                 break;
             case 9:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 10:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+1) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, 0, TILE_SIZE, (TILE_SIZE / 2));
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+3.5) * TILE_SIZE), TILE_SIZE, (TILE_SIZE / 2), 0, (TILE_SIZE / 2), TILE_SIZE, (TILE_SIZE / 2));
                 break;
             case 11:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+3)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 12:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 13:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 14:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+1)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
             case 15:
-                ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+1) * TILE_SIZE), ((tile[layer+"y"]+2)* TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
                 break;
         }
         
@@ -391,16 +391,16 @@ Tile.autoTile = function(tile, ctx, layer, chain) {
         var lower_left = _Game.getTile(tile.x-1, tile.y+1, tile.floor);
         
         if (matchTile(tile, upper, layer) && matchTile(tile, left, layer) && !matchTile(tile, upper_left, layer)) {
-            ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+0) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, 0, (TILE_SIZE / 2), (TILE_SIZE / 2));
+            ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+0) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, 0, (TILE_SIZE / 2), (TILE_SIZE / 2));
         }
         if (matchTile(tile, upper, layer) && matchTile(tile, right, layer) && !matchTile(tile, upper_right, layer)) {
-            ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+0) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, (TILE_SIZE / 2), (TILE_SIZE / 2));
+            ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+0) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, (TILE_SIZE / 2), (TILE_SIZE / 2));
         }
         if (matchTile(tile, lower, layer) && matchTile(tile, right, layer) && !matchTile(tile, lower_right, layer)) {
-            ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+0.5) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2));
+            ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2.5) * TILE_SIZE), ((tile[layer+"y"]+0.5) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2));
         }
         if (matchTile(tile, lower, layer) && matchTile(tile, left, layer) && !matchTile(tile, lower_left, layer)) {
-            ctx.drawImage(_Game.images.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+0.5) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2));
+            ctx.drawImage(_Game.tilesets[tile[layer+"s"]-10], ((tile[layer+"x"]+2) * TILE_SIZE), ((tile[layer+"y"]+0.5) * TILE_SIZE), (TILE_SIZE / 2), (TILE_SIZE / 2), 0, (TILE_SIZE / 2), (TILE_SIZE / 2), (TILE_SIZE / 2));
         }
         
         if (chain === undefined) {

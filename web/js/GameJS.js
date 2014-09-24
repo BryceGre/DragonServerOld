@@ -226,12 +226,12 @@ _Game.onDraw = function(elapsed) {
     var queue = new Array();
 
     // draw players
-    var w = Math.floor(_Game.images.sprites[_Game.world.user.sprite].width / 4);
-    var h = Math.floor(_Game.images.sprites[_Game.world.user.sprite].height / 4);
+    var w = Math.floor(_Game.gfx.Sprites[_Game.world.user.sprite].width / 4);
+    var h = Math.floor(_Game.gfx.Sprites[_Game.world.user.sprite].height / 4);
     queue[_Game.world.user.y] = new Array();
     queue[_Game.world.user.y].push({
         type: "user", args: {"user": _Game.world.user},
-        sprite: _Game.images.sprites[_Game.world.user.sprite],
+        sprite: _Game.gfx.Sprites[_Game.world.user.sprite],
         offset: _Game.world.user.getSpriteOffset(),
         width: w, height: h,
         x: (_Game.canvas.width / 2) - ((w/2) - (TILE_SIZE/2)),
@@ -239,8 +239,8 @@ _Game.onDraw = function(elapsed) {
     });
     for (key in _Game.world.players) {
         if (_Game.world.players[key].floor == _Game.world.user.floor) {
-            var w = Math.floor(_Game.images.sprites[_Game.world.players[key].sprite].width / 4);
-            var h = Math.floor(_Game.images.sprites[_Game.world.players[key].sprite].height / 4);
+            var w = Math.floor(_Game.gfx.Sprites[_Game.world.players[key].sprite].width / 4);
+            var h = Math.floor(_Game.gfx.Sprites[_Game.world.players[key].sprite].height / 4);
             var playerX = ((_Game.world.players[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
             var playerY = ((_Game.world.players[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
             if (_Game.world.players[key].direction != 0) {
@@ -260,7 +260,7 @@ _Game.onDraw = function(elapsed) {
             }
             queue[_Game.world.players[key].y].push({
                 type: "player", args: {"player": _Game.world.players[key]},
-                sprite: _Game.images.sprites[_Game.world.players[key].sprite],
+                sprite: _Game.gfx.Sprites[_Game.world.players[key].sprite],
                 offset: _Game.world.players[key].getSpriteOffset(),
                 width: w, height: h,
                 x: playerX, y: playerY
@@ -269,8 +269,8 @@ _Game.onDraw = function(elapsed) {
     }
     for (key in _Game.world.npcs) {
         if (_Game.world.npcs[key].floor == _Game.world.user.floor) {
-            var w = Math.floor(_Game.images.sprites[_Game.world.npcs[key].sprite].width / 4);
-            var h = Math.floor(_Game.images.sprites[_Game.world.npcs[key].sprite].height / 4);
+            var w = Math.floor(_Game.gfx.Sprites[_Game.world.npcs[key].sprite].width / 4);
+            var h = Math.floor(_Game.gfx.Sprites[_Game.world.npcs[key].sprite].height / 4);
             var npcX = ((_Game.world.npcs[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
             var npcY = ((_Game.world.npcs[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
             if (_Game.world.npcs[key].direction != 0) {
@@ -290,7 +290,7 @@ _Game.onDraw = function(elapsed) {
             }
             queue[_Game.world.npcs[key].y].push({
                 type: "npc", args: {"npc": _Game.world.npcs[key]},
-                sprite: _Game.images.sprites[_Game.world.npcs[key].sprite],
+                sprite: _Game.gfx.Sprites[_Game.world.npcs[key].sprite],
                 offset: _Game.world.npcs[key].getSpriteOffset(),
                 width: w, height: h,
                 x: npcX, y: npcY

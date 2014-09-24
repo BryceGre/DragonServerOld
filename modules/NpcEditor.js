@@ -60,7 +60,7 @@ NpcEditor.server.onHook = function(hook, args) {
                 npc.action = "none";
             }
             if (npc.behavior === null) {
-                npc.behavior = "";
+                npc.behavior = [];
             }
 
             Game.socket.send("loadnpc:" + JSON.stringify(npc));
@@ -139,7 +139,7 @@ NpcEditor.client.updateFields = function() {
     $("#npc-editor-behavior").val(this.currBehavior);
     $("#npc-editor-behavior").trigger("chosen:updated");
     NpcEditor.client.ctx.fillRect(0, 0, 128, 128);
-    NpcEditor.client.ctx.drawImage(_Game.images.sprites[this.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
+    NpcEditor.client.ctx.drawImage(Game.gfx.Sprites[this.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
 }
 
 NpcEditor.client.createUI = function() {
@@ -183,7 +183,7 @@ NpcEditor.client.createUI = function() {
             NpcEditor.client.currSprite = ui.value;
             NpcEditor.client.changed = true;
             NpcEditor.client.ctx.fillRect(0, 0, 96, 96);
-            NpcEditor.client.ctx.drawImage(_Game.images.sprites[NpcEditor.client.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
+            NpcEditor.client.ctx.drawImage(Game.gfx.Sprites[NpcEditor.client.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
         }
     }, false, {"style": 'display:block;width:48%;margin:4px 0px;'});
 

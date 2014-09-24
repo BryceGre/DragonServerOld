@@ -108,6 +108,6 @@ public class Npc implements Serializable {
     }
     
     public String toString() {
-        return this.mIID + "," + this.mX + "," + this.mY + "," + this.mFloor + "," + this.mSprite + "," + this.mName;
+        return this.mIID + "," + this.mX + "," + this.mY + "," + this.mFloor + "," + this.mSprite + "," + this.mName + "," + this.mHealth;
     }
 }

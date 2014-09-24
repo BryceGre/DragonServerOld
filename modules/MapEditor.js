@@ -527,7 +527,7 @@ MapEditor.client.createUI = function() {
     MapEditor.client.testMusic.play();
     MapEditor.client.testMusic.pause();
 
-    UI.AddSpinner(this.window, "track", {min: 0, max: MUSIC_COUNT, spin: function(event, ui) {
+    UI.AddSpinner(this.window, "track", {min: 0, max: SFX.Music, spin: function(event, ui) {
             MapEditor.client.currMusic = ui.value;
             if (!MapEditor.client.testMusic.paused && MapEditor.client.testMusic.currentTime) {
                 MapEditor.client.testMusic.setAttribute('src', "audio/Music/" + ui.value + ".mp3");

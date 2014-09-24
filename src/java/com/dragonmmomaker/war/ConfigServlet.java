@@ -44,17 +44,23 @@ public class ConfigServlet extends HttpServlet {
         outtext.append("const DEBUG = " + getConfig("Common", "debug", "true") + ";\n");
         
         outtext.append("\n//File Constants\n");
-        File folder = new File(ServerListener.dataDir + "/graphics/Sprites/");
-        if (folder.isDirectory()) {
-            outtext.append("const SPRITE_COUNT = " + folder.list().length + ";\n");
-        } else {
-            outtext.append("const SPRITE_COUNT = 0;\n");
+        outtext.append("const GFX = new Object();\n");
+        File graphics = new File(ServerListener.dataDir + "/GFX/");
+        if (graphics.isDirectory()) {
+            for (File folder : graphics.listFiles()) {
+                if (folder.isDirectory()) {
+                    outtext.append("GFX." + folder.getName() + " = " + folder.list().length + ";\n");
+                }
+            }
         }
-        folder = new File(ServerListener.dataDir + "/audio/Music/");
-        if (folder.isDirectory()) {
-            outtext.append("const MUSIC_COUNT = " + folder.list().length + ";\n");
-        } else {
-            outtext.append("const MUSIC_COUNT = 0;\n");
+        File audio = new File(ServerListener.dataDir + "/SFX/");
+        outtext.append("const SFX = new Object();\n");
+        if (audio.isDirectory()) {
+            for (File folder : audio.listFiles()) {
+                if (folder.isDirectory()) {
+                    outtext.append("SFX." + folder.getName() + " = " + folder.list().length + ";\n");
+                }
+            }
         }
         
         outtext.append("\n//Game Modules\n");

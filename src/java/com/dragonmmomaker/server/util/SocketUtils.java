@@ -29,23 +29,29 @@ public class SocketUtils {
 
     public void sendAll(String pMessage) {
         for (Session a : mClients) {
-            a.getAsyncRemote().sendText(pMessage);
+            if (a.getUserProperties().containsKey("loaded")) {
+                a.getAsyncRemote().sendText(pMessage);
+            }
         }
     }
     
     public void sendAllOther(String pMessage) {
         for (Session a : mClients) {
-            if (!a.getId().equals(mSession.getId())) {
-                a.getAsyncRemote().sendText(pMessage);
+            if (a.getUserProperties().containsKey("loaded")) {
+                if (!a.getId().equals(mSession.getId())) {
+                    a.getAsyncRemote().sendText(pMessage);
+                }
             }
         }
     }
     
     public void sendRange(String pMessage) {
         //TODO: range
+        this.sendAll(pMessage);
     }
     
     public void sendRangeOther(String pMessage) {
         //TODO: range
+        this.sendAllOther(pMessage);
     }
 }

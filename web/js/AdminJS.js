@@ -109,7 +109,7 @@ _Game.onDraw = function(elapsed) {
                     // draw lights
                     if ((!_Game.hide.li) && (tile.lis != 0 || tile.lix != 0 || tile.liy != 0)) {
                         _Game.context.globalAlpha = 0.5;
-                        _Game.context.drawImage(_Game.images.tilesets[tile.lis], (tile.lix * TILE_SIZE), (tile.liy * TILE_SIZE), TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
+                        _Game.context.drawImage(_Game.tilesets[tile.lis], (tile.lix * TILE_SIZE), (tile.liy * TILE_SIZE), TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
                         _Game.context.globalAlpha = 1.0;
                     }
 
@@ -174,8 +174,6 @@ _Game.onDraw = function(elapsed) {
             _Game.context.stroke();
         }
     }
-    // gameContext.drawImage(images.night, 0, 0, gameCanvas.width,
-    // gameCanvas.height);
 
     // draw grid
 
