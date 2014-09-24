@@ -55,7 +55,7 @@ MapEditor.server.onHook = function(hook, args) {
 /***********************************************/
 Combat.client = {
     /***** variables *****/
-    //none for this module
+    sct : new Array(), //scrolling combat text
 };
 
 /***** functions *****/
@@ -63,13 +63,42 @@ Combat.client = {
 Combat.client.onInit = function() {
         Data.npc_actions["attack"] = {name: "Attack"};
         Module.addHook("message");
+        Module.addHook("on_update");
+        Module.addHook("post_draw");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 Combat.client.onHook = function(hook, args) {
     if (hook == "message") {
         if (args.head === "npc-damage") {
-            
+            var n = JSON.parse(args.body);
+            var npc = Game.world.npcs[n.id];
+            if (npc) {
+                Combat.client.sct.push({
+                    npc: npc,
+                    num: n.dam,
+                    col: "red",
+                    y: 0
+                });
+            }
+        }
+    } else if (hook == "on_update") {
+        var newSct = new Array();
+        for (var key in Combat.client.sct) {
+            var text = Combat.client.sct[key];
+            text.y -= 1;
+            if (text.y < TILE_SIZE) {
+                newSct.push(text);
+            }
+        }
+        Combat.client.sct = newSct;
+    } else if (hook == "post_draw") {
+        for (var key in Combat.client.sct) {
+            var text = Combat.client.sct[key];
+            if (text.npc.floor == Game.world.user.floor) {
+                Game.context.fillStyle = text.col;
+                Game.context.fillText(n.dam, Game.getTileX(text.npc.x), Game.getTileY(text.npc.y));
+            }
         }
     }
 }

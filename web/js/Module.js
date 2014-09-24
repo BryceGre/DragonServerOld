@@ -25,8 +25,10 @@ Module.doHook = function(hook, args) {
     $.extend(Data.characters, _Game.world.players);
     
     for (key in _Game.hooks[hook]) {
+        _Game.context.save();
         Module.lastMod = _Game.hooks[hook][key];
         _Game.hooks[hook][key].client.onHook(hook, args);
+        _Game.context.restore();
     }
 }
 
