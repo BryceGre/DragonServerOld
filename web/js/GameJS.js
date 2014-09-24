@@ -7,8 +7,6 @@ _Game.canvas;
 _Game.context;
 _Game.testcontext;
 _Game.curKey = 0;
-_Game.currMusic = false;
-_Game.nextMusic = false;
 // Debug Variables
 _Game.frameCount = 0;
 _Game.FPS = 0;
@@ -64,9 +62,7 @@ _Game.loadWorld = function(string) {
     
     var playerTile = _Game.getTile(_Game.world.user.x, _Game.world.user.y, _Game.world.user.floor);
     if (playerTile && playerTile.music > 0) {
-        _Game.currMusic = new Audio("audio/Music/"+playerTile.music+".mp3");
-        _Game.currMusic.loop = true;
-        _Game.currMusic.play();
+        Game.playMusic(playerTile.music);
     }
     Module.doHook("world_load", {});
 }

@@ -3,6 +3,8 @@ _Game.lastTime = $.now();
 _Game.canvas;
 _Game.context;
 _Game.testcontext;
+_Game.currMusic = false;
+_Game.nextMusic = false;
 
 _Game.loadGame = function() {
     _Game.canvas = $("#game")[0];
@@ -23,6 +25,43 @@ _Game.gameLoop = function() {
     _Game.lastTime = $.now();
     _Game.onUpdate(elapsed);
     _Game.onDraw(elapsed);
+}
+
+_Game.playMusic = function(id) {
+    if (!_Game.currMusic) {
+        //no music object, create and play
+        _Game.currMusic = new Audio("SFX/Music/"+id+".mp3");
+        _Game.currMusic.loop = true;
+        _Game.currMusic.play();
+    } else if (_Game.nextMusic) {
+        //music is fading out, set next music
+        _Game.nextMusic = "SFX/Music/"+id+".mp3";
+    } else if (_Game.currMusic.getAttribute('src') != "SFX/Music/"+id+".mp3") {
+        //music is different from what is playing, fade out and set next music
+        $(_Game.currMusic).animate({volume: 0}, 1000, "swing", _Game.onFadeMusic);
+        _Game.nextMusic = "SFX/Music/"+id+".mp3";
+    }
+}
+
+_Game.stopMusic = function() {
+    if (_Game.currMusic) {
+        if (!_Game.nextMusic) {
+            $(_Game.currMusic).animate({volume: 0}, 1000, "swing", _Game.onFadeMusic);
+        }
+        _Game.nextMusic = false;
+    }
+}
+
+_Game.onFadeMusic = function() {
+    if (_Game.nextMusic) {
+        _Game.currMusic.setAttribute('src', _Game.nextMusic);
+        _Game.currMusic.volume = 1;
+        _Game.currMusic.play();
+        _Game.nextMusic = false;
+    } else {
+        _Game.currMusic.pause();
+        _Game.currMusic = false;
+    }
 }
 
 _Game.setupMenu = function() {

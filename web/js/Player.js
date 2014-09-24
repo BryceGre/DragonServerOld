@@ -64,20 +64,7 @@ function User(name, x, y, floor, sprite) {
         //update music for the new tile
         var playerTile = _Game.getTile(this.x, this.y, this.floor);
         if (playerTile && playerTile.music > 0) {
-            if (!_Game.currMusic || _Game.currMusic.getAttribute('src') != "audio/Music/"+playerTile.music+".mp3") {
-                if (_Game.nextMusic === false) {
-                    $(_Game.currMusic).animate({volume: 0}, 1000, "swing", function() {
-                        _Game.currMusic.setAttribute('src', _Game.nextMusic);
-                        _Game.currMusic.volume = 1;
-                        _Game.currMusic.play();
-                        _Game.nextMusic = false;
-                    });
-                    _Game.nextMusic = "audio/Music/"+playerTile.music+".mp3";
-                }
-            }
-            if (_Game.nextMusic) {
-                _Game.nextMusic = "audio/Music/"+playerTile.music+".mp3";
-            }
+            Game.playMusic(playerTile.music);
         }
     }
 }
