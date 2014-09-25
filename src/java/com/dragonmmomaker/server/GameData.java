@@ -53,7 +53,7 @@ public class GameData {
         }
         Config = pConfig;
         Utils = new GameUtils(pServData);
-        Npcs = new NpcManager(this);
+        Npcs = new NpcManager(pServData);
         Time = new Date();
     }
 

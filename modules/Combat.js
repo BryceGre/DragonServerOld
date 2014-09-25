@@ -36,7 +36,8 @@ Combat.server.onHook = function(hook, args) {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
             if (npc.action == "attack") {
-                var damage = 20;
+                var base = 20;
+                var damage = base - (base/20) + Math.floor(Math.random()*((base/10)+1));
                 args.npc.health -= damage;
                 //death is taken care of by the npc manager.
                 var msg = new Object();
