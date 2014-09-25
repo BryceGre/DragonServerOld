@@ -26,6 +26,7 @@ public class Npc implements Serializable {
     private int mHealth;
     private long mLastMove;
     private Tile mSpawn;
+    private int mRespawn;
     
     public Npc(int pIID) {
         mIID = pIID;
@@ -105,6 +106,18 @@ public class Npc implements Serializable {
     
     public void setSpawn(Tile pSpawn) {
         mSpawn = pSpawn;
+    }
+    
+    public int getRespawn() {
+        return mRespawn;
+    }
+    
+    public void setRespawn(int pRespawn) {
+        mRespawn = pRespawn;
+    }
+    
+    public void tickRespawn() {
+        mRespawn -= 1;
     }
     
     public String toString() {

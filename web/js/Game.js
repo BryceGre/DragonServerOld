@@ -7,10 +7,6 @@ _Game.currMusic = false;
 _Game.nextMusic = false;
 
 _Game.loadGame = function() {
-    _Game.canvas = $("#game")[0];
-    _Game.context = _Game.canvas.getContext("2d");
-    _Game.testcontext = $("#tiletest")[0].getContext("2d");
-
     $(document).keydown(_Game.keyDown);
     $(document).keyup(_Game.keyUp);
 
@@ -94,7 +90,7 @@ _Game.getTileX = function(x) {
             tileX += (TILE_SIZE - _Game.world.user.moved);
         }
     }
-    return tileY;
+    return tileX;
 }
 
 _Game.getTileY = function(y) {

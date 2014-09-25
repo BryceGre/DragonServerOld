@@ -57,7 +57,7 @@ _Game.include_loaded = function() {
     _Data.includes_loaded++;
     $("#load-bar").progressbar("value", _Data.includes_loaded)
     if (_Data.includes_loaded == _Data.includes_requested) {
-        console.log("Scripts loaded, loading modules");
+        console.log("Resources loaded, loading modules");
         for (var i = 0; i < ModuleList.length; i++) {
             _Game.includeMod(ModuleList[i]);
         }
@@ -70,6 +70,11 @@ _Game.module_loaded = function() {
     if (_Data.modules_loaded == _Data.modules_requested) {
         console.log("Modules loaded. Starting game");
         $("#load-dialog").dialog({ closeOnEscape: false }).dialog("close");
+        
+        _Game.canvas = $("#game")[0];
+        _Game.context = _Game.canvas.getContext("2d");
+        _Game.testcontext = $("#tiletest")[0].getContext("2d");
+
         _Game.setupConfig();
         _Game.module_onLoaded();
         _Game.onLoaded();

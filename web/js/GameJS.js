@@ -660,37 +660,6 @@ _Game.onMessage = function(data) {
             _Game.world.players[n.id].facing = n.dir;
             _Game.world.players[n.id].moved = 0;
             break;
-        case "npc-move":
-            var n = JSON.parse(message[1]);
-            
-            if (!_Game.world.npcs[n.id]) {
-                _Game.world.npcs[n.id] = new NPC(n.x, n.y, n.f, n.s);
-            } else {
-                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[n.id].x, _Game.world.npcs[n.id].y, _Game.world.npcs[n.id].floor)];
-                _Game.world.npcs[n.id].resetLastPoint();
-                _Game.world.npcs[n.id].x = n.x;
-                _Game.world.npcs[n.id].y = n.y;
-                _Game.world.npcs[n.id].floor = n.f;
-            }
-            var del = false;
-            if (_Game.world.npcs[n.id].direction == 37) { // left
-                del = (_Game.world.npcs[n.id].x < _Game.world.user.x - DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 38) { // up
-                del = (_Game.world.npcs[n.id].y < _Game.world.user.y - DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 39) { // right
-                del = (_Game.world.npcs[n.id].x > _Game.world.user.x + DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 40) { // down
-                del = (_Game.world.npcs[n.id].y > _Game.world.user.y + DRAW_DISTANCE);
-            }
-            if (del) {
-                delete _Game.world.npcs[n.id];
-            } else {
-                _Game.world.npcs[n.id].direction = n.dir;
-                _Game.world.npcs[n.id].facing = n.dir;
-                _Game.world.npcs[n.id].moved = 0;
-                _Game.world.npcTile[Tile.key(n.x, n.y, n.f)] = n.id;
-            }
-        break;
         case "snap":
             var n = JSON.parse(message[1]);
             //snap user
@@ -745,6 +714,65 @@ _Game.onMessage = function(data) {
                 _Game.world.user.floor = n.f;
                 _Game.world.user.moved = 0;
                 _Game.world.user.direction = 0;
+            }
+            break;
+        case "npc-move":
+            var n = JSON.parse(message[1]);
+            
+            if (!_Game.world.npcs[n.id]) {
+                _Game.world.npcs[n.id] = new NPC(n.x, n.y, n.f, n.s);
+            } else {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[n.id].x, _Game.world.npcs[n.id].y, _Game.world.npcs[n.id].floor)];
+                _Game.world.npcs[n.id].resetLastPoint();
+                _Game.world.npcs[n.id].x = n.x;
+                _Game.world.npcs[n.id].y = n.y;
+                _Game.world.npcs[n.id].floor = n.f;
+            }
+            var del = false;
+            if (_Game.world.npcs[n.id].direction == 37) { // left
+                del = (_Game.world.npcs[n.id].x < _Game.world.user.x - DRAW_DISTANCE);
+            } else if (_Game.world.npcs[n.id].direction == 38) { // up
+                del = (_Game.world.npcs[n.id].y < _Game.world.user.y - DRAW_DISTANCE);
+            } else if (_Game.world.npcs[n.id].direction == 39) { // right
+                del = (_Game.world.npcs[n.id].x > _Game.world.user.x + DRAW_DISTANCE);
+            } else if (_Game.world.npcs[n.id].direction == 40) { // down
+                del = (_Game.world.npcs[n.id].y > _Game.world.user.y + DRAW_DISTANCE);
+            }
+            if (del) {
+                delete _Game.world.npcs[n.id];
+            } else {
+                _Game.world.npcs[n.id].direction = n.dir;
+                _Game.world.npcs[n.id].facing = n.dir;
+                _Game.world.npcs[n.id].moved = 0;
+                _Game.world.npcTile[Tile.key(n.x, n.y, n.f)] = n.id;
+            }
+            break;
+        case "npc-die":
+            var id = parseInt(message[1]);
+            if (_Game.world.npcs[id]) {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[id].x, _Game.world.npcs[id].y, _Game.world.npcs[id].floor)];
+                delete _Game.world.npcs[id];
+            }
+            break;
+        case "npc-res":
+            var npc = message[1].split(",");
+            var id = parseInt(npc[0]);
+            var x = parseInt(npc[1]);
+            var y = parseInt(npc[2]);
+            var f = parseInt(npc[3]);
+            var s = parseInt(npc[4]);
+            if (!_Game.world.npcs[id]) {
+                //spawn npc
+                _Game.world.npcs[id] = new NPC(x, y, f, s);
+                _Game.world.npcTile[Tile.key(x, y, f)] = id;
+            } else {
+                //move npc back to spawn
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[id].x, _Game.world.npcs[id].y, _Game.world.npcs[id].floor)];
+                _Game.world.npcs[id].resetLastPoint();
+                _Game.world.npcs[id].x = x;
+                _Game.world.npcs[id].y = y;
+                _Game.world.npcs[id].floor = f;
+                _Game.world.npcTile[Tile.key(x, y, f)] = id;
             }
             break;
     }

@@ -138,8 +138,11 @@ NpcEditor.client.updateFields = function() {
     $("#npc-editor-action").trigger("chosen:updated");
     $("#npc-editor-behavior").val(this.currBehavior);
     $("#npc-editor-behavior").trigger("chosen:updated");
-    NpcEditor.client.ctx.fillRect(0, 0, 128, 128);
-    NpcEditor.client.ctx.drawImage(Game.gfx.Sprites[this.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
+    NpcEditor.client.ctx.fillRect(0, 0, 96, 96);
+    var sprite = Game.gfx.Sprites[this.currSprite];
+    var w = Math.floor(sprite.width / 4);
+    var h = Math.floor(sprite.height / 4);
+    NpcEditor.client.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
 }
 
 NpcEditor.client.createUI = function() {
@@ -179,13 +182,16 @@ NpcEditor.client.createUI = function() {
     }, false, {"style": 'display:block;width:48%;margin:4px 0px;'});
 
     UI.AddDiv(this.window, "sprite-label", "Sprite: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddSpinner(this.window, "sprite", {min: 1, max: SPRITE_COUNT, spin: function(event, ui) {
+    UI.AddSpinner(this.window, "sprite", {min: 1, max: GFX.Sprites, spin: function(event, ui) {
             NpcEditor.client.currSprite = ui.value;
             NpcEditor.client.changed = true;
             NpcEditor.client.ctx.fillRect(0, 0, 96, 96);
-            NpcEditor.client.ctx.drawImage(Game.gfx.Sprites[NpcEditor.client.currSprite], 32 * 4, 0, 32, 64, 64 - (32 / 2), 64 - (64 / 2), 32, 64);
+            var sprite = Game.gfx.Sprites[NpcEditor.client.currSprite];
+            var w = Math.floor(sprite.width / 4);
+            var h = Math.floor(sprite.height / 4);
+            NpcEditor.client.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
         }
-    }, false, {"style": 'display:block;width:48%;margin:4px 0px;'});
+    }, false, {"style": 'display:block;width:45%;margin:4px 0px;'});
 
     var actions = new Object();
     for (key in Data.npc_actions) {

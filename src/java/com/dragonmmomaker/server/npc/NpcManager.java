@@ -10,7 +10,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -36,12 +38,14 @@ public class NpcManager {
     private Timer mTimer;
     private NpcUpdateTask mUpdateTask;
     private Map<String,Npc> mNpcData;
+    private Queue<Npc> mRespawn;
 
     private int mCount;
 
     public NpcManager(GameData pGameData) {
         mGameData = pGameData;
         mNpcData = new ConcurrentHashMap();
+        mRespawn = new LinkedList();
         
         mCount = 1;
 
@@ -80,11 +84,55 @@ public class NpcManager {
         
         npc.setSprite((Integer)pInfo.get("sprite"));
         npc.setName((String)pInfo.get("name"));
+        npc.setSpawn(pTile);
         npc.setHealth(100); //TODO: Health
         npc.setLastMove(new Date().getTime());
         mNpcData.put(Tile.key(pTile), npc);
 
         mCount++;
+    }
+    
+    public void respawnNpc(Npc pNpc) {
+        Tile tile = pNpc.getSpawn();
+        pNpc.setX(tile.getX());
+        pNpc.setY(tile.getY());
+        pNpc.setFloor(tile.getFloor());
+        
+        pNpc.setHealth(100); //TODO: Health
+        pNpc.setLastMove(new Date().getTime());
+        mNpcData.put(Tile.key(tile), pNpc);
+        
+        ClientHandler.sendAllWithTest("npc-res:" + pNpc.toString(), (charID) -> {
+            DRow pchar = mGameData.Data.get("characters").get(charID);
+            int dist = Integer.parseInt(mGameData.Config.get("Game").get("draw_distance"));
+            int pX = (Integer) pchar.get("x");
+            int pY = (Integer) pchar.get("y");
+            if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
+                if (pNpc.getY() - dist <= pY && pNpc.getY() + dist >= pY) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+    
+    public void killNpc(Npc pNpc) {
+        pNpc.setRespawn(20);
+        mRespawn.offer(pNpc);
+        mNpcData.remove(Tile.key(pNpc.getX(), pNpc.getY(), pNpc.getFloor()));
+        
+        ClientHandler.sendAllWithTest("npc-die:" + pNpc.getIid(), (charID) -> {
+            DRow pchar = mGameData.Data.get("characters").get(charID);
+            int dist = Integer.parseInt(mGameData.Config.get("Game").get("draw_distance"));
+            int pX = (Integer) pchar.get("x");
+            int pY = (Integer) pchar.get("y");
+            if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
+                if (pNpc.getY() - dist <= pY && pNpc.getY() + dist >= pY) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     public void respawnAll() {
@@ -152,19 +200,7 @@ public class NpcManager {
                 Set<String> behavior = parseRaw(cache.get(npc.getId()));
                 //kill npc
                 if (npc.getHealth() <= 0) {
-                    mNpcData.remove(Tile.key(npc.getX(), npc.getY(), npc.getFloor()));
-                    ClientHandler.sendAllWithTest("npc-die:" + npc.getIid(), (charID) -> {
-                        DRow pchar = mGameData.Data.get("characters").get(charID);
-                        int dist = Integer.parseInt(mGameData.Config.get("Game").get("draw_distance"));
-                        int pX = (Integer) pchar.get("x");
-                        int pY = (Integer) pchar.get("y");
-                        if (npc.getX() - dist <= pX && npc.getX() + dist >= pX) {
-                            if (npc.getY() - dist <= pY && npc.getY() + dist >= pY) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
+                    killNpc(npc);
                     continue; //don't bother moving it.
                 }
                 //move npc
@@ -227,6 +263,13 @@ public class NpcManager {
                         }
                     }
                 }
+            }
+            
+            for (Npc npc : mRespawn) {
+                npc.tickRespawn();
+            }
+            while (mRespawn.peek() != null && mRespawn.peek().getRespawn() <= 0) {
+                respawnNpc(mRespawn.poll());
             }
         }
         

@@ -1,7 +1,7 @@
 /***********************************************/
 /***** Properties ******************************/
 /***********************************************/
-Combat = {
+var Combat = {
     name: "Basic Combat", //module name
     desc: "Simple combat via interacting with hostile NPCs.", //description
     auth: "Darek", //author
@@ -30,7 +30,7 @@ Combat.server.onInit = function() {
 };
 
 //onHook: Called when an event (that this module is hooked into) is triggered
-MapEditor.server.onHook = function(hook, args) {
+Combat.server.onHook = function(hook, args) {
     //argument "hook" contains which event has triggered
     if (hook === "npc_act") {
         var npc = Data.npcs[args.npc.id];
@@ -72,7 +72,7 @@ Combat.client.onHook = function(hook, args) {
     if (hook == "message") {
         if (args.head === "npc-damage") {
             var n = JSON.parse(args.body);
-            var npc = Game.world.npcs[n.id];
+            var npc = Game.world.npcs[n.npc];
             if (npc) {
                 Combat.client.sct.push({
                     npc: npc,
@@ -86,7 +86,7 @@ Combat.client.onHook = function(hook, args) {
         var newSct = new Array();
         for (var key in Combat.client.sct) {
             var text = Combat.client.sct[key];
-            text.y -= 1;
+            text.y += 1;
             if (text.y < TILE_SIZE) {
                 newSct.push(text);
             }
@@ -97,7 +97,7 @@ Combat.client.onHook = function(hook, args) {
             var text = Combat.client.sct[key];
             if (text.npc.floor == Game.world.user.floor) {
                 Game.context.fillStyle = text.col;
-                Game.context.fillText(n.dam, Game.getTileX(text.npc.x), Game.getTileY(text.npc.y));
+                Game.context.fillText(text.num, Game.getTileX(text.npc.x), Game.getTileY(text.npc.y)-text.y);
             }
         }
     }
