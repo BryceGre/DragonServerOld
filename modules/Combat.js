@@ -1,3 +1,11 @@
+/* Copyright (c) 2014, Bryce Gregerson
+ * All rights reserved.
+ *
+ * Redistribution and use in source form, with or without modification,
+ * are permitted provided that the above copyright notice and this list
+ * of conditions are retained.
+ */
+
 /***********************************************/
 /***** Properties ******************************/
 /***********************************************/
@@ -37,8 +45,13 @@ Combat.server.onHook = function(hook, args) {
         if (npc) {
             if (npc.action == "attack") {
                 var base = 20;
+                var mod = Module.doHook("combat-mod", {base:base}, AVG);
+                var add = Module.doHook("combat-add", {base:base}, ADD);
+                base = base + add;
+                if (mod > 0) base = base * mod;
                 var damage = base - (base/20) + Math.floor(Math.random()*((base/10)+1));
                 args.npc.health -= damage;
+                Module.doHook("combat-damage", {base:base, mod:mod, add:add, damage:damage, npc:args.npc});
                 //death is taken care of by the npc manager.
                 var msg = new Object();
                 msg.npc = args.npc.iid; //instanceID

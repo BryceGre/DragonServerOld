@@ -1,3 +1,14 @@
+/* Copyright (c) 2014, Bryce Gregerson
+ * All rights reserved.
+ *
+ * Redistribution and use in source form, with or without modification,
+ * are permitted provided that the above copyright notice and this list
+ * of conditions are retained.
+ */
+
+/***********************************************/
+/***** Properties ******************************/
+/***********************************************/
 var NpcEditor = {
     name: "NPC Editor", //module name
     desc: "A simple editor for Non-Player Characters.", //description

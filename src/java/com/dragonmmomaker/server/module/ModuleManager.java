@@ -26,6 +26,11 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import com.dragonmmomaker.server.ServData;
 
 public class ModuleManager {
+    
+    public final static int ADD = 0;
+    public final static int AVG = 1;
+    public final static int MAX = 2;
+    public final static int MIN = 3;
 
     private ServData mData;
     private Map<String, Module> mModules;
@@ -64,6 +69,11 @@ public class ModuleManager {
         //mEngine.put("World", mData.Game.Tiles);
         mEngine.put("console", mData.Log);
         mEngine.put("Module", this);
+        
+        mEngine.put("ADD", ADD);
+        mEngine.put("AVG", AVG);
+        mEngine.put("MAX", MAX);
+        mEngine.put("MIN", MIN);
         
         mLog = new LinkedList();
     }
@@ -129,22 +139,44 @@ public class ModuleManager {
         }
     }
 
-    public void doHook(String pHook) {
-        doHook(pHook, new HashMap<String, Object>());
+    public Double doHook(String pHook) {
+        return doHook(pHook, new HashMap<String, Object>());
+    }
+    
+    public Double doHook(String pHook, Map<String, Object> pArgs) {
+        return doHook(pHook, pArgs, ADD);
     }
 
-    public void doHook(String pHook, Map<String, Object> pArgs) {
+    public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {
         mLock.lock();
         try {
+            double sum = 0;
+            if (pRet == MIN) sum = Double.MAX_VALUE;
+            if (pRet == MAX) sum = Double.MIN_VALUE;
+            int num = 0;
             ServData._CurData = this.mData;
             if (mHooks.containsKey(pHook)) {
                 if (pArgs == null) {
                     pArgs = new HashMap<String, Object>();
                 }
                 for (String module : mHooks.get(pHook)) {
-                    mModules.get(module).call(mData, "onHook", pHook, pArgs);
+                    Object result = mModules.get(module).call(mData, "onHook", pHook, pArgs);
+                    if (result instanceof Number) {
+                        Number number = (Number)result;
+                        if (pRet == MAX) {
+                            if (number.doubleValue() > sum) sum = number.doubleValue();
+                        } else if (pRet == MIN) {
+                            if (number.doubleValue() < sum) sum = number.doubleValue();
+                        } else {
+                            sum += number.doubleValue();
+                        }
+                        num++;
+                    }
                 }
             }
+            
+            if (pRet == AVG) return (sum / num);
+            return sum;
         } finally {
             mLock.unlock();
         }

@@ -9,13 +9,13 @@
 /**********************/
 /***** Properties *****/
 /**********************/
-var testmod = {
-    name: "Test Mod", //module name
-    desc: "Module Template / Test.", //description
+var Equipment = {
+    name: "Equipmet", //module name
+    desc: "Allows equipping of items", //description
     auth: "Darek", //author
     ver: "0.9.1", //version
     req: {
-        //required dependencies
+        Items:true
     },
     opt: {
     }
@@ -24,22 +24,22 @@ var testmod = {
 /***********************************************/
 /***** Server **********************************/
 /***********************************************/
-testmod.server = {
+Equipment.server = {
     /***** variables *****/
     //none for this module
 };
 
 /***** functions *****/
 //onInit: Called when the server is started, or the module is installed
-testmod.server.onInit = function() {
+Equipment.server.onInit = function() {
     Module.addHook("server_start");
 }
 
 
 //onHook: Called when an event (that this module is hooked into) is triggered
-testmod.server.onHook = function(hook, args) {
+Equipment.server.onHook = function(hook, args) {
     if (hook == "server_start") {
-        console.log("Server booted! So says TestMod!");
+        
     }
 }
 
@@ -48,21 +48,20 @@ testmod.server.onHook = function(hook, args) {
 /***********************************************/
 /***** Client **********************************/
 /***********************************************/
-testmod.client = {
+Equipment.client = {
     /***** variables *****/
     //none for this module
 };
 
 /***** functions *****/
 //onInit: Called when the client page loads, as this module is loaded
-testmod.client.onInit = function() {
+Equipment.client.onInit = function() {
     Module.addHook("game_load");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
-testmod.client.onHook = function(hook, args) {
+Equipment.client.onHook = function(hook, args) {
     if (hook == "game_load") {
-        console.log("Game loaded! So says TestMod!");
     }
 }
 

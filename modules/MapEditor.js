@@ -1,3 +1,11 @@
+/* Copyright (c) 2014, Bryce Gregerson
+ * All rights reserved.
+ *
+ * Redistribution and use in source form, with or without modification,
+ * are permitted provided that the above copyright notice and this list
+ * of conditions are retained.
+ */
+
 var DEFAULT_TILE = "0000.......";
 
 /***********************************************/

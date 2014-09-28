@@ -1,3 +1,11 @@
+/* Copyright (c) 2014, Bryce Gregerson
+ * All rights reserved.
+ *
+ * Redistribution and use in source form, with or without modification,
+ * are permitted provided that the above copyright notice and this list
+ * of conditions are retained.
+ */
+
 /**********************/
 /***** Properties *****/
 /**********************/
@@ -10,6 +18,7 @@ var Items = {
         //required dependencies
     },
     opt: {
+        Combat:true
     }
 };
 
@@ -24,8 +33,8 @@ Items.server = {
 /***** functions *****/
 //onInit: Called when the server is started, or the module is installed
 Items.server.onInit = function() {
-    Module.addHook("server_start");
     Module.addHook("on_load"); //player loaded
+    Module.addHook("combat-add"); //bonus damage
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
@@ -62,6 +71,8 @@ Items.server.onHook = function(hook, args) {
         message.inv = output;
         //put the outgoing load message
         args.msg = JSON.stringify(message);
+    } else if (hook == "combat-add") {
+        
     }
 }
 
