@@ -338,3 +338,25 @@ _Game.addContorls = function() {
         _Game.hide.li = this.checked;
     });
 }
+
+_Game.getTileX = function(x) {
+    var tileX = ((x - _Game.editX) * TILE_SIZE) + (_Game.canvas.width / 2);
+    return Math.floor(tileX);
+}
+
+_Game.getTileY = function(y) {
+    var tileY = ((y - _Game.editY) * TILE_SIZE) + (_Game.canvas.height / 2);
+    return Math.floor(tileY);
+}
+
+_Game.getClickedX = function(e) {
+    var middleX = ($("#game").width() / 2);
+    var tileRatio = $("#game").width() / CLIENT_WIDTH;
+    return _Game.editX + Math.floor((((e.pageX - $("#game").offset().left) - middleX) / tileRatio) / TILE_SIZE);
+}
+
+_Game.getClickedY = function(e) {
+    var middleY = ($("#game").height() / 2);
+    var tileRatio = $("#game").height() / CLIENT_HEIGHT;
+    return _Game.editY + Math.floor((((e.pageY - $("#game").offset().top) - middleY) / tileRatio) / TILE_SIZE);
+}

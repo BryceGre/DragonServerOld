@@ -388,6 +388,64 @@ _UI.NewPrompt = function(title, fields, func, width, height) {
 }
 _UI.ORIG_VAL = $.fn.val;
 
+_UI.AddToMenu = function(title, hook, args) {
+    var id = "ui-menu";
+    if ($("#" + id).length) {
+        var newdiv = $('<li>', {
+            'id': id
+        }).appendTo("#ui-menu");
+        
+        $(newdiv).text(title);
+        
+        if (typeof hook !== 'function') {
+            hook = function() {
+                Module.doHook(hook, args);
+            }
+        }
+        $(newdiv).click(function() {
+            _UI.HideMenu();
+            hook();
+        });
+    }
+}
+
+_UI.ShowMenu = function(x, y, floor) {
+    var id = "ui-menu";
+    if ($("#" + id).length) {
+        //old menu exists, remove it.
+        $("#" + id).menu('destroy');
+        $("#" + id).remove();
+    }
+    var newdiv = $('<ul>', {
+        'id': id,
+        'style': "position:absolute"
+    }).appendTo("#ui");
+    
+    Module.doHook("contextmenu", {x:x, y:y, floor:floor});
+    
+    var tileX = _Game.getPageX(x+1);
+    var tileY = _Game.getPageY(y+1);
+    $(newdiv).menu();
+    $(newdiv).position({
+        my: "left top",
+        at: "left+"+tileX+" top+"+tileY,
+        of: "#"+id
+    });
+    $(newdiv).show();
+    console.log("left+"+tileX+" top+"+tileY);
+    
+    return newdiv;
+}
+
+_UI.HideMenu = function() {
+    var id = "ui-menu";
+    if ($("#" + id).length) {
+        //old menu exists, remove it.
+        $("#" + id).menu('destroy');
+        $("#" + id).remove();
+    }
+}
+
 $.fn.val = function () {
     if (typeof _UI.VAL[$(this).attr("id")] != "undefined") {
         return _UI.VAL[$(this).attr("id")].apply(this, arguments);

@@ -779,6 +779,42 @@ _Game.onMessage = function(data) {
     Module.doHook("message", {admin: false, "head": message[0], "body": message[1]});
 }
 
+_Game.getTileX = function(x) {
+    var tileX = ((x - _Game.world.user.x) * TILE_SIZE) + (_Game.canvas.width / 2);
+    if (_Game.world.user.direction != 0) {
+        if (_Game.world.user.direction == 37) { // left
+            tileX -= TILE_SIZE - _Game.world.user.moved;
+        } else if (_Game.world.user.direction == 39) { // right
+            tileX += TILE_SIZE - _Game.world.user.moved;
+        }
+    }
+    return Math.floor(tileX);
+}
+
+_Game.getTileY = function(y) {
+    var tileY = ((y - _Game.world.user.y) * TILE_SIZE) + (_Game.canvas.height / 2);
+    if (_Game.world.user.direction != 0) {
+        if (_Game.world.user.direction == 38) { // up
+            tileY -= TILE_SIZE - _Game.world.user.moved;
+        } else if (_Game.world.user.direction == 40) { // down
+            tileY += TILE_SIZE - _Game.world.user.moved;
+        }
+    }
+    return Math.floor(tileY);
+}
+
+_Game.getClickedX = function(e) {
+    var middleX = ($("#game").width() / 2);
+    var tileRatio = $("#game").width() / CLIENT_WIDTH;
+    return _Game.world.user.x + Math.floor((((e.pageX - $("#game").offset().left) - middleX) / tileRatio) / TILE_SIZE);
+}
+
+_Game.getClickedY = function(e) {
+    var middleY = ($("#game").height() / 2);
+    var tileRatio = $("#game").height() / CLIENT_HEIGHT;
+    return _Game.world.user.y + Math.floor((((e.pageY - $("#game").offset().top) - middleY) / tileRatio) / TILE_SIZE);
+}
+
 function alphaComposite(mv, ov, a) {
     return (mv * a) + (ov * (1 - a));
 }

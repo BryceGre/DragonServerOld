@@ -57,12 +57,15 @@ testmod.client = {
 //onInit: Called when the client page loads, as this module is loaded
 testmod.client.onInit = function() {
     Module.addHook("game_load");
+    Module.addHook("contextmenu");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 testmod.client.onHook = function(hook, args) {
     if (hook == "game_load") {
         console.log("Game loaded! So says TestMod!");
+    } else if (hook == "contextmenu") {
+        UI.AddToMenu("test", function() {alert("test");});
     }
 }
 
