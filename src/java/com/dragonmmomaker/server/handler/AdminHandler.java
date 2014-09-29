@@ -36,7 +36,7 @@ public class AdminHandler {
     public static final int ACCESS = 0;
 
     protected static Set<AdminHandler> mClients;
-    protected static ServData mServData;
+    protected static ServData mData;
     
     protected Session mSession;
 
@@ -45,12 +45,12 @@ public class AdminHandler {
     }
 
     public static void setData(ServData pData) {
-        mServData = pData;
+        mData = pData;
     }
 
     @OnOpen
     public void onOpen(Session pSession) {
-        ServData._CurData = mServData;
+        ServData._CurData = mData;
 
         mSession = pSession;
         
@@ -61,18 +61,18 @@ public class AdminHandler {
             mClients.add(this);
         }
 
-        mServData.Log.log(100, "(ADMIN) Connection from: " + this.getIP());
+        mData.Log.log(100, "(ADMIN) Connection from: " + this.getIP());
     }
 
     @OnClose
     public void onClose(Session pSession, CloseReason pReason) {
-        ServData._CurData = mServData;
+        ServData._CurData = mData;
 
         synchronized (mClients) {
             mClients.remove(this);
         }
 
-        mServData.Log.log(101, "(ADMIN) Disconnected: " + this.getIP());
+        mData.Log.log(101, "(ADMIN) Disconnected: " + this.getIP());
     }
 
     @OnMessage
@@ -82,29 +82,29 @@ public class AdminHandler {
             return;
         }
 
-        ServData._CurData = mServData;
-        mServData.Log.debug("(ADMIN): Recieved message: " + msg);
+        ServData._CurData = mData;
+        mData.Log.debug("(ADMIN): Recieved message: " + msg);
 
         String[] message = msg.split(":", 2);
 
         if (message[0].equals("login")) {
             JsonObject data = JsonObject.readFrom(message[1]);
             
-            Account acc = new Account(mServData, data.get("user").asString());
+            Account acc = new Account(mData, data.get("user").asString());
             if (acc.getID() >= 0) { //if account exists
                 if (acc.checkPassword(data.get("pass").asString()) && acc.getAccess() >= ACCESS) {
                     mSession.getUserProperties().put("player", acc.getID());
                     mSession.getAsyncRemote().sendText("login:1");
-                    mServData.Log.log(110,"(ADMIM): Log-in: " + "name");
+                    mData.Log.log(110,"(ADMIM): Log-in: " + "name");
                     return;
                 }
             }
 
             mSession.getAsyncRemote().sendText("login:0");
-            mServData.Log.debug("Login failed");
+            mData.Log.debug("Login failed");
         } else if (message[0].equals("load")) {
             if (mSession.getUserProperties().containsKey("player")) {
-                int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+                int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = 1000000000;
                 int pY = 1000000000;
 
@@ -112,9 +112,9 @@ public class AdminHandler {
                 
                 JsonArray tiles = new JsonArray();
                 String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
-                try (ResultSet rs = mServData.DB.Query(sql)) {
+                try (ResultSet rs = mData.DB.Query(sql)) {
                     while (rs.next()) {
-                        Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                        Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                         tiles.add(tile.toString());
                     }
                 } catch (SQLException e) {
@@ -130,7 +130,7 @@ public class AdminHandler {
         } else if (message[0].equals("warp")) {
             if (mSession.getUserProperties().containsKey("player")) {
                 JsonObject data = JsonObject.readFrom(message[1]);
-                int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+                int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = data.get("x").asInt();
                 int pY = data.get("y").asInt();
 
@@ -138,9 +138,9 @@ public class AdminHandler {
                 
                 JsonArray tiles = new JsonArray();
                 String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
-                try (ResultSet rs = mServData.DB.Query(sql)) {
+                try (ResultSet rs = mData.DB.Query(sql)) {
                     while (rs.next()) {
-                        Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                        Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                         tiles.add(tile.toString());
                     }
                 } catch (SQLException e) {
@@ -153,7 +153,7 @@ public class AdminHandler {
         } else if (message[0].equals("move")) {
             if (mSession.getUserProperties().containsKey("player")) {
                 JsonObject data = JsonObject.readFrom(message[1]);
-                int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+                int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = data.get("x").asInt();
                 int pY = data.get("y").asInt();
                 int pDir = data.get("dir").asInt();
@@ -165,9 +165,9 @@ public class AdminHandler {
                     case 37: //left
                         if (pX > 0) {
                             String sql = "SELECT * FROM tiles WHERE x=" + (pX - pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
-                            try (ResultSet rs = mServData.DB.Query(sql)) {
+                            try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
-                                    Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                                    Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                                     tiles.add(tile.toString());
                                 }
                             } catch (SQLException e) {
@@ -178,9 +178,9 @@ public class AdminHandler {
                     case 38: //up
                         if (pY > 0) {
                             String sql = "SELECT * FROM tiles WHERE y=" + (pY - pD) + " AND x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + ";";
-                            try (ResultSet rs = mServData.DB.Query(sql)) {
+                            try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
-                                    Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                                    Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                                     tiles.add(tile.toString());
                                 }
                             } catch (SQLException e) {
@@ -191,9 +191,9 @@ public class AdminHandler {
                     case 39: //right
                         if (pX < 2000000000) {
                             String sql = "SELECT * FROM tiles WHERE x=" + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
-                            try (ResultSet rs = mServData.DB.Query(sql)) {
+                            try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
-                                    Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                                    Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                                     tiles.add(tile.toString());
                                 }
                             } catch (SQLException e) {
@@ -204,9 +204,9 @@ public class AdminHandler {
                     case 40: //down
                         if (pY < 2000000000) {
                             String sql = "SELECT * FROM tiles WHERE y=" + (pY + pD) + " AND x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + ";";
-                            try (ResultSet rs = mServData.DB.Query(sql)) {
+                            try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
-                                    Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                                    Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                                     tiles.add(tile.toString());
                                 }
                             } catch (SQLException e) {
@@ -228,8 +228,8 @@ public class AdminHandler {
         if (message.length > 1) {
             args.put("body", message[1]);
         }
-        mServData.Game.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mServData.Module.doHook("admin_message", args);
+        mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
+        mData.Module.doHook("admin_message", args);
     }
 
     @OnError

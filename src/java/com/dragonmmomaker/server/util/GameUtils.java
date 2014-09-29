@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import com.dragonmmomaker.datamap.DRow;
-import com.dragonmmomaker.server.GameData;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
@@ -18,20 +17,18 @@ import com.eclipsesource.json.JsonObject;
 
 public class GameUtils {
 
-    private ServData mServData;
-    private GameData mGameData;
+    private ServData mData;
     public SocketUtils socket;
 
     public GameUtils(ServData pGameData) {
-        mServData = pGameData;
-        mGameData = mServData.Game;
+        mData = pGameData;
     }
 
     public Tile getTile(int x, int y, short floor) {
         String sql = "SELECT * FROM tiles WHERE x=" + x + " AND y=" + y + " AND floor=" + floor;
-        try (ResultSet rs = mServData.DB.Query(sql)) {
+        try (ResultSet rs = mData.DB.Query(sql)) {
             if (rs.next()) {
-                return new Tile(mServData, rs.getInt("id"), x, y, floor, rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                return new Tile(mData, rs.getInt("id"), x, y, floor, rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
             } else {
                 return null;
             }
@@ -53,16 +50,16 @@ public class GameUtils {
     }
 
     public void spawnNPC(Tile tile, int id) {
-        mGameData.Npcs.spawnNPC(tile, id, mGameData.Data.get("npcs").get(id));
+        mData.Npcs.spawnNPC(tile, id, mData.Data.get("npcs").get(id));
     }
 
     public void respawnAllNpcs() {
-        mGameData.Npcs.respawnAll();
+        mData.Npcs.respawnAll();
     }
     
     public void warpPlayer(int id, int x, int y, short floor) {
-        DRow pChar = mServData.Game.Data.get("characters").get(id);
-        int pD = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+        DRow pChar = mData.Data.get("characters").get(id);
+        int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
 
         Map<Object, Object> charData = new HashMap();
         charData.put("x", x);
@@ -74,11 +71,11 @@ public class GameUtils {
         JsonArray tiles = new JsonArray();
         JsonArray npcs = new JsonArray();
         String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (x - pD) + " AND " + (x + pD) + " AND y BETWEEN " + (y - pD) + " AND " + (y + pD) + ";";
-        try (ResultSet rs = mServData.DB.Query(sql)) {
+        try (ResultSet rs = mData.DB.Query(sql)) {
             while (rs.next()) {
-                Tile tile = new Tile(mServData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
+                Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
                 tiles.add(tile.toString());
-                Npc npc = mServData.Game.Npcs.getNpc(tile.getX(), tile.getY(), tile.getFloor());
+                Npc npc = mData.Npcs.getNpc(tile.getX(), tile.getY(), tile.getFloor());
                 if (npc != null) {
                     npcs.add(npc.toString());
                 }
@@ -156,19 +153,19 @@ public class GameUtils {
 
     public int getUTCHours() {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        cal.setTime(mGameData.Time);
+        cal.setTime(mData.Time);
         return cal.get(Calendar.HOUR_OF_DAY);
     }
 
     public int getUTCMinutes() {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        cal.setTime(mGameData.Time);
+        cal.setTime(mData.Time);
         return cal.get(Calendar.MINUTE);
     }
 
     public int getUTCSeconds() {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        cal.setTime(mGameData.Time);
+        cal.setTime(mData.Time);
         return cal.get(Calendar.SECOND);
     }
     

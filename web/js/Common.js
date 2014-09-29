@@ -6,6 +6,7 @@ var _Data = new Object();
 _Game.gfx = new Object();
 _Game.tilesets = new Array();
 _Game.target = null;
+_Game.select = null;
 _Game.modules = new Object();
 _Game.hooks = new Object();
 _Game.menus = new Object();
@@ -88,6 +89,7 @@ _Game.loadResources = function() {
     }
     
     _Game.target = _Game.loadImage("GFX/Target.png");
+    _Game.select = _Game.loadImage("GFX/Select.png");
 
     for (var key in GFX) {
         _Game.gfx[key] = new Array();

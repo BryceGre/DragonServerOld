@@ -62,10 +62,10 @@ public class ModuleManager {
         } catch (ScriptException e) {
             e.printStackTrace();
         }
-        mData.Game.Data.fixEngine(mEngine);
+        mData.Data.fixEngine(mEngine);
         
-        mEngine.put("Game", mData.Game.Utils);
-        mEngine.put("Data", mData.Game.Data);
+        mEngine.put("Game", mData.Utils);
+        mEngine.put("Data", mData.Data);
         //mEngine.put("World", mData.Game.Tiles);
         mEngine.put("console", mData.Log);
         mEngine.put("Module", this);

@@ -67,17 +67,17 @@ public class DragonServer {
         mData.Log.log(000, "Server Start");
         
         mData.Log.log(001, "Opening Database");
-        mData.DB.connect(mData.Game.Data.getConnection());
+        mData.DB.connect(mData.Data.getConnection());
         
-        mData.Game.Time = new Date();
-        mTimeFactor = Integer.parseInt(mData.Game.Config.get("Game").get("time_factor"));
+        mData.Time = new Date();
+        mTimeFactor = Integer.parseInt(mData.Config.get("Game").get("time_factor"));
         new Timer(true).schedule(new ServerTimer(), 0, 1000);
         
         initData();
 
         mData.Module.doHook("server_start");
 
-        mData.Game.Npcs.start();
+        mData.Npcs.start();
         
         DragonServer.mRunning = true;
 
@@ -128,13 +128,13 @@ public class DragonServer {
         mData.Module.initModules();
         
         //spawn all NPCs
-        mData.Game.Npcs.spawnAll(spawn);
+        mData.Npcs.spawnAll(spawn);
     }
 
     public DragonServer stop() {
         mData.Module.doHook("server_stop");
         
-        mData.Game.Npcs.stop();
+        mData.Npcs.stop();
         mData.DB.Disconnect();
         mRunning = false;
         mData.Log.log(99, "Server End");
@@ -156,7 +156,7 @@ public class DragonServer {
             if (isRunning()) {
                 mData.Module.doHook("server_stop");
             }
-            mData.Game.Npcs.stop();
+            mData.Npcs.stop();
             mData.DB.Disconnect();
             mRunning = false;
             mData.Log.log(99, "Server End");
@@ -180,7 +180,7 @@ public class DragonServer {
         @Override
         public void run() {
             //add {mTimeFactor} seconds to the game time
-            mData.Game.Time = new Date(mData.Game.Time.getTime() + (mTimeFactor * 1000));
+            mData.Time = new Date(mData.Time.getTime() + (mTimeFactor * 1000));
             //also run the garbage collecter every second to keep memory consumption down.
             count++;
             if (count >= GC_FREQ) {

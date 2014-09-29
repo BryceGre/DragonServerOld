@@ -530,7 +530,7 @@ MapEditor.client.createUI = function() {
      * ** Tab 3: Music ***
      **************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 
-    MapEditor.client.testMusic = new Audio("audio/Music/1.mp3");
+    MapEditor.client.testMusic = new Audio("SFX/Music/1.mp3");
     MapEditor.client.testMusic.loop = true;
     MapEditor.client.testMusic.play();
     MapEditor.client.testMusic.pause();
@@ -538,10 +538,10 @@ MapEditor.client.createUI = function() {
     UI.AddSpinner(this.window, "track", {min: 0, max: SFX.Music, spin: function(event, ui) {
             MapEditor.client.currMusic = ui.value;
             if (!MapEditor.client.testMusic.paused && MapEditor.client.testMusic.currentTime) {
-                MapEditor.client.testMusic.setAttribute('src', "audio/Music/" + ui.value + ".mp3");
+                MapEditor.client.testMusic.setAttribute('src', "SFX/Music/" + ui.value + ".mp3");
                 MapEditor.client.testMusic.play();
             } else {
-                MapEditor.client.testMusic.setAttribute('src', "audio/Music/" + ui.value + ".mp3");
+                MapEditor.client.testMusic.setAttribute('src', "SFX/Music/" + ui.value + ".mp3");
             }
         }
     }, 3, {"style": 'display:inline-block;margin:4px 0px;'});

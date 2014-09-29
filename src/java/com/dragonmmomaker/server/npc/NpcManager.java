@@ -35,7 +35,7 @@ import com.eclipsesource.json.JsonObject;
  */
 public class NpcManager {
 
-    private ServData mServData;
+    private ServData mData;
     private Timer mTimer;
     private NpcUpdateTask mUpdateTask;
     private Map<String,Npc> mNpcData;
@@ -44,7 +44,7 @@ public class NpcManager {
     private int mCount;
 
     public NpcManager(ServData pServData) {
-        mServData = pServData;
+        mData = pServData;
         mNpcData = new ConcurrentHashMap();
         mRespawn = new LinkedList();
         
@@ -67,7 +67,7 @@ public class NpcManager {
     }
 
     public void spawnAll(Map<Tile, Integer> pSpawns) {
-        Map<Integer,Map<Object,Object>> cache = mServData.Game.Data.get("npcs").list("sprite", "name");
+        Map<Integer,Map<Object,Object>> cache = mData.Data.get("npcs").list("sprite", "name");
         for (Map.Entry<Tile, Integer> spawn : pSpawns.entrySet()) {
             int id = spawn.getValue();
             if (cache.containsKey(id)) {
@@ -94,7 +94,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mServData.Module.doHook("npc_spawn", args);
+        mData.Module.doHook("npc_spawn", args);
     }
     
     public void respawnNpc(Npc pNpc) {
@@ -108,8 +108,8 @@ public class NpcManager {
         mNpcData.put(Tile.key(tile), pNpc);
         
         ClientHandler.sendAllWithTest("npc-res:" + pNpc.toString(), (charID) -> {
-            DRow pchar = mServData.Game.Data.get("characters").get(charID);
-            int dist = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+            DRow pchar = mData.Data.get("characters").get(charID);
+            int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
             int pX = (Integer) pchar.get("x");
             int pY = (Integer) pchar.get("y");
             if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
@@ -122,7 +122,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mServData.Module.doHook("npc_spawn", args);
+        mData.Module.doHook("npc_spawn", args);
     }
     
     public void killNpc(Npc pNpc) {
@@ -131,8 +131,8 @@ public class NpcManager {
         mNpcData.remove(Tile.key(pNpc.getX(), pNpc.getY(), pNpc.getFloor()));
         
         ClientHandler.sendAllWithTest("npc-die:" + pNpc.getIid(), (charID) -> {
-            DRow pchar = mServData.Game.Data.get("characters").get(charID);
-            int dist = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+            DRow pchar = mData.Data.get("characters").get(charID);
+            int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
             int pX = (Integer) pchar.get("x");
             int pY = (Integer) pchar.get("y");
             if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
@@ -145,7 +145,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mServData.Module.doHook("npc_die", args);
+        mData.Module.doHook("npc_die", args);
     }
 
     public void respawnAll() {
@@ -160,7 +160,7 @@ public class NpcManager {
     }
 
     public boolean checkAttr(int pX, int pY, short pFloor, Npc pNpc, Set<String> pPlayerData) {
-        Tile tile = mServData.Game.Utils.getTile(pX, pY, pFloor);
+        Tile tile = mData.Utils.getTile(pX, pY, pFloor);
         if (tile == null) {
             return false; //cannot walk off the map
         }
@@ -197,7 +197,7 @@ public class NpcManager {
         public void run() {
             //log the positions of all players
             Set<String> playerData = new CopyOnWriteArraySet();
-            Map<Integer,Map<Object,Object>> players = mServData.Game.Data.get("characters").list("x","y","floor");
+            Map<Integer,Map<Object,Object>> players = mData.Data.get("characters").list("x","y","floor");
             for (Map.Entry<Integer,Map<Object,Object>> entry : players.entrySet()) {
                 Map<Object,Object> player = entry.getValue();
                 if (player.get("x") != null && player.get("y") != null && player.get("floor") != null)
@@ -205,7 +205,7 @@ public class NpcManager {
             }
             //cache NPC behavior
             Date now = new Date();
-            Map<Integer,byte[]> cache = mServData.Game.Data.get("npcs").listRaw("behavior");
+            Map<Integer,byte[]> cache = mData.Data.get("npcs").listRaw("behavior");
             //clone the entry set, and iterate over the npcs
             Iterator<Map.Entry<String,Npc>> itr = new LinkedHashSet(mNpcData.entrySet()).iterator();
             while (itr.hasNext()) {
@@ -262,8 +262,8 @@ public class NpcManager {
                             newmsg.add("s", npc.getSprite());
                             newmsg.add("dir", dir);
                             ClientHandler.sendAllWithTest("npc-move:" + newmsg.toString(), (charID) -> {
-                                DRow pchar = mServData.Game.Data.get("characters").get(charID);
-                                int dist = Integer.parseInt(mServData.Game.Config.get("Game").get("draw_distance"));
+                                DRow pchar = mData.Data.get("characters").get(charID);
+                                int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                                 int pX = (Integer) pchar.get("x");
                                 int pY = (Integer) pchar.get("y");
                                 if (npc.getX() - dist <= pX && npc.getX() + dist >= pX) {
