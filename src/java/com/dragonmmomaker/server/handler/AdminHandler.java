@@ -8,10 +8,12 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Predicate;
 
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
@@ -46,6 +48,26 @@ public class AdminHandler {
 
     public static void setData(ServData pData) {
         mData = pData;
+    }
+    
+
+    public static void sendAll(String pMessage) {
+        Iterator<AdminHandler> itr = mClients.iterator();
+        while (itr.hasNext()) {
+            itr.next().mSession.getAsyncRemote().sendText(pMessage);
+        }
+    }
+
+    public static void sendAllWithTest(String pMessage, Predicate<Integer> pTest) {
+        Iterator<AdminHandler> itr = mClients.iterator();
+        while (itr.hasNext()) {
+            AdminHandler player = itr.next();
+            if (player.mSession.getUserProperties().containsKey("char")) {
+                if (pTest.test((Integer) player.mSession.getUserProperties().get("char"))) {
+                    player.mSession.getAsyncRemote().sendText(pMessage);
+                }
+            }
+        }
     }
 
     @OnOpen
@@ -228,8 +250,8 @@ public class AdminHandler {
         if (message.length > 1) {
             args.put("body", message[1]);
         }
-        mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mData.Module.doHook("admin_message", args);
+        
+        mData.Module.doHook("admin_message", args, new SocketUtils(mSession, this.getRemotes()));
     }
 
     @OnError

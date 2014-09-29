@@ -131,8 +131,7 @@ public class ClientHandler {
         if (message.length > 1) {
             args.put("data", message[1]);
         }
-        mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mData.Module.doHook("pre_message", args);
+        mData.Module.doHook("pre_message", args, new SocketUtils(mSession, this.getRemotes()));
 
         if (message[0].equals("login")) {
             JsonObject data = JsonObject.readFrom(message[1]);
@@ -263,7 +262,7 @@ public class ClientHandler {
                 args = new HashMap<String, Object>();
                 args.put("index", pID);
                 args.put("msg", newmsg.toString());
-                mData.Module.doHook("on_load", args);
+                mData.Module.doHook("on_load", args, new SocketUtils(mSession, this.getRemotes()));
 
                 mSession.getAsyncRemote().sendText("load:" + args.get("msg"));
 
@@ -278,6 +277,7 @@ public class ClientHandler {
 
                 mSession.getUserProperties().put("loaded", true);
                 mSession.getUserProperties().put("lastMove", new Date());
+                mSession.getUserProperties().put("lastAct", new Date());
             }
         } else if (message[0].equals("loaded")) {
             //pConnection.data("loaded", true);
@@ -408,106 +408,112 @@ public class ClientHandler {
         } else if (message[0].equals("act")) {
             if (mSession.getUserProperties().containsKey("loaded")) {
                 short pDir = Short.parseShort(message[1]);
-                DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
-
-                int pID = (Integer) pchar.get("id");
-                int pX = (Integer) pchar.get("x");
-                int pY = (Integer) pchar.get("y");
-                short pFloor = ((Integer) pchar.get("floor")).shortValue();
+                //put a cooldown on acting so that it cannot be spammed.
+                Date last = (Date) mSession.getUserProperties().get("lastAct");
+                Date now = new Date();
                 
-                mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-                Npc npc = null;
-                Tile tile = null;
-                GameUtils.Point point = null;
-                switch (pDir) {
-                    case 37: //left
-                        npc = mData.Npcs.getNpc(pX - 1, pY, pFloor);
-                        if (npc != null) {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("npc", npc);
-                            mData.Module.doHook("npc_act", args);
-                        } else {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("point", new GameUtils.Point(pX - 1, pY, pFloor));
-                            mData.Module.doHook("point_act", args);
-
-                            tile = mData.Utils.getTile(pX - 1, pY, pFloor);
-                            if (tile != null) {
+                if ((last.getTime() + 100) < now.getTime()) {
+                    mSession.getUserProperties().put("lastAct", now);
+                    //compile character information
+                    DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
+                    int pID = (Integer) pchar.get("id");
+                    int pX = (Integer) pchar.get("x");
+                    int pY = (Integer) pchar.get("y");
+                    short pFloor = ((Integer) pchar.get("floor")).shortValue();
+                    
+                    Npc npc = null;
+                    Tile tile = null;
+                    GameUtils.Point point = null;
+                    switch (pDir) {
+                        case 37: //left
+                            npc = mData.Npcs.getNpc(pX - 1, pY, pFloor);
+                            if (npc != null) {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("tile", tile);
-                                mData.Module.doHook("tile_act", args);
-                            }
-                        }
-                        break;
-                    case 38: //up
-                        npc = mData.Npcs.getNpc(pX, pY - 1, pFloor);
-                        if (npc != null) {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("npc", npc);
-                            mData.Module.doHook("npc_act", args);
-                        } else {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("point", new GameUtils.Point(pX, pY - 1, pFloor));
-                            mData.Module.doHook("point_act", args);
-
-                            tile = mData.Utils.getTile(pX, pY - 1, pFloor);
-                            if (tile != null) {
+                                args.put("npc", npc);
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                            } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("tile", tile);
-                                mData.Module.doHook("tile_act", args);
-                            }
-                        }
-                        break;
-                    case 39: //right
-                        npc = mData.Npcs.getNpc(pX + 1, pY, pFloor);
-                        if (npc != null) {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("npc", npc);
-                            mData.Module.doHook("npc_act", args);
-                        } else {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("point", new GameUtils.Point(pX + 1, pY, pFloor));
-                            mData.Module.doHook("point_act", args);
+                                args.put("point", new GameUtils.Point(pX - 1, pY, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
 
-                            tile = mData.Utils.getTile(pX + 1, pY, pFloor);
-                            if (tile != null) {
+                                tile = mData.Utils.getTile(pX - 1, pY, pFloor);
+                                if (tile != null) {
+                                    args = new HashMap();
+                                    args.put("index", pID);
+                                    args.put("tile", tile);
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                }
+                            }
+                            break;
+                        case 38: //up
+                            npc = mData.Npcs.getNpc(pX, pY - 1, pFloor);
+                            if (npc != null) {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("tile", tile);
-                                mData.Module.doHook("tile_act", args);
-                            }
-                        }
-                        break;
-                    case 40: //down
-                        npc = mData.Npcs.getNpc(pX, pY + 1, pFloor);
-                        if (npc != null) {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("npc", npc);
-                            mData.Module.doHook("npc_act", args);
-                        } else {
-                            args = new HashMap();
-                            args.put("index", pID);
-                            args.put("point", new GameUtils.Point(pX, pY + 1, pFloor));
-                            mData.Module.doHook("point_act", args);
-
-                            tile = mData.Utils.getTile(pX, pY + 1, pFloor);
-                            if (tile != null) {
+                                args.put("npc", npc);
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                            } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("tile", tile);
-                                mData.Module.doHook("tile_act", args);
+                                args.put("point", new GameUtils.Point(pX, pY - 1, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+
+                                tile = mData.Utils.getTile(pX, pY - 1, pFloor);
+                                if (tile != null) {
+                                    args = new HashMap();
+                                    args.put("index", pID);
+                                    args.put("tile", tile);
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                }
                             }
-                        }
-                        break;
+                            break;
+                        case 39: //right
+                            npc = mData.Npcs.getNpc(pX + 1, pY, pFloor);
+                            if (npc != null) {
+                                args = new HashMap();
+                                args.put("index", pID);
+                                args.put("npc", npc);
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                            } else {
+                                args = new HashMap();
+                                args.put("index", pID);
+                                args.put("point", new GameUtils.Point(pX + 1, pY, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+
+                                tile = mData.Utils.getTile(pX + 1, pY, pFloor);
+                                if (tile != null) {
+                                    args = new HashMap();
+                                    args.put("index", pID);
+                                    args.put("tile", tile);
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                }
+                            }
+                            break;
+                        case 40: //down
+                            npc = mData.Npcs.getNpc(pX, pY + 1, pFloor);
+                            if (npc != null) {
+                                args = new HashMap();
+                                args.put("index", pID);
+                                args.put("npc", npc);
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                            } else {
+                                args = new HashMap();
+                                args.put("index", pID);
+                                args.put("point", new GameUtils.Point(pX, pY + 1, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+
+                                tile = mData.Utils.getTile(pX, pY + 1, pFloor);
+                                if (tile != null) {
+                                    args = new HashMap();
+                                    args.put("index", pID);
+                                    args.put("tile", tile);
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                }
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -523,8 +529,7 @@ public class ClientHandler {
         if (message.length > 1) {
             args.put("body", message[1]);
         }
-        mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mData.Module.doHook("message", args);
+        mData.Module.doHook("message", args, new SocketUtils(mSession, this.getRemotes()));
     }
 
     @OnError
@@ -560,8 +565,7 @@ public class ClientHandler {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put("index", charID);
         args.put("name", name);
-        mData.Utils.socket = new SocketUtils(mSession, this.getRemotes());
-        mData.Module.doHook("create_char", args);
+        mData.Module.doHook("create_char", args, new SocketUtils(mSession, this.getRemotes()));
 
         return charID;
     }

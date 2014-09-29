@@ -24,6 +24,7 @@ import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 
 import com.dragonmmomaker.server.ServData;
+import com.dragonmmomaker.server.util.SocketUtils;
 
 public class ModuleManager {
     
@@ -48,6 +49,7 @@ public class ModuleManager {
         
         mModules = new ConcurrentHashMap();
         mHooks = new ConcurrentHashMap();
+        //TODO: remove strict
         //mEngineManager = new ScriptEngineManager();
         //mEngine = mEngineManager.getEngineByName("nashorn");
         NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
@@ -66,7 +68,6 @@ public class ModuleManager {
         
         mEngine.put("Game", mData.Utils);
         mEngine.put("Data", mData.Data);
-        //mEngine.put("World", mData.Game.Tiles);
         mEngine.put("console", mData.Log);
         mEngine.put("Module", this);
         
@@ -146,40 +147,46 @@ public class ModuleManager {
     public Double doHook(String pHook, Map<String, Object> pArgs) {
         return doHook(pHook, pArgs, ADD);
     }
-
-    public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {
-        mLock.lock();
+    
+    //for use within server, on first hook call. Locks to prevent multithreading errors
+    public void doHook(String pHook, Map<String, Object> pArgs, SocketUtils pUtils) {
         try {
-            double sum = 0;
-            if (pRet == MIN) sum = Double.MAX_VALUE;
-            if (pRet == MAX) sum = Double.MIN_VALUE;
-            int num = 0;
-            ServData._CurData = this.mData;
-            if (mHooks.containsKey(pHook)) {
-                if (pArgs == null) {
-                    pArgs = new HashMap<String, Object>();
-                }
-                for (String module : mHooks.get(pHook)) {
-                    Object result = mModules.get(module).call(mData, "onHook", pHook, pArgs);
-                    if (result instanceof Number) {
-                        Number number = (Number)result;
-                        if (pRet == MAX) {
-                            if (number.doubleValue() > sum) sum = number.doubleValue();
-                        } else if (pRet == MIN) {
-                            if (number.doubleValue() < sum) sum = number.doubleValue();
-                        } else {
-                            sum += number.doubleValue();
-                        }
-                        num++;
-                    }
-                }
-            }
-            
-            if (pRet == AVG) return (sum / num);
-            return sum;
+            mLock.lock();
+            mData.Utils.socket = pUtils;
+            doHook(pHook, pArgs, ADD);
         } finally {
             mLock.unlock();
         }
+    }
+
+    public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {
+        double sum = 0;
+        if (pRet == MIN) sum = Double.MAX_VALUE;
+        if (pRet == MAX) sum = Double.MIN_VALUE;
+        int num = 0;
+        ServData._CurData = this.mData;
+        if (mHooks.containsKey(pHook)) {
+            if (pArgs == null) {
+                pArgs = new HashMap<String, Object>();
+            }
+            for (String module : mHooks.get(pHook)) {
+                Object result = mModules.get(module).call(mData, "onHook", pHook, pArgs);
+                if (result instanceof Number) {
+                    Number number = (Number)result;
+                    if (pRet == MAX) {
+                        if (number.doubleValue() > sum) sum = number.doubleValue();
+                    } else if (pRet == MIN) {
+                        if (number.doubleValue() < sum) sum = number.doubleValue();
+                    } else {
+                        sum += number.doubleValue();
+                    }
+                    num++;
+                }
+            }
+        }
+
+        if (pRet == AVG) return (sum / num);
+        return sum;
     }
     
     public void log(String pMessage) {

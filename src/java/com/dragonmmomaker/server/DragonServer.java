@@ -132,7 +132,9 @@ public class DragonServer {
     }
 
     public DragonServer stop() {
-        mData.Module.doHook("server_stop");
+        if (isRunning()) {
+            mData.Module.doHook("server_stop");
+        }
         
         mData.Npcs.stop();
         mData.DB.Disconnect();
@@ -153,13 +155,7 @@ public class DragonServer {
 
     private class ShutdownHook extends Thread {
         public void run() {
-            if (isRunning()) {
-                mData.Module.doHook("server_stop");
-            }
-            mData.Npcs.stop();
-            mData.DB.Disconnect();
-            mRunning = false;
-            mData.Log.log(99, "Server End");
+            DragonServer.this.stop();
         }
     }
 

@@ -26,6 +26,7 @@ import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.DummyTile;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
+import com.dragonmmomaker.server.util.SocketUtils;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 
@@ -94,7 +95,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_spawn", args);
+        mData.Module.doHook("npc_spawn", args, new SocketUtils());
     }
     
     public void respawnNpc(Npc pNpc) {
@@ -122,7 +123,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_spawn", args);
+        mData.Module.doHook("npc_spawn", args, new SocketUtils());
     }
     
     public void killNpc(Npc pNpc) {
@@ -145,7 +146,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_die", args);
+        mData.Module.doHook("npc_die", args, new SocketUtils());
     }
 
     public void respawnAll() {

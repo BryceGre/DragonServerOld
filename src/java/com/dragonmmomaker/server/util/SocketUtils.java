@@ -10,6 +10,9 @@ import java.util.Set;
 
 import javax.websocket.Session;
 
+import com.dragonmmomaker.server.handler.AdminHandler;
+import com.dragonmmomaker.server.handler.ClientHandler;
+
 /**
  *
  * @author Bryce
@@ -17,6 +20,11 @@ import javax.websocket.Session;
 public class SocketUtils {
     private Session mSession;
     private Set<Session> mClients;
+    
+    public SocketUtils() {
+        mSession = null;
+        mClients = null;
+    }
 
     public SocketUtils(Session pSession, Set<Session> pClients) {
         mSession = pSession;
@@ -24,22 +32,34 @@ public class SocketUtils {
     }
     
     public void send(String pMessage) {
-        mSession.getAsyncRemote().sendText(pMessage);
+        if (mSession != null) {
+            mSession.getAsyncRemote().sendText(pMessage);
+        } else {
+            //no user to send message to
+        }
     }
-
+    
     public void sendAll(String pMessage) {
-        for (Session a : mClients) {
-            if (a.getUserProperties().containsKey("loaded")) {
-                a.getAsyncRemote().sendText(pMessage);
+        if (mClients != null) {
+            for (Session a : mClients) {
+                if (a.getUserProperties().containsKey("loaded")) {
+                    a.getAsyncRemote().sendText(pMessage);
+                }
             }
+        } else {
+            //hook not specific to any user
+            ClientHandler.sendAll(pMessage);
+            AdminHandler.sendAll(pMessage);
         }
     }
     
     public void sendAllOther(String pMessage) {
-        for (Session a : mClients) {
-            if (a.getUserProperties().containsKey("loaded")) {
-                if (!a.getId().equals(mSession.getId())) {
-                    a.getAsyncRemote().sendText(pMessage);
+        if (mSession != null && mClients != null) {
+            for (Session a : mClients) {
+                if (a.getUserProperties().containsKey("loaded")) {
+                    if (!a.getId().equals(mSession.getId())) {
+                        a.getAsyncRemote().sendText(pMessage);
+                    }
                 }
             }
         }
