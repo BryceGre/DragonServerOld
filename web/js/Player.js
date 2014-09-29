@@ -15,6 +15,7 @@ function User(name, x, y, floor, sprite) {
     this.floor = parseInt(floor);
     this.lastPoint = new Point(this.x, this.y, this.floor);
     this.sprite = parseInt(sprite);
+    this.target = null;
 
     this.getSpriteOffset = getSpriteOffset;
 
@@ -84,6 +85,7 @@ function Player(id, name, x, y, floor, sprite) {
     this.floor = parseInt(floor);
     this.lastPoint = new Point(this.x, this.y, this.floor);
     this.sprite = parseInt(sprite);
+    this.target = null;
 
     this.getSpriteOffset = getSpriteOffset;
     
@@ -103,6 +105,7 @@ function NPC(x, y, floor, sprite) {
     this.floor = parseInt(floor);
     this.lastPoint = new Point(this.x, this.y, this.floor);
     this.sprite = parseInt(sprite);
+    this.target = null;
 
     this.getSpriteOffset = getSpriteOffset;
     

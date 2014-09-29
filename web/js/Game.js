@@ -64,10 +64,6 @@ _Game.onFadeMusic = function() {
     }
 }
 
-_Game.onClick = function(e) {
-    _UI.HideMenu();
-}
-
 _Game.onMenu = function(e) {
     _UI.ShowMenu(_Game.getClickedX(e), _Game.getClickedY(e), _Game.world.user.floor);
     return false;

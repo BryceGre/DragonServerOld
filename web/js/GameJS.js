@@ -218,6 +218,24 @@ _Game.onDraw = function(elapsed) {
         }
     }
     
+    //draw target indicator below all characters
+    if (_Game.world.user.target) {
+        var targetX = ((_Game.world.user.target.x - _Game.world.user.x) * TILE_SIZE) + middleX;
+        var targetY = ((_Game.world.user.target.y - _Game.world.user.y) * TILE_SIZE) + middleY;
+        if (_Game.world.user.target.direction != 0) {
+            if (_Game.world.user.target.direction == 37) { // left
+                targetX += (TILE_SIZE - _Game.world.user.target.moved);
+            } else if (_Game.world.user.target.direction == 38) { // up
+                targetY += (TILE_SIZE - _Game.world.user.target.moved);
+            } else if (_Game.world.user.target.direction == 39) { // right
+                targetX -= (TILE_SIZE - _Game.world.user.target.moved);
+            } else if (_Game.world.user.target.direction == 40) { // down
+                targetY -= (TILE_SIZE - _Game.world.user.target.moved);
+            }
+        }
+        _Game.context.drawImage(_Game.target, 0, 0, TILE_SIZE, TILE_SIZE, targetX, targetY, TILE_SIZE, TILE_SIZE);
+    }
+    
     //queue the drawing from top to bottom, so that characters underneath other characters will be drawn on top. (head on top of feet)
     var queue = new Array();
 
@@ -589,6 +607,30 @@ _Game.keyUp = function(e) {
     // if (e.which == 16) {
     // _Game.world.user.sprinting = false;
     // }
+}
+
+_Game.onClick = function(e) {
+    _UI.HideMenu();
+    _Game.world.user.target = null;
+    var x = _Game.getClickedX(e);
+    var y = _Game.getClickedY(e);
+    
+    for (key in _Game.world.players) {
+        if (_Game.world.players[key].floor == _Game.world.user.floor) {
+            if (_Game.world.players[key].x == x && _Game.world.players[key].y == y) {
+                _Game.world.user.target = _Game.world.players[key];
+                return;
+            }
+        }
+    }
+    for (key in _Game.world.npcs) {
+        if (_Game.world.npcs[key].floor == _Game.world.user.floor) {
+            if (_Game.world.npcs[key].x == x && _Game.world.npcs[key].y == y) {
+                _Game.world.user.target = _Game.world.npcs[key];
+                return;
+            }
+        }
+    }
 }
 
 _Game.onMessage = function(data) {

@@ -5,6 +5,7 @@ var _Data = new Object();
 // Common Vars
 _Game.gfx = new Object();
 _Game.tilesets = new Array();
+_Game.target = null;
 _Game.modules = new Object();
 _Game.hooks = new Object();
 _Game.menus = new Object();
@@ -85,6 +86,8 @@ _Game.loadResources = function() {
     for (var i = 0; i <= 9; i++) {
         _Game.tilesets[i] = _Game.loadImage("GFX/Tiles" + i + ".png");
     }
+    
+    _Game.target = _Game.loadImage("GFX/Target.png");
 
     for (var key in GFX) {
         _Game.gfx[key] = new Array();

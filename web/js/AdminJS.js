@@ -247,6 +247,10 @@ _Game.keyUp = function(e) {
     Module.doHook("key_up", {admin: true, key: e.which});
 }
 
+_Game.onClick = function(e) {
+    _UI.HideMenu();
+}
+
 _Game.onMessage = function(data) {
     var n = data.split(":");
     var message = n.splice(0, 1);
