@@ -2,24 +2,66 @@ package com.dragonmmomaker.server;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
+import com.dragonmmomaker.datamap.DBase;
+import com.dragonmmomaker.war.ServerListener;
 import javafx.util.Callback;
 
 public class Database {
 
     private Connection mConnection;
     private UpdateThread mUThread;
-
-    public Database connect(Connection pConn) {
-        mConnection = pConn;
-
-        if (mConnection != null) {
+    private Map<String,String> config;
+    
+    public Database(Map<String,String> pArgs) {
+        config = pArgs;
+    }
+    
+    public DBase setup() {
+        DBase data = null;
+        String host = config.get("host");
+        String port = config.get("port");
+        String name = config.get("name");
+        String user = config.get("user");
+        String pass = config.get("pass");
+        String dataDir = ServerListener.dataDir;
+        try {
+            if (ServerListener.isEmbed) {
+                try {
+                    data = new DBase("org.hsqldb.jdbc.JDBCDriver", "jdbc:hsqldb:file:" + dataDir + "/data;sql.syntax_pgs=true;shutdown=true;", "accounts", "tiles");
+                } catch (final SQLException e) { e.printStackTrace();}
+                try {
+                    data.getConnection().prepareStatement("CREATE TYPE BYTEA AS VARBINARY(1000000)").execute(); //support for bytea
+                } catch (final SQLException e) {} //type already exists
+            } else {
+                try {
+                    data = new DBase("org.postgresql.Driver", "jdbc:postgresql://"+host+":"+port+"/"+name+"?user="+user+"&password="+pass, "accounts", "tiles");
+                } catch (final SQLException e) {
+                    //possible database doesn't exist, try to create
+                    Class.forName("org.postgresql.Driver");
+                    try (Connection c = DriverManager.getConnection("jdbc:postgresql://"+host+":"+port+"/postgres?user="+user+"&password="+pass)) {
+                        c.prepareStatement("CREATE DATABASE " + name).execute(); //support for bytea
+                        c.close();
+                        data = new DBase("org.postgresql.Driver", "jdbc:postgresql://"+host+":"+port+"/"+name+"?user="+user+"&password="+pass, "accounts", "tiles");
+                    } catch (SQLException ex) {
+                        e.printStackTrace(); //print original exception
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        
+        if (data != null) {
+            mConnection = data.getConnection();
             mUThread = new UpdateThread(new Callback<Void,Void>() {
                 @Override
                 public Void call(Void param) {
@@ -33,8 +75,7 @@ public class Database {
             });
             mUThread.start();
         }
-
-        return this;
+        return data;
     }
 
     public void Disconnect() {

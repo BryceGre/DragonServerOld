@@ -17,10 +17,10 @@ import com.eclipsesource.json.JsonObject;
 
 public class GameUtils {
 
-    private ServData mData;
+    private final ServData mData;
     public SocketUtils socket;
 
-    public GameUtils(ServData pGameData) {
+    public GameUtils(final ServData pGameData) {
         mData = pGameData;
     }
 

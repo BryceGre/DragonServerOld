@@ -7,9 +7,9 @@ import com.dragonmmomaker.server.ServData;
 
 public class Account {
 
-    private ServData mServData;
+    private final ServData mServData;
 
-    private int mID;
+    private final int mID;
     private String mUsername;
     private String mPassword;
     private String mEmail;
@@ -18,12 +18,10 @@ public class Account {
     private int mChar2ID;
     private int mChar3ID;
 
-    public Account(ServData pServData, int pID) {
+    public Account(final ServData pServData, int pID) {
         mServData = pServData;
         
-        mID = pID;
-        
-        try (ResultSet rs = mServData.DB.Query("SELECT * FROM accounts WHERE id=" + mID)) {
+        try (ResultSet rs = mServData.DB.Query("SELECT * FROM accounts WHERE id=" + pID)) {
             if (rs.next()) {
                 mUsername = rs.getString("username");
                 mPassword = rs.getString("password");
@@ -33,33 +31,34 @@ public class Account {
                 mChar2ID = rs.getInt("char2");
                 mChar3ID = rs.getInt("char3");
             } else {
-                mID = -1;
+                pID = -1;
             }
         } catch (SQLException e) {
-            mID = -1;
+            pID = -1;
         }
+        mID = pID;
     }
     
     public Account(ServData pServData, String pUsername) {
         mServData = pServData;
         
         mUsername = pUsername;
+        int pID = -1;
         
         try (ResultSet rs = mServData.DB.Query("SELECT * FROM accounts WHERE username='" + mUsername + "'")) {
             if (rs.next()) {
-                mID = rs.getInt("id");
+                pID = rs.getInt("id");
                 mPassword = rs.getString("password");
                 mEmail = rs.getString("email");
                 mAccess = rs.getInt("access");
                 mChar1ID = rs.getInt("char1");
                 mChar2ID = rs.getInt("char2");
                 mChar3ID = rs.getInt("char3");
-            } else {
-                mID = -1;
             }
         } catch (SQLException e) {
-            mID = -1;
+            pID = -1;
         }
+        mID = pID;
     }
 
     public static int insert(ServData pServData, String pUsername, String pPassword, String pEmail) {

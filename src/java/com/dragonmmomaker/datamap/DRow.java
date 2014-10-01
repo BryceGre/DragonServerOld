@@ -20,71 +20,98 @@ import com.dragonmmomaker.datamap.binary.BinaryDB;
 
 public class DRow extends HashMap<Object, Object> {
     
-    private int mID;
+    private final int mID;
     private String mKey;
-    protected DTable mTable;
+    protected final DTable mTable;
     
-    public DRow(int pID, DTable pTable) {
+    public DRow(final int pID, final DTable pTable) {
         super();
         
-        mID = pID;
-        mTable = pTable;
+        String pKey = null; //temp
         
-        if (mTable.mBase.isClosed()) return;
-        //load Row into Map
-        String sql = "SELECT * FROM " + mTable.getName() + " WHERE id=?";
-        try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql)) {
-            statement.setInt(1, mID);
-            statement.setQueryTimeout(30);
-            
-            load(statement);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    
-    public DRow(String pKey, DTable pTable) {
-        super();
-        
-        mKey = pKey;
-        mTable = pTable;
-        
-        if (mTable.mBase.isClosed()) return;
-        //load Row into Map
-        String sql = "SELECT * FROM " + mTable.getName() + " WHERE key=?";
-        try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql)) {
-            statement.setString(1, mKey);
-            statement.setQueryTimeout(30);
-            
-            load(statement);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    public void load(PreparedStatement pSQL) throws SQLException {
-        try (ResultSet rs = pSQL.executeQuery()) {
-            if (rs.next()) {
-                ResultSetMetaData rsmd = rs.getMetaData();
-                for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-                    if (rsmd.getColumnName(i).toLowerCase().equals("key")) {
-                        mKey = rs.getString(i);
-                        super.put("key", mKey);
-                    } else if (rsmd.getColumnName(i).toLowerCase().equals("id")) {
-                        mID = rs.getInt(i);
-                        super.put("id", mID);
-                    } else {
-                        byte[] raw = rs.getBytes(i);
-                        Object value = null;
-                        if (raw != null) {
-                            value = BinaryDB.retrieveObject(raw);
-                        }
-                        super.put(rsmd.getColumnName(i).toLowerCase(), value);
+        //make sure database is open
+        if (!pTable.mBase.isClosed()) {
+            //load Row into Map
+            String sql = "SELECT * FROM " + pTable.getName() + " WHERE id=?";
+            try (PreparedStatement statement = pTable.mBase.getConnection().prepareStatement(sql)) {
+                statement.setInt(1, pID);
+                statement.setQueryTimeout(30);
+
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) {
+                        pKey = rs.getString("key");
+                        load(rs);
                     }
                 }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
+        
+        mID = pID;
+        mKey = pKey;
+        mTable = pTable;
+    }
+    
+    public DRow(final String pKey, final DTable pTable) {
+        super();
+        
+        int pID = 0; //temp
+        
+        //make sure database is open
+        if (!pTable.mBase.isClosed()) {
+            //load Row into Map
+            String sql = "SELECT * FROM " + pTable.getName() + " WHERE key=?";
+            try (PreparedStatement statement = pTable.mBase.getConnection().prepareStatement(sql)) {
+                statement.setString(1, pKey);
+                statement.setQueryTimeout(30);
+
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) {
+                        pID = rs.getInt("id");
+                        load(rs);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        mID = pID;
+        mKey = pKey;
+        mTable = pTable;
+    }
+    
+    public DRow(final ResultSet pRS, final DTable pTable) throws SQLException {
+        super();
+        
+        mID = pRS.getInt("id");
+        mKey = pRS.getString("key");
+        mTable = pTable;
+        
+        load(pRS);
+    }
+    
+    private void load(ResultSet pRS) throws SQLException {
+        ResultSetMetaData rsmd = pRS.getMetaData();
+        for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+            if (rsmd.getColumnName(i).toLowerCase().equals("key")) {
+                super.put("key", pRS.getString(i));
+            } else if (rsmd.getColumnName(i).toLowerCase().equals("id")) {
+                super.put("id", pRS.getInt(i));
+            } else {
+                byte[] raw = pRS.getBytes(i);
+                Object value = null;
+                if (raw != null) {
+                    value = BinaryDB.retrieveObject(raw);
+                }
+                super.put(rsmd.getColumnName(i).toLowerCase(), value);
+            }
+        }
+    }
+    
+    public boolean exists() {
+        return super.containsKey("id");
     }
     
     public ScriptObject toJS() {
@@ -124,6 +151,7 @@ public class DRow extends HashMap<Object, Object> {
     @Override
     public void clear() {
         // unsupported
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -132,7 +160,7 @@ public class DRow extends HashMap<Object, Object> {
         Object old = super.get(arg0.toString().toLowerCase());
         
         if (arg0.toString().toLowerCase().equals("id")) {
-            return null;
+            return null; //cannot change id
         }
         if (arg0.toString().toLowerCase().equals("key")) {
             String sql = "UPDATE " + mTable.getName() + " SET key=? WHERE id=?";
@@ -247,14 +275,14 @@ public class DRow extends HashMap<Object, Object> {
     public Object remove(Object arg0) {
         // unsupported (TODO)
         //return super.remove(arg0.toString().toLowerCase());
-        return null;
+        throw new UnsupportedOperationException();
     }
     
     @Override
     public boolean remove(Object arg0, Object arg1) {
         // unsupported (TODO)
         //return super.remove(arg0.toString().toLowerCase(), arg1);
-        return false;
+        throw new UnsupportedOperationException();
     }
     
     @Override
@@ -319,8 +347,8 @@ public class DRow extends HashMap<Object, Object> {
 
     public class Entry implements Map.Entry<Object, Object> {
 
-        private Object mKey;
-        private Object mValue;
+        private final Object mKey;
+        private final Object mValue;
 
         public Entry(String pKey, Object pValue) {
             mKey = pKey;

@@ -18,14 +18,14 @@ import com.dragonmmomaker.datamap.util.ArrayMap;
 
 public class DTable implements Map<Object, DRow> {
 
-    protected DBase mBase;
-    private String mName;
+    protected final DBase mBase;
+    private final String mName;
 
     public String getName() {
         return mName;
     }
     
-    public DTable(String pTableName, DBase pBase) {
+    public DTable(final String pTableName, final DBase pBase) {
         mName = pTableName;
         mBase = pBase;
     }
@@ -113,7 +113,8 @@ public class DTable implements Map<Object, DRow> {
 
     @Override
     public boolean containsValue(Object arg0) {
-        return false;
+        // unsupported
+        throw new UnsupportedOperationException();
     }
     
     @Override
@@ -127,7 +128,7 @@ public class DTable implements Map<Object, DRow> {
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     int id = rs.getInt("id");
-                    entrySet.add(new DTable.Entry(new Integer(id), new DRow(id, this)));
+                    entrySet.add(new DTable.Entry(new Integer(id), new DRow(rs, this)));
                 }
             }
         } catch (SQLException e) {
@@ -144,7 +145,7 @@ public class DTable implements Map<Object, DRow> {
         if (id != null) {
             //arg0 is a number, check the id column
             DRow row = new DRow(id, this);
-            if (!row.containsKey("id")) {
+            if (!row.exists()) {
                 //row doesn't exist, create it.
                 String sql = "INSERT INTO " + mName + " (id) VALUES (?)";
                 try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
@@ -152,16 +153,17 @@ public class DTable implements Map<Object, DRow> {
                     statement.setQueryTimeout(60);
 
                     statement.executeUpdate();
+                    
+                    return new DRow(id, this);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                return new DRow(id, this);
             }
             return row;
         } else if (arg0 != null) {
             //arg0 is an object, use the key column
             DRow row = new DRow(arg0.toString(), this);
-            if (row.containsKey("id")) {
+            if (row.exists()) {
                 //row found, return it.
                 return row;
             } else {
@@ -419,7 +421,8 @@ public class DTable implements Map<Object, DRow> {
 
     @Override
     public DRow put(Object arg0, DRow arg1) {
-        return null; // unsupported, use get for autocreate
+        // unsupported, use get for auto-create
+        throw new UnsupportedOperationException();
     }
     
     public DRow insert() {
@@ -441,6 +444,7 @@ public class DTable implements Map<Object, DRow> {
     @Override
     public void putAll(Map<? extends Object, ? extends DRow> arg0) {
         // unsupported
+        throw new UnsupportedOperationException();
     }
 
     @Override

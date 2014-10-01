@@ -7,8 +7,8 @@ import com.dragonmmomaker.server.ServData;
 
 public class Module {
 
-    private String mName;
-    private ModuleManager mManager;
+    private final String mName;
+    private final ModuleManager mManager;
     private ScriptObjectMirror mMod;
 
     public Module(String pName, ModuleManager pManager, ScriptObjectMirror pMod) {

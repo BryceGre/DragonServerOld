@@ -38,7 +38,7 @@ public class DBase implements Map<String, DTable> {
     public DBase(String pClass, String pDriver, String... pBlacklist) throws ClassNotFoundException, SQLException {
         Class.forName(pClass);
         mConnection = DriverManager.getConnection(pDriver);
-        mBlacklist = new HashSet<String>();
+        mBlacklist = new HashSet();
         for (int i = 0; i < pBlacklist.length; i++) {
             mBlacklist.add(pBlacklist[i].toLowerCase());
         }
@@ -80,10 +80,13 @@ public class DBase implements Map<String, DTable> {
         }
     }
 
+    @Override
     public void clear() {
         // unsupported
+        throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean containsKey(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
             return false;
@@ -100,12 +103,15 @@ public class DBase implements Map<String, DTable> {
         return false;
     }
 
+    @Override
     public boolean containsValue(Object arg0) {
-        return false; // unsupported
+        // unsupported
+        throw new UnsupportedOperationException();
     }
     
+    @Override
     public Set<Map.Entry<String, DTable>> entrySet() {
-        Set<Map.Entry<String, DTable>> entrySet = new LinkedHashSet<Map.Entry<String, DTable>>();
+        Set<Map.Entry<String, DTable>> entrySet = new LinkedHashSet();
         try {
             if (this.isClosed()) return entrySet;
             DatabaseMetaData dbmeta = mConnection.getMetaData();
@@ -123,6 +129,7 @@ public class DBase implements Map<String, DTable> {
         return entrySet;
     }
 
+    @Override
     public DTable get(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
             return null;
@@ -141,6 +148,7 @@ public class DBase implements Map<String, DTable> {
         return new DTable(arg0.toString(), this);
     }
 
+    @Override
     public boolean isEmpty() {
         try {
             if (this.isClosed()) return true;
@@ -158,6 +166,7 @@ public class DBase implements Map<String, DTable> {
         return true;
     }
 
+    @Override
     public Set<String> keySet() {
         Set<String> keySet = new LinkedHashSet<String>();
         try {
@@ -177,14 +186,19 @@ public class DBase implements Map<String, DTable> {
         return keySet;
     }
 
+    @Override
     public DTable put(String arg0, DTable arg1) {
-        return null; // unsupported
+        // unsupported
+        throw new UnsupportedOperationException();
     }
 
+    @Override
     public void putAll(Map<? extends String, ? extends DTable> arg0) {
         // unsupported
+        throw new UnsupportedOperationException();
     }
 
+    @Override
     public DTable remove(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
             return null;
@@ -202,10 +216,12 @@ public class DBase implements Map<String, DTable> {
         return null;
     }
 
+    @Override
     public int size() {
         return this.keySet().size();
     }
 
+    @Override
     public Collection<DTable> values() {
         Collection<DTable> values = new AbstractCollection<DTable>() {
             @Override

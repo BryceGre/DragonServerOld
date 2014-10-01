@@ -33,18 +33,17 @@ public class ModuleManager {
     public final static int MAX = 2;
     public final static int MIN = 3;
 
-    private ServData mData;
+    private final ServData mData;
     private Map<String, Module> mModules;
     private Map<String, ArrayList<String>> mHooks;
     private ScriptEngineManager mEngineManager;
     ScriptEngine mEngine;
-    ServData mCurrentServer = null;
     String lastMod = null;
     Queue<String> mLog;
 
     ReentrantLock mLock = new ReentrantLock();
 
-    public ModuleManager(ServData pServData) {
+    public ModuleManager(final ServData pServData) {
         mData = pServData;
         
         mModules = new ConcurrentHashMap();

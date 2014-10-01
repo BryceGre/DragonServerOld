@@ -9,7 +9,7 @@ public class Tile {
     
     public static final String DEFAULT_TILE = "0000.......";
 
-    private ServData mServData;
+    private final ServData mServData;
 
     private int mID;
     private int mX;
@@ -33,7 +33,7 @@ public class Tile {
         this(ServData._CurData, pID, pX, pY, pFloor, pData, pAttr1, pAttr2);
     }
 
-    public Tile(ServData pServData, int pID, int pX, int pY, short pFloor, String pData, String pAttr1, String pAttr2) {
+    public Tile(final ServData pServData, int pID, int pX, int pY, short pFloor, String pData, String pAttr1, String pAttr2) {
         mServData = pServData;
         
         mID = pID;
@@ -71,25 +71,27 @@ public class Tile {
 
     public Tile(ServData pServData, int pX, int pY, short pFloor, String pData, String pAttr1, String pAttr2) throws SQLException {
         mServData = pServData;
-        
-        mX = pX;
-        mY = pY;
-        mFloor = pFloor;
-        mData = pData;
-        mAttr1 = pAttr1;
-        mAttr2 = pAttr2;
+        int pID = -1;
         
         String sql = "INSERT INTO tiles (x,y,floor,data,attr1,attr2)";
         sql += " VALUES (" + pX + "," + pY + "," + pFloor + ",'" + pData + "','" + pAttr1 + "','" + pAttr2 + "')";
         
         try (ResultSet rs = mServData.DB.Insert(sql)) {
             if (rs.next()) {
-                this.mID = rs.getInt("id");
+                pID = rs.getInt("id");
                 while (rs.next()); //close the connection
 
                 //pServData.Game.Tiles.put(Tile.key(pX, pY, pFloor), this);
             }
         }
+        
+        mID = pID;
+        mX = pX;
+        mY = pY;
+        mFloor = pFloor;
+        mData = pData;
+        mAttr1 = pAttr1;
+        mAttr2 = pAttr2;
     }
 
     /**
@@ -106,10 +108,6 @@ public class Tile {
      */
     public int getID() {
         return mID;
-    }
-    
-    protected void setID(int pID) {
-        mID = pID;
     }
 
     public int getX() {

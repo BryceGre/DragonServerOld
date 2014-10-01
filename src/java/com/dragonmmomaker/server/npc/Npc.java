@@ -16,7 +16,7 @@ import com.dragonmmomaker.server.data.Tile;
  */
 public class Npc implements Serializable {
     private int mID; //NPC ID (template to draw stats/scripts from)
-    private int mIID; //Instance ID (id of this specific npc spawn)
+    private final int mIID; //Instance ID (id of this specific npc spawn)
     private int mX;
     private int mY;
     private short mFloor;

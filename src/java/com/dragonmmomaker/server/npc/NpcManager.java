@@ -36,7 +36,7 @@ import com.eclipsesource.json.JsonObject;
  */
 public class NpcManager {
 
-    private ServData mData;
+    private final ServData mData;
     private Timer mTimer;
     private NpcUpdateTask mUpdateTask;
     private Map<String,Npc> mNpcData;
@@ -44,7 +44,7 @@ public class NpcManager {
 
     private int mCount;
 
-    public NpcManager(ServData pServData) {
+    public NpcManager(final ServData pServData) {
         mData = pServData;
         mNpcData = new ConcurrentHashMap();
         mRespawn = new LinkedList();

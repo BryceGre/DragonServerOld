@@ -66,10 +66,7 @@ public class DragonServer {
         }
         mData.Log.log(000, "Server Start");
         
-        mData.Log.log(001, "Opening Database");
-        mData.DB.connect(mData.Data.getConnection());
-        
-        mData.Time = new Date();
+        mData.Time.setTime(new Date().getTime());
         mTimeFactor = Integer.parseInt(mData.Config.get("Game").get("time_factor"));
         new Timer(true).schedule(new ServerTimer(), 0, 1000);
         
@@ -86,14 +83,14 @@ public class DragonServer {
 
     public void initData() throws SQLException {
         
-        mData.Log.log(002, "Loading Accounts");
+        mData.Log.log(001, "Loading Accounts");
         //if (!mData.DB.tableExists("accounts")) {
             mData.DB.createTable("accounts", Account.getStructure());
         //}
         
         Map<Tile,Integer> spawn = new LinkedHashMap();
         
-        mData.Log.log(003, "Loading Tiles");
+        mData.Log.log(002, "Loading Tiles");
         //if (!mData.DB.tableExists("tiles")) {
             mData.DB.createTable("tiles", Tile.getStructure());
         //}
@@ -117,6 +114,7 @@ public class DragonServer {
             tiles = null; //don't keep tiles in memory
         }
         
+        mData.Log.log(003, "Loading Modules");
         //load the modules into memory
         try {
             mData.Module.loadModules();
@@ -124,9 +122,11 @@ public class DragonServer {
             e.printStackTrace();
         }
         
+        mData.Log.log(004, "Starting Modules");
         //load the data from each table
         mData.Module.initModules();
         
+        mData.Log.log(004, "Spawning NPCs");
         //spawn all NPCs
         mData.Npcs.spawnAll(spawn);
     }
@@ -176,7 +176,7 @@ public class DragonServer {
         @Override
         public void run() {
             //add {mTimeFactor} seconds to the game time
-            mData.Time = new Date(mData.Time.getTime() + (mTimeFactor * 1000));
+            mData.Time.setTime(mData.Time.getTime() + (mTimeFactor * 1000));
             //also run the garbage collecter every second to keep memory consumption down.
             count++;
             if (count >= GC_FREQ) {

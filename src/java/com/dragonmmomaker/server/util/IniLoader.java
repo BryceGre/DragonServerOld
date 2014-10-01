@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public class IniLoader {
 	private static Pattern _Section = Pattern.compile( "\\s*\\[([^]]*)\\]\\s*" );
 	private static Pattern _Value = Pattern.compile( "\\s*([^=]*)=(.*)" );
-	private String mPath;
+	private final String mPath;
 	
 	public IniLoader(String pPath) {
 		mPath = pPath;
