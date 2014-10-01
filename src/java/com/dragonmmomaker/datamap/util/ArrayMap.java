@@ -7,16 +7,41 @@
 package com.dragonmmomaker.datamap.util;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import jdk.nashorn.internal.objects.Global;
 import jdk.nashorn.internal.objects.NativeNumber;
 import jdk.nashorn.internal.runtime.ScriptObject;
+
 
 /**
  *
  * @author Bryce
  */
 public class ArrayMap<T> extends LinkedHashMap<Integer,T> {
+    /**
+     * Default Constructor
+     */
+    public ArrayMap() {
+        super();
+    }
+    
+    /**
+     * Designed to accept an EntrySet. Will create an ArrayMap from a Map using
+     * any keys that can be converted to Integers.
+     * 
+     * @param arg0 the EntrySet of a Map with Integer keys.
+     */
+    public ArrayMap(Set<Map.Entry<? extends Object,T>> arg0) {
+        super();
+        for (Map.Entry<? extends Object,T> row : arg0) {
+            Integer id = fixInt(row.getKey());
+            if (id != null)
+                this.put(id, row.getValue());
+        }
+    }
+    
     public ScriptObject toJS() {
         ScriptObject sobj = Global.newEmptyInstance();
         sobj.putAll(this, false);

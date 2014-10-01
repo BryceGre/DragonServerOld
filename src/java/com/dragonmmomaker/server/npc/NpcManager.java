@@ -25,6 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.dragonmmomaker.datamap.DRow;
+import com.dragonmmomaker.datamap.util.ArrayMap;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.DummyTile;
 import com.dragonmmomaker.server.data.Tile;
@@ -69,7 +70,7 @@ public class NpcManager {
     }
 
     public void spawnAll(Map<Tile, Integer> pSpawns) {
-        Map<Integer,Map<Object,Object>> cache = mData.Data.get("npcs").list("sprite", "name");
+        ArrayMap<DRow> cache = new ArrayMap(mData.Data.get("npcs").entrySet());
         for (Map.Entry<Tile, Integer> spawn : pSpawns.entrySet()) {
             int id = spawn.getValue();
             if (cache.containsKey(id)) {
@@ -199,9 +200,9 @@ public class NpcManager {
         public void run() {
             //log the positions of all players
             Set<String> playerData = new CopyOnWriteArraySet();
-            Map<Integer,Map<Object,Object>> players = mData.Data.get("characters").list("x","y","floor");
-            for (Map.Entry<Integer,Map<Object,Object>> entry : players.entrySet()) {
-                Map<Object,Object> player = entry.getValue();
+            Set<Map.Entry<Object,DRow>> players = mData.Data.get("characters").entrySet();
+            for (Map.Entry<Object,DRow> entry : players) {
+                DRow player = entry.getValue();
                 if (player.get("x") != null && player.get("y") != null && player.get("floor") != null)
                     playerData.add(Tile.key((Integer)player.get("x"), (Integer)player.get("y"), (Integer)player.get("floor")));
             }

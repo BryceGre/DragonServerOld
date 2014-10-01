@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.AbstractCollection;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -175,52 +174,6 @@ public class DTable implements Map<Object, DRow> {
         return null;
     }
     
-    public ArrayMap<Map<Object,Object>> list(Object... arg0) {
-        ArrayMap<Map<Object,Object>> all = new ArrayMap();
-        if (mBase.isClosed()) return all;
-        //compile args into string keys
-        String[] keys = new String[arg0.length];
-        //compile from all args
-        for (int i=0; i<arg0.length; i++) {
-            if (!arg0[i].toString().toLowerCase().equals("id")) {
-                keys[i] = arg0[i].toString().toLowerCase();
-            }
-        }
-        String sql = "SELECT * FROM " + mName;
-        try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
-            statement.setQueryTimeout(60);
-
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    //create a new map
-                    Map<Object,Object> map = new HashMap();
-                    //for each key, add the value to the map
-                    for (int i=0; i<keys.length; i++) {
-                        if (keys[i].equals("key")) {
-                            map.put("key", rs.getString("key"));
-                        } else {
-                            byte[] raw = null;
-                            try {
-                                raw = rs.getBytes(keys[i]);
-                            } catch (SQLException e) { } //column doesn't exist
-
-                            Object value = null;
-                            if (raw != null) {
-                                value = BinaryDB.retrieveObject(raw);
-                            }
-                            map.put(keys[i], value);
-                        }
-                    }
-                    //add the map to the output
-                    all.put(rs.getInt("id"), map);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return all;
-    }
-    
     public ArrayMap<Object> list(Object arg0) {
         ArrayMap<Object> all = new ArrayMap();
         if (arg0.toString().toLowerCase().equals("id")) {
@@ -276,49 +229,6 @@ public class DTable implements Map<Object, DRow> {
                     }
 
                     all.put(rs.getInt("id"), value);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return all;
-    }
-    
-    
-    public ArrayMap<Map<String,byte[]>> listRaw(Object... arg0) {
-        ArrayMap<Map<String,byte[]>> all = new ArrayMap();
-        if (mBase.isClosed()) return all;
-        //compile args into string keys
-        String[] keys = new String[arg0.length];
-        //compile from all args
-        for (int i=0; i<arg0.length; i++) {
-            if (!arg0[i].toString().toLowerCase().equals("id")) {
-                keys[i] = arg0[i].toString().toLowerCase();
-            }
-        }
-        String sql = "SELECT * FROM " + mName;
-        try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
-            statement.setQueryTimeout(60);
-
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    //create a new map
-                    Map<String,byte[]> map = new HashMap();
-                    //for each key, add the value to the map
-                    for (int i=0; i<keys.length; i++) {
-                        if (keys[i].equals("key")) {
-                            map.put("key", rs.getString("key").getBytes(Charset.forName("UTF-8")));
-                        } else {
-                            byte[] raw = null;
-                            try { 
-                                raw = rs.getBytes(keys[i]);
-                            } catch (SQLException e) { } //column doesn't exist
-
-                            map.put(keys[i], raw);
-                        }
-                    }
-                    //add the map to the output
-                    all.put(rs.getInt("id"), map);
                 }
             }
         } catch (SQLException e) {
