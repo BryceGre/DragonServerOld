@@ -21,14 +21,15 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.dragonmmomaker.datamap.DRow;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.DummyTile;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.util.SocketUtils;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
 
 /**
  *
@@ -55,8 +56,8 @@ public class NpcManager {
         mTimer = new Timer(true);
         
         new DummyTile(0, 0, (short)0); //pre-load class
-        new JsonArray().add(1).toString(); //pre-load JsonArray and sub-classes
-        new JsonObject().add("a", 1).toString(); //pre-load JsonObject and sub-classes
+        new JSONArray().put(1).toString(); //pre-load JSONArray and sub-classes
+        new JSONObject().put("a", 1).toString(); //pre-load JSONObject and sub-classes
     }
     
     public void start() {
@@ -255,13 +256,13 @@ public class NpcManager {
                             mNpcData.put(Tile.key(npc.getX(), npc.getY(), npc.getFloor()), npc);
                             
                             //send the snap and move direction
-                            JsonObject newmsg = new JsonObject();
-                            newmsg.add("id", npc.getIid());
-                            newmsg.add("x", npc.getX());
-                            newmsg.add("y", npc.getY());
-                            newmsg.add("f", npc.getFloor());
-                            newmsg.add("s", npc.getSprite());
-                            newmsg.add("dir", dir);
+                            JSONObject newmsg = new JSONObject();
+                            newmsg.put("id", npc.getIid());
+                            newmsg.put("x", npc.getX());
+                            newmsg.put("y", npc.getY());
+                            newmsg.put("f", npc.getFloor());
+                            newmsg.put("s", npc.getSprite());
+                            newmsg.put("dir", dir);
                             ClientHandler.sendAllWithTest("npc-move:" + newmsg.toString(), (charID) -> {
                                 DRow pchar = mData.Data.get("characters").get(charID);
                                 int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
@@ -290,9 +291,9 @@ public class NpcManager {
         private Set<String> parseRaw(byte[] b) {
             Set<String> set = new HashSet();
             if (b == null || b.length <= 1) return set;
-            JsonArray behavior = JsonArray.readFrom(new String(b, 1, b.length-1, Charset.forName("UTF-8")));
-            for (int i = 0; i < behavior.size(); i++) {
-                set.add(behavior.get(i).asString());
+            JSONArray behavior = new JSONArray(new String(b, 1, b.length-1, Charset.forName("UTF-8")));
+            for (int i = 0; i < behavior.length(); i++) {
+                set.add(behavior.getString(i));
             }
             return set;
         }

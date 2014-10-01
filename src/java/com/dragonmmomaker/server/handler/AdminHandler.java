@@ -23,13 +23,14 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.dragonmmomaker.server.DragonServer;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.Account;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.util.SocketUtils;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
 
 @ServerEndpoint("/admin")
 public class AdminHandler {
@@ -110,11 +111,11 @@ public class AdminHandler {
         String[] message = msg.split(":", 2);
 
         if (message[0].equals("login")) {
-            JsonObject data = JsonObject.readFrom(message[1]);
+            JSONObject data = new JSONObject(message[1]);
             
-            Account acc = new Account(mData, data.get("user").asString());
+            Account acc = new Account(mData, data.getString("user"));
             if (acc.getID() >= 0) { //if account exists
-                if (acc.checkPassword(data.get("pass").asString()) && acc.getAccess() >= ACCESS) {
+                if (acc.checkPassword(data.getString("pass")) && acc.getAccess() >= ACCESS) {
                     mSession.getUserProperties().put("player", acc.getID());
                     mSession.getAsyncRemote().sendText("login:1");
                     mData.Log.log(110,"(ADMIM): Log-in: " + "name");
@@ -130,19 +131,19 @@ public class AdminHandler {
                 int pX = 1000000000;
                 int pY = 1000000000;
 
-                JsonObject newmsg = new JsonObject();
+                JSONObject newmsg = new JSONObject();
                 
-                JsonArray tiles = new JsonArray();
+                JSONArray tiles = new JSONArray();
                 String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
                 try (ResultSet rs = mData.DB.Query(sql)) {
                     while (rs.next()) {
                         Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                        tiles.add(tile.toString());
+                        tiles.put(tile.toString());
                     }
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                newmsg.add("tiles", tiles);
+                newmsg.put("tiles", tiles);
                 
                 mSession.getAsyncRemote().sendText("load:" + newmsg.toString());
                 mSession.getUserProperties().put("loaded", true);
@@ -151,37 +152,37 @@ public class AdminHandler {
             //pConnection.data("loaded", true);
         } else if (message[0].equals("warp")) {
             if (mSession.getUserProperties().containsKey("player")) {
-                JsonObject data = JsonObject.readFrom(message[1]);
+                JSONObject data = new JSONObject(message[1]);
                 int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
-                int pX = data.get("x").asInt();
-                int pY = data.get("y").asInt();
+                int pX = data.getInt("x");
+                int pY = data.getInt("y");
 
-                JsonObject newmsg = new JsonObject();
+                JSONObject newmsg = new JSONObject();
                 
-                JsonArray tiles = new JsonArray();
+                JSONArray tiles = new JSONArray();
                 String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
                 try (ResultSet rs = mData.DB.Query(sql)) {
                     while (rs.next()) {
                         Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                        tiles.add(tile.toString());
+                        tiles.put(tile.toString());
                     }
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                newmsg.add("tiles", tiles);
+                newmsg.put("tiles", tiles);
                 
                 mSession.getAsyncRemote().sendText("more:" + newmsg.toString());
             }
         } else if (message[0].equals("move")) {
             if (mSession.getUserProperties().containsKey("player")) {
-                JsonObject data = JsonObject.readFrom(message[1]);
+                JSONObject data = new JSONObject(message[1]);
                 int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
-                int pX = data.get("x").asInt();
-                int pY = data.get("y").asInt();
-                int pDir = data.get("dir").asInt();
+                int pX = data.getInt("x");
+                int pY = data.getInt("y");
+                int pDir = data.getInt("dir");
 
-                JsonObject newmsg = new JsonObject();
-                JsonArray tiles = new JsonArray();
+                JSONObject newmsg = new JSONObject();
+                JSONArray tiles = new JSONArray();
 
                 switch (pDir) {
                     case 37: //left
@@ -190,7 +191,7 @@ public class AdminHandler {
                             try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
                                     Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                                    tiles.add(tile.toString());
+                                    tiles.put(tile.toString());
                                 }
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -203,7 +204,7 @@ public class AdminHandler {
                             try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
                                     Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                                    tiles.add(tile.toString());
+                                    tiles.put(tile.toString());
                                 }
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -216,7 +217,7 @@ public class AdminHandler {
                             try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
                                     Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                                    tiles.add(tile.toString());
+                                    tiles.put(tile.toString());
                                 }
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -229,7 +230,7 @@ public class AdminHandler {
                             try (ResultSet rs = mData.DB.Query(sql)) {
                                 while (rs.next()) {
                                     Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                                    tiles.add(tile.toString());
+                                    tiles.put(tile.toString());
                                 }
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -238,7 +239,7 @@ public class AdminHandler {
                         break;
                 }
 
-                newmsg.add("tiles", tiles);
+                newmsg.put("tiles", tiles);
                 mSession.getAsyncRemote().sendText("more:" + newmsg.toString());
             }
         }

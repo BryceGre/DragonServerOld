@@ -23,6 +23,9 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.dragonmmomaker.datamap.DRow;
 import com.dragonmmomaker.server.DragonServer;
 import com.dragonmmomaker.server.ServData;
@@ -31,8 +34,6 @@ import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.npc.Npc;
 import com.dragonmmomaker.server.util.GameUtils;
 import com.dragonmmomaker.server.util.SocketUtils;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
 
 @ServerEndpoint("/client")
 public class ClientHandler {
@@ -134,10 +135,10 @@ public class ClientHandler {
         mData.Module.doHook("pre_message", args, new SocketUtils(mSession, this.getRemotes()));
 
         if (message[0].equals("login")) {
-            JsonObject data = JsonObject.readFrom(message[1]);
-            Account acc = new Account(mData, data.get("user").asString());
+            JSONObject data = new JSONObject(message[1]);
+            Account acc = new Account(mData, data.getString("user"));
             if (acc.getID() >= 0) { //if account exists
-                if (acc.checkPassword(data.get("pass").asString())) {
+                if (acc.checkPassword(data.getString("pass"))) {
                     mSession.getUserProperties().put("player", acc.getID());
                     mSession.getAsyncRemote().sendText("login:1");
 
@@ -179,13 +180,13 @@ public class ClientHandler {
                 this.onMessage("load"); //TODO: Combine character select and load.
             }
         } else if (message[0].equals("register")) {
-            JsonObject data = JsonObject.readFrom(message[1]);
-            if (new Account(mData, data.get("user").asString()).getID() >= 0) {
+            JSONObject data = new JSONObject(message[1]);
+            if (new Account(mData, data.getString("user")).getID() >= 0) {
                 mSession.getAsyncRemote().sendText("register:0");
                 mData.Log.debug("Register failed: Username exists");
                 return;
             }
-            int id = Account.insert(mData, data.get("user").asString(), data.get("pass").asString(), data.get("email").asString());
+            int id = Account.insert(mData, data.getString("user"), data.getString("pass"), data.getString("email"));
 
             if (id == -1) {
                 mSession.getAsyncRemote().sendText("register:0");
@@ -194,7 +195,7 @@ public class ClientHandler {
             }
 
             mSession.getAsyncRemote().sendText("register:1");
-            mData.Log.log(120, "Registered: " + data.get("user").asString());
+            mData.Log.log(120, "Registered: " + data.getString("user"));
         } else if (message[0].equals("load")) {
             mData.Log.log("starting load");
             if (mSession.getUserProperties().containsKey("player") && mSession.getUserProperties().containsKey("char")) {
@@ -208,56 +209,56 @@ public class ClientHandler {
                 short pFloor = ((Integer) pchar.get("floor")).shortValue();
                 int pSprite = (Integer) pchar.get("sprite");
 
-                JsonObject newmsg = new JsonObject();
+                JSONObject newmsg = new JSONObject();
 
                 //user
-                JsonObject user = new JsonObject();
-                user.add("id", pID);
-                user.add("n", pName);
-                user.add("x", pX);
-                user.add("y", pY);
-                user.add("f", pFloor);
-                user.add("s", pSprite);
-                newmsg.add("user", user);
+                JSONObject user = new JSONObject();
+                user.put("id", pID);
+                user.put("n", pName);
+                user.put("x", pX);
+                user.put("y", pY);
+                user.put("f", pFloor);
+                user.put("s", pSprite);
+                newmsg.put("user", user);
 
                 //players
-                JsonArray chars = new JsonArray();
+                JSONArray chars = new JSONArray();
                 for (ClientHandler con : mClients) {
                     if (!con.equals(this) && con.mSession.getUserProperties().containsKey("loaded")) {
                         Integer icharID = (Integer) con.mSession.getUserProperties().get("char");
                         DRow ichar = mData.Data.get("characters").get(icharID);
-                        JsonObject ochar = new JsonObject();
-                        ochar.add("id", (Integer) ichar.get("id"));
-                        ochar.add("n", (String) pchar.get("name"));
-                        ochar.add("x", (Integer) ichar.get("x"));
-                        ochar.add("y", (Integer) ichar.get("y"));
-                        ochar.add("f", ((Integer) ichar.get("floor")).shortValue());
-                        ochar.add("s", (Integer) ichar.get("sprite"));
-                        chars.add(ochar);
+                        JSONObject ochar = new JSONObject();
+                        ochar.put("id", (Integer) ichar.get("id"));
+                        ochar.put("n", (String) pchar.get("name"));
+                        ochar.put("x", (Integer) ichar.get("x"));
+                        ochar.put("y", (Integer) ichar.get("y"));
+                        ochar.put("f", ((Integer) ichar.get("floor")).shortValue());
+                        ochar.put("s", (Integer) ichar.get("sprite"));
+                        chars.put(ochar);
                     }
                 }
-                newmsg.add("players", chars);
+                newmsg.put("players", chars);
 
                 //tiles
-                JsonArray tiles = new JsonArray();
-                JsonArray npcs = new JsonArray();
+                JSONArray tiles = new JSONArray();
+                JSONArray npcs = new JSONArray();
                 String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
                 try (ResultSet rs = mData.DB.Query(sql)) {
                     while (rs.next()) {
                         Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                        tiles.add(tile.toString());
+                        tiles.put(tile.toString());
                         Npc npc = mData.Npcs.getNpc(tile.getX(), tile.getY(), tile.getFloor());
                         if (npc != null) {
-                            npcs.add(npc.toString());
+                            npcs.put(npc.toString());
                         }
                     }
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                newmsg.add("tiles", tiles);
-                newmsg.add("npcs", npcs);
+                newmsg.put("tiles", tiles);
+                newmsg.put("npcs", npcs);
                 
-                newmsg.add("time", mData.Time.getTime());
+                newmsg.put("time", mData.Time.getTime());
                 
                 args = new HashMap<String, Object>();
                 args.put("index", pID);
@@ -266,13 +267,13 @@ public class ClientHandler {
 
                 mSession.getAsyncRemote().sendText("load:" + args.get("msg"));
 
-                newmsg = new JsonObject();
-                newmsg.add("id", pID);
-                newmsg.add("n", pName);
-                newmsg.add("x", pX);
-                newmsg.add("y", pY);
-                newmsg.add("f", pFloor);
-                newmsg.add("s", pSprite);
+                newmsg = new JSONObject();
+                newmsg.put("id", pID);
+                newmsg.put("n", pName);
+                newmsg.put("x", pX);
+                newmsg.put("y", pY);
+                newmsg.put("f", pFloor);
+                newmsg.put("s", pSprite);
                 this.sendAllOther("enter:" + newmsg.toString());
 
                 mSession.getUserProperties().put("loaded", true);
@@ -355,42 +356,42 @@ public class ClientHandler {
                     }
                     
                     //snap the user to his current position, in case of lag
-                    JsonObject newmsg = new JsonObject();
-                    newmsg.add("x", pX);
-                    newmsg.add("y", pY);
-                    newmsg.add("f", pFloor);
+                    JSONObject newmsg = new JSONObject();
+                    newmsg.put("x", pX);
+                    newmsg.put("y", pY);
+                    newmsg.put("f", pFloor);
                     //and send any tiles and npcs that must be loaded in
                     this.mSession.getAsyncRemote().sendText("snap:" + newmsg.toString());
                     
                     //send the movement to all other players
-                    newmsg = new JsonObject();
-                    newmsg.add("id", pID);
-                    newmsg.add("dir", new Integer(pDir));
-                    newmsg.add("n", pName);
-                    newmsg.add("x", pX);
-                    newmsg.add("y", pY);
-                    newmsg.add("f", pFloor);
-                    newmsg.add("s", pSprite);
+                    newmsg = new JSONObject();
+                    newmsg.put("id", pID);
+                    newmsg.put("dir", new Integer(pDir));
+                    newmsg.put("n", pName);
+                    newmsg.put("x", pX);
+                    newmsg.put("y", pY);
+                    newmsg.put("f", pFloor);
+                    newmsg.put("s", pSprite);
                     this.sendAllOther("move:" + newmsg.toString());
                     
                     //send any tiles and npcs that must be loaded in
-                    newmsg = new JsonObject();
-                    JsonArray tiles = new JsonArray();
-                    JsonArray npcs = new JsonArray();
+                    newmsg = new JSONObject();
+                    JSONArray tiles = new JSONArray();
+                    JSONArray npcs = new JSONArray();
                     try (ResultSet rs = mData.DB.Query(sql)) {
                         while (rs.next()) {
                             Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                            tiles.add(tile.toString());
+                            tiles.put(tile.toString());
                             Npc npc = mData.Npcs.getNpc(tile.getX(), tile.getY(), tile.getFloor());
                             if (npc != null) {
-                                npcs.add(npc.toString());
+                                npcs.put(npc.toString());
                             }
                         }
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
-                    newmsg.add("tiles", tiles);
-                    newmsg.add("npcs", npcs);
+                    newmsg.put("tiles", tiles);
+                    newmsg.put("npcs", npcs);
                     this.mSession.getAsyncRemote().sendText("more:" + newmsg.toString());
                 }
             }
@@ -400,9 +401,9 @@ public class ClientHandler {
                 //DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
                 int pID = (Integer) mSession.getUserProperties().get("char");
 
-                JsonObject newmsg = new JsonObject();
-                newmsg.add("id", pID);
-                newmsg.add("dir", new Integer(pDir));
+                JSONObject newmsg = new JSONObject();
+                newmsg.put("id", pID);
+                newmsg.put("dir", new Integer(pDir));
                 this.sendAllOther("face:" + newmsg.toString());
             }
         } else if (message[0].equals("act")) {
@@ -621,15 +622,15 @@ public class ClientHandler {
                 String pName = (String) pChar.get("name");
 
                 for (ClientHandler con : mClients) {
-                    JsonObject newmsg = new JsonObject();
+                    JSONObject newmsg = new JSONObject();
 
                     if (!con.equals(this)) {
-                        newmsg.add("id", pID);
-                        newmsg.add("n", pName);
+                        newmsg.put("id", pID);
+                        newmsg.put("n", pName);
                     }
-                    newmsg.add("x", pX);
-                    newmsg.add("y", pY);
-                    newmsg.add("f", nF);
+                    newmsg.put("x", pX);
+                    newmsg.put("y", pY);
+                    newmsg.put("f", nF);
                     //con.mSession.getAsyncRemote().sendText("floor:" + newmsg.toString());
                     con.mSession.getAsyncRemote().sendText("warp:" + newmsg.toString());
                 }

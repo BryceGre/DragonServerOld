@@ -7,13 +7,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.dragonmmomaker.datamap.DRow;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.npc.Npc;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
 
 public class GameUtils {
 
@@ -67,36 +68,36 @@ public class GameUtils {
         charData.put("floor", (int)floor);
         pChar.putAll(charData);
         
-        JsonObject newmsg = new JsonObject();
-        JsonArray tiles = new JsonArray();
-        JsonArray npcs = new JsonArray();
+        JSONObject newmsg = new JSONObject();
+        JSONArray tiles = new JSONArray();
+        JSONArray npcs = new JSONArray();
         String sql = "SELECT * FROM tiles WHERE x BETWEEN " + (x - pD) + " AND " + (x + pD) + " AND y BETWEEN " + (y - pD) + " AND " + (y + pD) + ";";
         try (ResultSet rs = mData.DB.Query(sql)) {
             while (rs.next()) {
                 Tile tile = new Tile(mData, rs.getShort("id"), rs.getInt("x"), rs.getInt("y"), rs.getShort("floor"), rs.getString("data"), rs.getString("attr1"), rs.getString("attr2"));
-                tiles.add(tile.toString());
+                tiles.put(tile.toString());
                 Npc npc = mData.Npcs.getNpc(tile.getX(), tile.getY(), tile.getFloor());
                 if (npc != null) {
-                    npcs.add(npc.toString());
+                    npcs.put(npc.toString());
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        newmsg.add("x", x);
-        newmsg.add("y", y);
-        newmsg.add("f", floor);
-        newmsg.add("tiles", tiles);
-        newmsg.add("npcs", npcs);
+        newmsg.put("x", x);
+        newmsg.put("y", y);
+        newmsg.put("f", floor);
+        newmsg.put("tiles", tiles);
+        newmsg.put("npcs", npcs);
         ClientHandler.sendAllWithTest("warp:" + newmsg.toString(), (charID) -> {
             return (charID == id);
         });
 
-        newmsg = new JsonObject();
-        newmsg.add("x", x);
-        newmsg.add("y", y);
-        newmsg.add("f", floor);
-        newmsg.add("id", id);
+        newmsg = new JSONObject();
+        newmsg.put("x", x);
+        newmsg.put("y", y);
+        newmsg.put("f", floor);
+        newmsg.put("id", id);
         ClientHandler.sendAllWithTest("warp:" + newmsg.toString(), (charID) -> {
             return (charID != id);
         });
