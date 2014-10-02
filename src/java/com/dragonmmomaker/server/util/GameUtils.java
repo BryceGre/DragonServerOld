@@ -19,10 +19,24 @@ import com.dragonmmomaker.server.npc.Npc;
 public class GameUtils {
 
     private final ServData mData;
-    public SocketUtils socket;
+    private final ThreadLocal<SocketUtils> mSocket;
 
     public GameUtils(final ServData pGameData) {
         mData = pGameData;
+        mSocket = new ThreadLocal() {
+            @Override
+            protected SocketUtils initialValue() {
+                 return new SocketUtils();
+            }
+        };
+    }
+    
+    public SocketUtils getSocket() {
+        return mSocket.get();
+    }
+    
+    public void setSocket(SocketUtils pSocket) {
+        mSocket.set(pSocket);
     }
 
     public Tile getTile(int x, int y, short floor) {

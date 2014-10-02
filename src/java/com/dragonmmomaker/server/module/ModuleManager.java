@@ -149,13 +149,8 @@ public class ModuleManager {
     
     //for use within server, on first hook call. Locks to prevent multithreading errors
     public void doHook(String pHook, Map<String, Object> pArgs, SocketUtils pUtils) {
-        try {
-            mLock.lock();
-            mData.Utils.socket = pUtils;
-            doHook(pHook, pArgs, ADD);
-        } finally {
-            mLock.unlock();
-        }
+        mData.Utils.setSocket(pUtils);
+        doHook(pHook, pArgs, ADD);
     }
 
     public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {

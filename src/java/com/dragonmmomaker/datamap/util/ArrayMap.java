@@ -6,8 +6,11 @@
 
 package com.dragonmmomaker.datamap.util;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import jdk.nashorn.internal.objects.Global;
@@ -19,7 +22,7 @@ import jdk.nashorn.internal.runtime.ScriptObject;
  *
  * @author Bryce
  */
-public class ArrayMap<T> extends LinkedHashMap<Integer,T> {
+public class ArrayMap<T> extends LinkedHashMap<Integer,T> implements java.lang.Iterable<T> {
     /**
      * Default Constructor
      */
@@ -80,5 +83,35 @@ public class ArrayMap<T> extends LinkedHashMap<Integer,T> {
                 return null;
             }
         }
+    }
+
+    @Override
+    public java.util.Iterator iterator() {
+        return new ArrayMapIterator();
+    }
+    
+    private class ArrayMapIterator implements java.util.Iterator<T> {
+        private LinkedList<Map.Entry<Integer,T>> entryList;
+        
+        public ArrayMapIterator() {
+            entryList = new LinkedList(ArrayMap.this.entrySet());
+            entryList.sort(new Comparator<Entry<Integer,T>>() {
+                @Override
+                public int compare(Entry<Integer, T> o1, Entry<Integer, T> o2) {
+                    return Integer.compare(o1.getKey(), o2.getKey());
+                }
+            });
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return (entryList.peek() != null);
+        }
+
+        @Override
+        public T next() {
+            return entryList.poll().getValue();
+        }
+        
     }
 }

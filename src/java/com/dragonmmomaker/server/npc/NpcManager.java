@@ -68,7 +68,7 @@ public class NpcManager {
     public void stop() {
         mTimer.cancel();
     }
-
+    
     public void spawnAll(Map<Tile, Integer> pSpawns) {
         ArrayMap<DRow> cache = new ArrayMap(mData.Data.get("npcs").entrySet());
         for (Map.Entry<Tile, Integer> spawn : pSpawns.entrySet()) {
