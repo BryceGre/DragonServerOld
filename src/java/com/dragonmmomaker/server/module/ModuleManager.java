@@ -14,10 +14,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
@@ -36,21 +34,24 @@ public class ModuleManager {
     private final ServData mData;
     private Map<String, Module> mModules;
     private Map<String, ArrayList<String>> mHooks;
-    private ScriptEngineManager mEngineManager;
-    ScriptEngine mEngine;
-    String lastMod = null;
+    final ScriptEngine mEngine;
+    final ThreadLocal<String> lastMod;
     Queue<String> mLog;
-
-    ReentrantLock mLock = new ReentrantLock();
 
     public ModuleManager(final ServData pServData) {
         mData = pServData;
+        lastMod = new ThreadLocal() {
+            @Override
+            protected String initialValue() {
+                 return null;
+            }
+        };
         
         mModules = new ConcurrentHashMap();
         mHooks = new ConcurrentHashMap();
         //TODO: remove strict
-        //mEngineManager = new ScriptEngineManager();
-        //mEngine = mEngineManager.getEngineByName("nashorn");
+        //ScriptEngineManager manager = new ScriptEngineManager();
+        //mEngine = manager.getEngineByName("nashorn");
         NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
         mEngine = factory.getScriptEngine(new String[]{"-strict"});
         
@@ -119,7 +120,7 @@ public class ModuleManager {
     }
 
     public void addHook(String pHook) {
-        addHook(pHook, lastMod);
+        addHook(pHook, lastMod.get());
     }
 
     public void addHook(String pHook, String pModule) {
@@ -130,7 +131,7 @@ public class ModuleManager {
     }
     
     public void removeHook(String pHook) {
-        removeHook(pHook, lastMod);
+        removeHook(pHook, lastMod.get());
     }
     
     public void removeHook(String pHook, String pModule) {

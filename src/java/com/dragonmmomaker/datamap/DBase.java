@@ -19,8 +19,8 @@ import javax.script.ScriptException;
 
 public class DBase implements Map<String, DTable> {
 
-    private Connection mConnection;
-    private HashSet<String> mBlacklist;
+    private final Connection mConnection;
+    private final HashSet<String> mBlacklist;
 
     public Connection getConnection() {
         return mConnection;

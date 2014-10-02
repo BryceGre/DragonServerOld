@@ -160,7 +160,7 @@ public class DRow extends HashMap<Object, Object> {
         Object old = super.get(arg0.toString().toLowerCase());
         
         if (arg0.toString().toLowerCase().equals("id")) {
-            return null; //cannot change id
+            throw new IllegalArgumentException("id cannot be changed!");
         }
         if (arg0.toString().toLowerCase().equals("key")) {
             String sql = "UPDATE " + mTable.getName() + " SET key=? WHERE id=?";

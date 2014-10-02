@@ -20,8 +20,8 @@ public class Module {
 
     public Object call(ServData pServData, String pMethod, Object... pArgs) {
         ServData._CurData = pServData; //force set of current server data
-        String prevMov = mManager.lastMod;
-        mManager.lastMod = mName;
+        String prevMov = mManager.lastMod.get();
+        mManager.lastMod.set(mName);
         try {
             ScriptObjectMirror modScript = (ScriptObjectMirror) mMod.getMember("server");
             return modScript.callMember(pMethod, pArgs);
@@ -31,7 +31,7 @@ public class Module {
             //mManager.log(e.toString());
             return null;
         } finally {
-            mManager.lastMod = prevMov;
+            mManager.lastMod.set(prevMov);
         }
     }
     
