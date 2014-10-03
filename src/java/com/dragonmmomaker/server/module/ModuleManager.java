@@ -56,11 +56,12 @@ public class ModuleManager {
         mEngine = factory.getScriptEngine(new String[]{"-strict"});
         
         //String headers = "function parseInt(string, rad) { return Java.type('jdk.nashorn.internal.runtime.GlobalFunctions').parseInt(null, string, rad).intValue(); }\n";
-        String headers = "var Tile = com.dragonmmomaker.server.data.Tile;\n";
-        headers += "var Point = com.dragonmmomaker.server.util.GameUtils.Point;\n";
+        StringBuilder headers = new StringBuilder();
+        headers.append("var Tile = com.dragonmmomaker.server.data.Tile;\n");
+        headers.append("var Point = com.dragonmmomaker.server.util.GameUtils.Point;\n");
         
         try {
-            mEngine.eval(headers);
+            mEngine.eval(headers.toString());
         } catch (ScriptException e) {
             e.printStackTrace();
         }
@@ -152,6 +153,11 @@ public class ModuleManager {
     public void doHook(String pHook, Map<String, Object> pArgs, SocketUtils pUtils) {
         mData.Utils.setSocket(pUtils);
         doHook(pHook, pArgs, ADD);
+    }
+    
+    //for sending in doHook(pHook, false, pRet)
+    public Double doHook(String pHook, boolean args, int pRet) {
+        return doHook(pHook, new HashMap<String, Object>(), pRet);
     }
 
     public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {

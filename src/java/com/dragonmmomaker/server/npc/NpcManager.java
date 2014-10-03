@@ -258,11 +258,7 @@ public class NpcManager {
                             
                             //send the snap and move direction
                             JSONObject newmsg = new JSONObject();
-                            newmsg.put("id", npc.getIid());
-                            newmsg.put("x", npc.getX());
-                            newmsg.put("y", npc.getY());
-                            newmsg.put("f", npc.getFloor());
-                            newmsg.put("s", npc.getSprite());
+                            newmsg.put("npc", npc.toString());
                             newmsg.put("dir", dir);
                             ClientHandler.sendAllWithTest("npc-move:" + newmsg.toString(), (charID) -> {
                                 DRow pchar = mData.Data.get("characters").get(charID);

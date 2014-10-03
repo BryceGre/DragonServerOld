@@ -1,3 +1,5 @@
+const DEFAULT_TILE = "0000.......";
+
 _Game.world = new Object();
 var World = _Game.world;
 
@@ -17,7 +19,6 @@ _Game.updateWorld = function(tiles) {
         var f = parseInt(n[2]);
         
         var newTile = new Tile(x, y, f, n[3], n[4], n[5], true);
-        _Game.setTile(x, y, f, newTile);
         newTile.redraw();
     }
 }
@@ -29,7 +30,10 @@ _Game.setTile = function(x, y, floor, tile) {
     if (!_Game.world.tiles[x][y]) {
         _Game.world.tiles[x][y] = new Object();
     }
-    _Game.world.tiles[x][y][floor] = tile;
+    if (tile)
+        _Game.world.tiles[x][y][floor] = tile;
+    else
+        delete _Game.world.tiles[x][y][floor];
 }
 
 _Game.getTile = function(x, y, floor) {
@@ -178,6 +182,8 @@ function Tile(x, y, floor, data, a1d, a2d, skipDraw) {
     function deepCopy() {
         return $.extend(true, {}, this);
     }
+    
+    _Game.setTile(x, y, floor, this);
 }
 
 Tile.key = function(x, y, floor) {

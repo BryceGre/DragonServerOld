@@ -1,126 +1,24 @@
 _Game.userID = 0;
 
-//User is the local player
-function User(name, x, y, floor, sprite) {
+function Character(name, x, y, floor, sprite) {
     this.direction = 0;
     this.facing = 0;
-    this.nextDir = 0;
     this.moved = 0;
     this.lastOffset = {x:0,y:0};
-    this.sprinting = false;
-    this.command = 0;
+    this.x = parseInt(x);
+    this.y = parseInt(y);
+    this.floor = parseInt(floor);
+    this.lastPoint = new Point(this.x, this.y, this.floor);
     this.name = name;
-    this.x = parseInt(x);
-    this.y = parseInt(y);
-    this.floor = parseInt(floor);
-    this.lastPoint = new Point(this.x, this.y, this.floor);
     this.sprite = parseInt(sprite);
     this.target = null;
-
-    this.getSpriteOffset = getSpriteOffset;
-
-    this.resetLastPoint = resetLastPoint;
-    function resetLastPoint() {
-        this.lastPoint = new Point(this.x, this.y, this.floor);
-    }
-
-    this.move = move;
-    function move() {
-        //update user position
-        this.resetLastPoint();
-        if (this.direction == 37) { // left
-            this.x--;
-            for (key in _Game.world.npcs) {
-                if (_Game.world.npcs[key].x > this.x + DRAW_DISTANCE) {
-                    delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
-                    delete _Game.world.npcs[key];
-                }
-            }
-        } else if (this.direction == 38) { // up
-            this.y--;
-            for (key in _Game.world.npcs) {
-                if (_Game.world.npcs[key].y > this.y + DRAW_DISTANCE) {
-                    delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
-                    delete _Game.world.npcs[key];
-                }
-            }
-        } else if (this.direction == 39) { // right
-            this.x++;
-            for (key in _Game.world.npcs) {
-                if (_Game.world.npcs[key].x < this.x - DRAW_DISTANCE) {
-                    delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
-                    delete _Game.world.npcs[key];
-                }
-            }
-        } else if (this.direction == 40) { // down
-            this.y++;
-            for (key in _Game.world.npcs) {
-                if (_Game.world.npcs[key].y < this.y - DRAW_DISTANCE) {
-                    delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
-                    delete _Game.world.npcs[key];
-                }
-            }
-        }
-        
-        //update music for the new tile
-        var playerTile = _Game.getTile(this.x, this.y, this.floor);
-        if (playerTile && playerTile.music > 0) {
-            Game.playMusic(playerTile.music);
-        }
-    }
 }
 
-//A Player is any player other than the local user
-function Player(id, name, x, y, floor, sprite) {
-    this.direction = 0;
-    this.facing = 0;
-    this.moved = 0;
-    this.lastOffset = {x:0,y:0};
-    this.sprinting = false;
-    this.command = 0;
-    this.id = parseInt(id);
-    this.name = name;
-    this.x = parseInt(x);
-    this.y = parseInt(y);
-    this.floor = parseInt(floor);
+Character.prototype.resetLastPoint = function() {
     this.lastPoint = new Point(this.x, this.y, this.floor);
-    this.sprite = parseInt(sprite);
-    this.target = null;
-
-    this.getSpriteOffset = getSpriteOffset;
-    
-    this.resetLastPoint = resetLastPoint;
-    function resetLastPoint() {
-        this.lastPoint = new Point(this.x, this.y, this.floor);
-    }
 }
 
-function NPC(x, y, floor, sprite) {
-    this.direction = 0;
-    this.facing = 0;
-    this.moved = 0;
-    this.lastOffset = {x:0,y:0};
-    this.x = parseInt(x);
-    this.y = parseInt(y);
-    this.floor = parseInt(floor);
-    this.lastPoint = new Point(this.x, this.y, this.floor);
-    this.sprite = parseInt(sprite);
-    this.target = null;
-
-    this.getSpriteOffset = getSpriteOffset;
-    
-    this.resetLastPoint = resetLastPoint;
-    function resetLastPoint() {
-        this.lastPoint = new Point(this.x, this.y, this.floor);
-    }
-}
-
-/** "this" must have the following data members: 
- this.sprite
- this.facing
- this.moved
- this.lastOffset   */
-function getSpriteOffset() {
+Character.prototype.getSpriteOffset = function() {
     if (this.facing != 0) {
         var offset = new Object();
         var width = Math.floor(_Game.gfx.Sprites[this.sprite].width / 4);
@@ -139,4 +37,77 @@ function getSpriteOffset() {
         this.lastOffset = offset;
     }
     return this.lastOffset
+}
+
+//User is the local player
+function User(name, x, y, floor, sprite) {
+    Character.call(this, name, x, y, floor, sprite);
+    
+    this.nextDir = 0;
+    this.sprinting = false;
+    this.command = 0;
+}
+
+//A Player is any player other than the local user
+function Player(id, name, x, y, floor, sprite) {
+    Character.call(this, name, x, y, floor, sprite);
+    
+    this.sprinting = false;
+    this.command = 0;
+    this.id = parseInt(id);
+}
+
+function NPC(name, x, y, floor, sprite) {
+    Character.call(this, name, x, y, floor, sprite);
+}
+
+User.prototype = Object.create(Character.prototype);
+User.prototype.constructor = User;
+Player.prototype = Object.create(Character.prototype);
+Player.prototype.constructor = Player;
+NPC.prototype = Object.create(Character.prototype);
+NPC.prototype.constructor = NPC;
+
+User.prototype.move = function() {
+    //update user position
+    this.resetLastPoint();
+    if (this.direction == 37) { // left
+        this.x--;
+        for (key in _Game.world.npcs) {
+            if (_Game.world.npcs[key].x > this.x + DRAW_DISTANCE) {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
+                delete _Game.world.npcs[key];
+            }
+        }
+    } else if (this.direction == 38) { // up
+        this.y--;
+        for (key in _Game.world.npcs) {
+            if (_Game.world.npcs[key].y > this.y + DRAW_DISTANCE) {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
+                delete _Game.world.npcs[key];
+            }
+        }
+    } else if (this.direction == 39) { // right
+        this.x++;
+        for (key in _Game.world.npcs) {
+            if (_Game.world.npcs[key].x < this.x - DRAW_DISTANCE) {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
+                delete _Game.world.npcs[key];
+            }
+        }
+    } else if (this.direction == 40) { // down
+        this.y++;
+        for (key in _Game.world.npcs) {
+            if (_Game.world.npcs[key].y < this.y - DRAW_DISTANCE) {
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[key].x, _Game.world.npcs[key].y, _Game.world.npcs[key].floor)];
+                delete _Game.world.npcs[key];
+            }
+        }
+    }
+
+    //update music for the new tile
+    var playerTile = _Game.getTile(this.x, this.y, this.floor);
+    if (playerTile && playerTile.music > 0) {
+        Game.playMusic(playerTile.music);
+    }
 }

@@ -54,7 +54,7 @@ _Game.loadWorld = function(string) {
         var f = parseInt(n[3]);
         var s = parseInt(n[4]);
         
-        _Game.world.npcs[id] = new NPC(x, y, f, s);
+        _Game.world.npcs[id] = new NPC(n[5], x, y, f, s);
         _Game.world.npcTile[Tile.key(x, y, f)] = id;
     }
     
@@ -684,7 +684,7 @@ _Game.onMessage = function(data) {
                 var y = parseInt(npc[2]);
                 var f = parseInt(npc[3]);
                 var s = parseInt(npc[4]);
-                _Game.world.npcs[id] = new NPC(x, y, f, s);
+                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
                 _Game.world.npcTile[Tile.key(x, y, f)] = id;
             }
             break;
@@ -741,7 +741,7 @@ _Game.onMessage = function(data) {
                     var y = parseInt(npc[2]);
                     var f = parseInt(npc[3]);
                     var s = parseInt(npc[4]);
-                    _Game.world.npcs[id] = new NPC(x, y, f, s);
+                    _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
                     _Game.world.npcTile[Tile.key(x, y, f)] = id;
                 }
             }
@@ -761,32 +761,39 @@ _Game.onMessage = function(data) {
         case "npc-move":
             var n = JSON.parse(message[1]);
             
-            if (!_Game.world.npcs[n.id]) {
-                _Game.world.npcs[n.id] = new NPC(n.x, n.y, n.f, n.s);
+            var npc = n.npc.split(",");
+            var id = parseInt(npc[0]);
+            var x = parseInt(npc[1]);
+            var y = parseInt(npc[2]);
+            var f = parseInt(npc[3]);
+            var s = parseInt(npc[4]);
+            
+            if (!_Game.world.npcs[id]) {
+                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
             } else {
-                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[n.id].x, _Game.world.npcs[n.id].y, _Game.world.npcs[n.id].floor)];
-                _Game.world.npcs[n.id].resetLastPoint();
-                _Game.world.npcs[n.id].x = n.x;
-                _Game.world.npcs[n.id].y = n.y;
-                _Game.world.npcs[n.id].floor = n.f;
+                delete _Game.world.npcTile[Tile.key(_Game.world.npcs[id].x, _Game.world.npcs[id].y, _Game.world.npcs[id].floor)];
+                _Game.world.npcs[id].resetLastPoint();
+                _Game.world.npcs[id].x = x;
+                _Game.world.npcs[id].y = y;
+                _Game.world.npcs[id].floor = f;
             }
             var del = false;
-            if (_Game.world.npcs[n.id].direction == 37) { // left
-                del = (_Game.world.npcs[n.id].x < _Game.world.user.x - DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 38) { // up
-                del = (_Game.world.npcs[n.id].y < _Game.world.user.y - DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 39) { // right
-                del = (_Game.world.npcs[n.id].x > _Game.world.user.x + DRAW_DISTANCE);
-            } else if (_Game.world.npcs[n.id].direction == 40) { // down
-                del = (_Game.world.npcs[n.id].y > _Game.world.user.y + DRAW_DISTANCE);
+            if (_Game.world.npcs[id].direction == 37) { // left
+                del = (_Game.world.npcs[id].x < _Game.world.user.x - DRAW_DISTANCE);
+            } else if (_Game.world.npcs[id].direction == 38) { // up
+                del = (_Game.world.npcs[id].y < _Game.world.user.y - DRAW_DISTANCE);
+            } else if (_Game.world.npcs[id].direction == 39) { // right
+                del = (_Game.world.npcs[id].x > _Game.world.user.x + DRAW_DISTANCE);
+            } else if (_Game.world.npcs[id].direction == 40) { // down
+                del = (_Game.world.npcs[id].y > _Game.world.user.y + DRAW_DISTANCE);
             }
             if (del) {
-                delete _Game.world.npcs[n.id];
+                delete _Game.world.npcs[id];
             } else {
-                _Game.world.npcs[n.id].direction = n.dir;
-                _Game.world.npcs[n.id].facing = n.dir;
-                _Game.world.npcs[n.id].moved = 0;
-                _Game.world.npcTile[Tile.key(n.x, n.y, n.f)] = n.id;
+                _Game.world.npcs[id].direction = n.dir;
+                _Game.world.npcs[id].facing = n.dir;
+                _Game.world.npcs[id].moved = 0;
+                _Game.world.npcTile[Tile.key(x, y, f)] = id;
             }
             break;
         case "npc-die":
@@ -805,7 +812,7 @@ _Game.onMessage = function(data) {
             var s = parseInt(npc[4]);
             if (!_Game.world.npcs[id]) {
                 //spawn npc
-                _Game.world.npcs[id] = new NPC(x, y, f, s);
+                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
                 _Game.world.npcTile[Tile.key(x, y, f)] = id;
             } else {
                 //move npc back to spawn

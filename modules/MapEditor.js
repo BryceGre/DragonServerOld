@@ -6,8 +6,6 @@
  * of conditions are retained.
  */
 
-var DEFAULT_TILE = "0000.......";
-
 /***********************************************/
 /***** Properties ******************************/
 /***********************************************/
@@ -54,7 +52,6 @@ MapEditor.server.onHook = function(hook, args) {
                 var oldtile = Game.getTile(x, y, floor);
                 if (oldtile === null) {
                     var newtile = new Tile(x, y, floor, tile[3], tile[4], tile[5]);
-                    Game.setTile(x, y, floor, newtile);
                     //spawn npc if new npc is placed here
                     if (newtile.attr1 == 6 || newtile.attr2 == 6) {
                         if (newtile.attr1 == 6) {
@@ -203,7 +200,7 @@ MapEditor.client.placeTile = function(x, y) {
     var changed = new Object();
 
     outerloop:
-            for (var ix = 0; ix < MapEditor.client.currMultiX; ix++) {
+    for (var ix = 0; ix < MapEditor.client.currMultiX; ix++) {
         for (var iy = 0; iy < MapEditor.client.currMultiY; iy++) {
             var point = new Point((x + ix), (y + iy), Game.editFloor);
 
@@ -216,7 +213,7 @@ MapEditor.client.placeTile = function(x, y) {
             if (oldTile) {
                 changed[point.getKey()].tile = oldTile.deepCopy();
             } else {
-                changed[point.getKey()].tile = new Tile(point.x, point.y, point.floor, DEFAULT_TILE);
+                changed[point.getKey()].tile = null;
             }
 
             // for saving
@@ -252,7 +249,6 @@ MapEditor.client.placeAttr = function(x, y, which) {
     var tile = Game.getTile(x, y, Game.editFloor);
     if (!tile) {
         tile = new Tile(x, y, Game.editFloor, DEFAULT_TILE);
-        Game.setTile(x, y, Game.editFloor, tile);
     }
     if (which === 1) {
         tile.attr1 = $('input:checked', '#map-editor-attributes').val() + "";
@@ -274,7 +270,6 @@ MapEditor.client.placeMusic = function(x, y) {
     var tile = Game.getTile(x, y, Game.editFloor);
     if (!tile) {
         tile = new Tile(x, y, Game.editFloor, DEFAULT_TILE);
-        Game.setTile(x, y, Game.editFloor, tile);
     }
     
     tile.music = $("#map-editor-track").val();
@@ -320,7 +315,6 @@ MapEditor.client.clearAttr = function(x, y, which) {
     var tile = Game.getTile(x, y, Game.editFloor);
     if (!tile) {
         tile = new Tile(x, y, Game.editFloor, DEFAULT_TILE);
-        Game.setTile(x, y, Game.editFloor, tile);
     }
     if (which === 1) {
         tile.attr1 = "0";
@@ -334,7 +328,6 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
     var tile = Game.getTile(x, y, floor);
     if (!tile) {
         tile = new Tile(x, y, floor, DEFAULT_TILE);
-        Game.setTile(x, y, floor, tile);
     }
     var chain;
     console.log("updaing tile: " + $('input:checked', '#map-editor-layers').val());

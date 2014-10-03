@@ -17,6 +17,21 @@ Module.addHook = function(hook, module) {
     _Game.hooks[hook].push(module);
 }
 
+Module.removeHook = function(hook, module) {
+    if (!module) {
+        module = Module.lastMod;
+    }
+    if (!module) {
+        return;
+    }
+    if (_Game.hooks[hook]) {
+        var index = _Game.hooks[hook].indexOf(item);
+        if (index >= 0) {
+            _Game.hooks[hook].splice(index, 1);
+        }
+    }
+}
+
 Module.doHook = function(hook, args, ret) {
     if (!args) {
         args = new Object();
@@ -30,6 +45,8 @@ Module.doHook = function(hook, args, ret) {
     Data.characters = new Object();
     Data.characters[_Game.userID] = _Game.world.user;
     $.extend(Data.characters, _Game.world.players);
+    Data.npcs = new Object();
+    $.extend(Data.npcs, _Game.world.npcs);
     
     var sum = 0;
     if (ret == MIN) sum = Number.MAX_VALUE;

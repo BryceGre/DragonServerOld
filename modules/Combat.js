@@ -44,12 +44,12 @@ Combat.server.onHook = function(hook, args) {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
             if (npc.action == "attack") {
-                var base = 20;
+                var base = 21;
                 var mod = Module.doHook("combat-mod", {base:base}, AVG);
                 var add = Module.doHook("combat-add", {base:base}, ADD);
                 base = base + add;
                 if (mod > 0) base = base * mod;
-                var damage = base - (base/20) + Math.floor(Math.random()*((base/10)+1));
+                var damage = base - Math.floor(base/20) + Math.floor(Math.random()*((base/10)+1));
                 args.npc.health -= damage;
                 Module.doHook("combat-damage", {base:base, mod:mod, add:add, damage:damage, npc:args.npc});
                 //death is taken care of by the npc manager.
