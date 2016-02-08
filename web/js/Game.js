@@ -14,7 +14,7 @@ _Game.loadGame = function() {
     $(_Game.canvas).on("click", _Game.onClick);
     $(_Game.canvas).on("contextmenu", _Game.onMenu);
 
-    setInterval(_Game.gameLoop, 10);
+    window.requestAnimationFrame(_Game.gameLoop);
 
     _Game.socket.send("loaded");
 }
@@ -25,6 +25,8 @@ _Game.gameLoop = function() {
     _Game.lastTime = $.now();
     _Game.onUpdate(elapsed);
     _Game.onDraw(elapsed);
+    
+    window.requestAnimationFrame(_Game.gameLoop);
 }
 
 _Game.playMusic = function(id) {

@@ -13,6 +13,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import javax.websocket.CloseReason;
@@ -32,7 +34,9 @@ import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.Account;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.npc.Npc;
-import com.dragonmmomaker.server.util.GameUtils;
+import com.dragonmmomaker.server.quadtree.HashBag;
+import com.dragonmmomaker.server.quadtree.Player;
+import com.dragonmmomaker.server.util.Point;
 import com.dragonmmomaker.server.util.SocketUtils;
 
 @ServerEndpoint("/client")
@@ -41,11 +45,13 @@ public class ClientHandler {
 
     protected static Set<ClientHandler> mClients;
     protected static ServData mData;
+    protected static Lock mLock;
 
     protected Session mSession;
 
     static {
         mClients = new CopyOnWriteArraySet();
+        mLock = new ReentrantLock();
     }
 
     public static void setData(ServData pData) {
@@ -55,7 +61,7 @@ public class ClientHandler {
     public static void sendAll(String pMessage) {
         Iterator<ClientHandler> itr = mClients.iterator();
         while (itr.hasNext()) {
-            itr.next().mSession.getAsyncRemote().sendText(pMessage);
+            itr.next().send(pMessage);
         }
     }
 
@@ -65,10 +71,14 @@ public class ClientHandler {
             ClientHandler player = itr.next();
             if (player.mSession.getUserProperties().containsKey("char")) {
                 if (pTest.test((Integer) player.mSession.getUserProperties().get("char"))) {
-                    player.mSession.getAsyncRemote().sendText(pMessage);
+                    player.send(pMessage);
                 }
             }
         }
+    }
+    
+    public static String getData(String pCat, String pDat) {
+        return mData.Config.get(pCat).get(pDat);
     }
 
     @OnOpen
@@ -90,14 +100,17 @@ public class ClientHandler {
     @OnClose
     public void onClose(Session pSession, CloseReason pReason) {
         ServData._CurData = mData;
-        synchronized (mClients) {
-            if (mSession.getUserProperties().containsKey("loaded")) {
-                for (ClientHandler con : mClients) {
-                    if (!con.equals(this) && con.mSession.getUserProperties().containsKey("loaded")) {
-                        con.mSession.getAsyncRemote().sendText("leave:" + mSession.getUserProperties().get("char"));
-                    }
-                }
+        
+        if (mSession.getUserProperties().containsKey("loaded")) {
+            Player player = (Player) mSession.getUserProperties().get("player");
+            try {
+                mLock.lock();
+                player.remove();
+            } finally { mLock.unlock(); }
+            for (Player p : player.getPlayers()) {
+                System.out.println("Send leave to :" + p.getID());
             }
+            this.sendOther(player.getPlayers(), "leave:" + player.getID());
         }
 
         synchronized (mClients) {
@@ -110,10 +123,11 @@ public class ClientHandler {
     @OnMessage
     public void onMessage(String msg) {
         if (!DragonServer.isRunning()) {
-            mSession.getAsyncRemote().sendText(ERROR);
+            this.send(ERROR);
             return;
         }
 
+        try {
         ServData._CurData = mData;
         mData.Log.debug("Recieved message: " + msg);
 
@@ -132,25 +146,25 @@ public class ClientHandler {
         if (message.length > 1) {
             args.put("data", message[1]);
         }
-        mData.Module.doHook("pre_message", args, new SocketUtils(mSession, this.getRemotes()));
+        mData.Module.doHook("pre_message", args, new SocketUtils(mSession, getRemotes()));
 
         if (message[0].equals("login")) {
             JSONObject data = new JSONObject(message[1]);
             Account acc = new Account(mData, data.getString("user"));
             if (acc.getID() >= 0) { //if account exists
                 if (acc.checkPassword(data.getString("pass"))) {
-                    mSession.getUserProperties().put("player", acc.getID());
-                    mSession.getAsyncRemote().sendText("login:1");
+                    mSession.getUserProperties().put("acc", acc.getID());
+                    this.send("login:1");
 
                     mData.Log.log(110, "Log-in: " + acc.getUsername());
                     return;
                 }
             }
-            mSession.getAsyncRemote().sendText("login:0");
+            this.send("login:0");
             mData.Log.debug("Login failed");
         } else if (message[0].equals("char")) {
-            if (mSession.getUserProperties().containsKey("player")) {
-                Account acc = new Account(mData, (Integer) mSession.getUserProperties().get("player"));
+            if (mSession.getUserProperties().containsKey("acc")) {
+                Account acc = new Account(mData, (Integer) mSession.getUserProperties().get("acc"));
                 int charID = 0;
                 switch (Integer.parseInt(message[1])) {
                     case 3:
@@ -182,35 +196,46 @@ public class ClientHandler {
         } else if (message[0].equals("register")) {
             JSONObject data = new JSONObject(message[1]);
             if (new Account(mData, data.getString("user")).getID() >= 0) {
-                mSession.getAsyncRemote().sendText("register:0");
+                this.send("register:0");
                 mData.Log.debug("Register failed: Username exists");
                 return;
             }
             int id = Account.insert(mData, data.getString("user"), data.getString("pass"), data.getString("email"));
 
             if (id == -1) {
-                mSession.getAsyncRemote().sendText("register:0");
+                this.send("register:0");
                 mData.Log.debug("Register failed: Could not create account");
                 return;
             }
 
-            mSession.getAsyncRemote().sendText("register:1");
+            this.send("register:1");
             mData.Log.log(120, "Registered: " + data.getString("user"));
         } else if (message[0].equals("load")) {
             mData.Log.log("starting load");
-            if (mSession.getUserProperties().containsKey("player") && mSession.getUserProperties().containsKey("char")) {
+            if (mSession.getUserProperties().containsKey("acc") && mSession.getUserProperties().containsKey("char")) {
                 DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
-
-                int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
+                
+                int pD = Integer.parseInt(getData("Game","draw_distance"));
                 String pName = (String) pchar.get("name");
                 int pID = (Integer) pchar.get("id");
                 int pX = (Integer) pchar.get("x");
                 int pY = (Integer) pchar.get("y");
                 short pFloor = ((Integer) pchar.get("floor")).shortValue();
                 int pSprite = (Integer) pchar.get("sprite");
-
+                
+                Player player = new Player(pID, pFloor, pName, pSprite, this);
+                player.setFloor(pFloor);
+                //add player to world
+                try {
+                    mLock.lock();
+                    //add player to world
+                    player.warp(pX, pY);
+                    mSession.getUserProperties().put("player", player);
+                    mSession.getUserProperties().put("loaded", true);
+                } finally { mLock.unlock(); }
+                
                 JSONObject newmsg = new JSONObject();
-
+                
                 //user
                 JSONObject user = new JSONObject();
                 user.put("id", pID);
@@ -220,22 +245,18 @@ public class ClientHandler {
                 user.put("f", pFloor);
                 user.put("s", pSprite);
                 newmsg.put("user", user);
-
+                
                 //players
                 JSONArray chars = new JSONArray();
-                for (ClientHandler con : mClients) {
-                    if (!con.equals(this) && con.mSession.getUserProperties().containsKey("loaded")) {
-                        Integer icharID = (Integer) con.mSession.getUserProperties().get("char");
-                        DRow ichar = mData.Data.get("characters").get(icharID);
-                        JSONObject ochar = new JSONObject();
-                        ochar.put("id", (Integer) ichar.get("id"));
-                        ochar.put("n", (String) pchar.get("name"));
-                        ochar.put("x", (Integer) ichar.get("x"));
-                        ochar.put("y", (Integer) ichar.get("y"));
-                        ochar.put("f", ((Integer) ichar.get("floor")).shortValue());
-                        ochar.put("s", (Integer) ichar.get("sprite"));
-                        chars.put(ochar);
-                    }
+                for (Player p : player.getPlayers()) {
+                    JSONObject ochar = new JSONObject();
+                    ochar.put("id", p.getID());
+                    ochar.put("n", p.getName());
+                    ochar.put("x", p.getX());
+                    ochar.put("y", p.getY());
+                    ochar.put("f", p.getFloor());
+                    ochar.put("s", p.getSprite());
+                    chars.put(ochar);
                 }
                 newmsg.put("players", chars);
 
@@ -263,9 +284,9 @@ public class ClientHandler {
                 args = new HashMap<String, Object>();
                 args.put("index", pID);
                 args.put("msg", newmsg.toString());
-                mData.Module.doHook("on_load", args, new SocketUtils(mSession, this.getRemotes()));
+                mData.Module.doHook("on_load", args, new SocketUtils(mSession, getRemotes()));
 
-                mSession.getAsyncRemote().sendText("load:" + args.get("msg"));
+                this.send("load:" + args.get("msg"));
 
                 newmsg = new JSONObject();
                 newmsg.put("id", pID);
@@ -274,9 +295,8 @@ public class ClientHandler {
                 newmsg.put("y", pY);
                 newmsg.put("f", pFloor);
                 newmsg.put("s", pSprite);
-                this.sendAllOther("enter:" + newmsg.toString());
-
-                mSession.getUserProperties().put("loaded", true);
+                this.sendOther(player.getPlayers(), "enter:" + newmsg.toString());
+                
                 mSession.getUserProperties().put("lastMove", new Date());
                 mSession.getUserProperties().put("lastAct", new Date());
             }
@@ -293,63 +313,97 @@ public class ClientHandler {
                     mSession.getUserProperties().put("lastMove", now);
                     //compile character information
                     DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
-                    int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
-                    int pID = (Integer) pchar.get("id");
-                    String pName = (String) pchar.get("name");
-                    int pX = (Integer) pchar.get("x");
-                    int pY = (Integer) pchar.get("y");
-                    short pFloor = ((Integer) pchar.get("floor")).shortValue();
-                    int pSprite = (Integer) pchar.get("sprite");
+                    Player player = (Player) mSession.getUserProperties().get("player");
+                    int pD = Integer.parseInt(getData("Game","draw_distance"));
+                    int pID = player.getID();
+                    String pName = player.getName();
+                    int pX = player.getX();
+                    int pY = player.getY();
+                    short pFloor = player.getFloor();
+                    int pSprite = player.getSprite();
                     
                     String sql = "";
                     
+                    HashBag<Player> enter = new HashBag();
                     //move the player
                     switch (pDir) {
                         case 37: //left
                             if (pX > 0) {
                                 try {
-                                    if (!checkAttr(pX - 1, pY, pFloor, pchar) || mData.Npcs.getNpc(pX - 1, pY, pFloor) != null) {
+                                    if (!checkAttr(pX - 1, pY, pFloor, player, pchar) || mData.Npcs.getNpc(pX - 1, pY, pFloor) != null) {
                                         return;
                                     }
                                 } catch (Exception e) { e.printStackTrace(); }
                                 pX--;
-                                pchar.put("x", new Integer(pX));
+                                try {
+                                    mLock.lock();
+                                    pchar.put("x", new Integer(pX));
+                                    player.move(pX, pY);
+                                    for (Player p : player.getPlayers()) {
+                                        if (player.getX() - pD == p.getX())
+                                            enter.add(p);
+                                    }
+                                } finally { mLock.unlock(); }
                                 sql = "SELECT * FROM tiles WHERE x=" + (pX - pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
                             }
                             break;
                         case 38: //up
                             if (pY > 0) {
                                 try {
-                                    if (!checkAttr(pX, pY - 1, pFloor, pchar) || mData.Npcs.getNpc(pX, pY - 1, pFloor) != null) {
+                                    if (!checkAttr(pX, pY - 1, pFloor, player, pchar) || mData.Npcs.getNpc(pX, pY - 1, pFloor) != null) {
                                         return;
                                     }
                                 } catch (Exception e) { e.printStackTrace(); }
                                 pY--;
-                                pchar.put("y", new Integer(pY));
+                                try {
+                                    mLock.lock();
+                                    pchar.put("y", new Integer(pY));
+                                    player.move(pX, pY);
+                                    for (Player p : player.getPlayers()) {
+                                        if (player.getY() - pD == p.getY())
+                                            enter.add(p);
+                                    }
+                                } finally { mLock.unlock(); }
                                 sql = "SELECT * FROM tiles WHERE y=" + (pY - pD) + " AND x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + ";";
                             }
                             break;
                         case 39: //right
                             if (pX < 2000000000) {
                                 try {
-                                    if (!checkAttr(pX + 1, pY, pFloor, pchar) || mData.Npcs.getNpc(pX + 1, pY, pFloor) != null) {
+                                    if (!checkAttr(pX + 1, pY, pFloor, player, pchar) || mData.Npcs.getNpc(pX + 1, pY, pFloor) != null) {
                                         return;
                                     }
                                 } catch (Exception e) { e.printStackTrace(); }
                                 pX++;
-                                pchar.put("x", new Integer(pX));
+                                try {
+                                    mLock.lock();
+                                    pchar.put("x", new Integer(pX));
+                                    player.move(pX, pY);
+                                    for (Player p : player.getPlayers()) {
+                                        if (player.getX() + pD == p.getX())
+                                            enter.add(p);
+                                    }
+                                } finally { mLock.unlock(); }
                                 sql = "SELECT * FROM tiles WHERE x=" + (pX + pD) + " AND y BETWEEN " + (pY - pD) + " AND " + (pY + pD) + ";";
                             }
                             break;
                         case 40: //down
                             if (pY < 2000000000) {
                                 try {
-                                    if (!checkAttr(pX, pY + 1, pFloor, pchar) || mData.Npcs.getNpc(pX, pY + 1, pFloor) != null) {
+                                    if (!checkAttr(pX, pY + 1, pFloor, player, pchar) || mData.Npcs.getNpc(pX, pY + 1, pFloor) != null) {
                                         return;
                                     }
                                 } catch (Exception e) { e.printStackTrace(); }
                                 pY++;
-                                pchar.put("y", new Integer(pY));
+                                try {
+                                    mLock.lock();
+                                    pchar.put("y", new Integer(pY));
+                                    player.move(pX, pY);
+                                    for (Player p : player.getPlayers()) {
+                                        if (player.getY() + pD == p.getY())
+                                            enter.add(p);
+                                    }
+                                } finally { mLock.unlock(); }
                                 sql = "SELECT * FROM tiles WHERE y=" + (pY + pD) + " AND x BETWEEN " + (pX - pD) + " AND " + (pX + pD) + ";";
                             }
                             break;
@@ -357,22 +411,25 @@ public class ClientHandler {
                     
                     //snap the user to his current position, in case of lag
                     JSONObject newmsg = new JSONObject();
-                    newmsg.put("x", pX);
-                    newmsg.put("y", pY);
+                    newmsg.put("x", player.getX());
+                    newmsg.put("y", player.getY());
                     newmsg.put("f", pFloor);
                     //and send any tiles and npcs that must be loaded in
-                    this.mSession.getAsyncRemote().sendText("snap:" + newmsg.toString());
+                    this.send("snap:" + newmsg.toString());
                     
                     //send the movement to all other players
                     newmsg = new JSONObject();
                     newmsg.put("id", pID);
                     newmsg.put("dir", new Integer(pDir));
                     newmsg.put("n", pName);
-                    newmsg.put("x", pX);
-                    newmsg.put("y", pY);
+                    newmsg.put("x", player.getX());
+                    newmsg.put("y", player.getY());
                     newmsg.put("f", pFloor);
                     newmsg.put("s", pSprite);
-                    this.sendAllOther("move:" + newmsg.toString());
+                    this.sendOther(player.getPlayers(), "move:" + newmsg.toString());
+                    for (Player p : player.getPlayers()) {
+                        System.out.println("sending move to: " + p.getID());
+                    }
                     
                     //send any tiles and npcs that must be loaded in
                     newmsg = new JSONObject();
@@ -390,9 +447,21 @@ public class ClientHandler {
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
+                    JSONArray chars = new JSONArray();
+                    for (Player p : enter) {
+                        JSONObject ochar = new JSONObject();
+                        ochar.put("id", p.getID());
+                        ochar.put("n", p.getName());
+                        ochar.put("x", p.getX());
+                        ochar.put("y", p.getY());
+                        ochar.put("f", p.getFloor());
+                        ochar.put("s", p.getSprite());
+                        chars.put(ochar);
+                    }
                     newmsg.put("tiles", tiles);
                     newmsg.put("npcs", npcs);
-                    this.mSession.getAsyncRemote().sendText("more:" + newmsg.toString());
+                    newmsg.put("players", chars);
+                    this.send("more:" + newmsg.toString());
                 }
             }
         } else if (message[0].equals("face")) {
@@ -400,11 +469,13 @@ public class ClientHandler {
                 short pDir = Short.parseShort(message[1]);
                 //DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
                 int pID = (Integer) mSession.getUserProperties().get("char");
+                
+                Player player = (Player) mSession.getUserProperties().get("player");
 
                 JSONObject newmsg = new JSONObject();
                 newmsg.put("id", pID);
                 newmsg.put("dir", new Integer(pDir));
-                this.sendAllOther("face:" + newmsg.toString());
+                this.sendOther(player.getPlayers(), "face:" + newmsg.toString());
             }
         } else if (message[0].equals("act")) {
             if (mSession.getUserProperties().containsKey("loaded")) {
@@ -424,7 +495,6 @@ public class ClientHandler {
                     
                     Npc npc = null;
                     Tile tile = null;
-                    GameUtils.Point point = null;
                     switch (pDir) {
                         case 37: //left
                             npc = mData.Npcs.getNpc(pX - 1, pY, pFloor);
@@ -432,19 +502,19 @@ public class ClientHandler {
                                 args = new HashMap();
                                 args.put("index", pID);
                                 args.put("npc", npc);
-                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, getRemotes()));
                             } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("point", new GameUtils.Point(pX - 1, pY, pFloor));
-                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                args.put("point", new Point(pX - 1, pY, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, getRemotes()));
 
                                 tile = mData.Utils.getTile(pX - 1, pY, pFloor);
                                 if (tile != null) {
                                     args = new HashMap();
                                     args.put("index", pID);
                                     args.put("tile", tile);
-                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, getRemotes()));
                                 }
                             }
                             break;
@@ -454,19 +524,19 @@ public class ClientHandler {
                                 args = new HashMap();
                                 args.put("index", pID);
                                 args.put("npc", npc);
-                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, getRemotes()));
                             } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("point", new GameUtils.Point(pX, pY - 1, pFloor));
-                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                args.put("point", new Point(pX, pY - 1, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, getRemotes()));
 
                                 tile = mData.Utils.getTile(pX, pY - 1, pFloor);
                                 if (tile != null) {
                                     args = new HashMap();
                                     args.put("index", pID);
                                     args.put("tile", tile);
-                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, getRemotes()));
                                 }
                             }
                             break;
@@ -476,19 +546,19 @@ public class ClientHandler {
                                 args = new HashMap();
                                 args.put("index", pID);
                                 args.put("npc", npc);
-                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, getRemotes()));
                             } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("point", new GameUtils.Point(pX + 1, pY, pFloor));
-                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                args.put("point", new Point(pX + 1, pY, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, getRemotes()));
 
                                 tile = mData.Utils.getTile(pX + 1, pY, pFloor);
                                 if (tile != null) {
                                     args = new HashMap();
                                     args.put("index", pID);
                                     args.put("tile", tile);
-                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, getRemotes()));
                                 }
                             }
                             break;
@@ -498,19 +568,19 @@ public class ClientHandler {
                                 args = new HashMap();
                                 args.put("index", pID);
                                 args.put("npc", npc);
-                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                mData.Module.doHook("npc_act", args, new SocketUtils(mSession, getRemotes()));
                             } else {
                                 args = new HashMap();
                                 args.put("index", pID);
-                                args.put("point", new GameUtils.Point(pX, pY + 1, pFloor));
-                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                args.put("point", new Point(pX, pY + 1, pFloor));
+                                mData.Module.doHook("point_act", args, new SocketUtils(mSession, getRemotes()));
 
                                 tile = mData.Utils.getTile(pX, pY + 1, pFloor);
                                 if (tile != null) {
                                     args = new HashMap();
                                     args.put("index", pID);
                                     args.put("tile", tile);
-                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, this.getRemotes()));
+                                    mData.Module.doHook("tile_act", args, new SocketUtils(mSession, getRemotes()));
                                 }
                             }
                             break;
@@ -530,15 +600,19 @@ public class ClientHandler {
         if (message.length > 1) {
             args.put("body", message[1]);
         }
-        mData.Module.doHook("message", args, new SocketUtils(mSession, this.getRemotes()));
+        mData.Module.doHook("message", args, new SocketUtils(mSession, getRemotes()));
+        } catch (Exception e) {
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
     }
 
     @OnError
     public void onError(Throwable pTrowable) {
         //TODO:onError
     }
-
-    public Set<Session> getRemotes() {
+    
+    public static Set<Session> getRemotes() {
         Set<Session> remotes = new LinkedHashSet();
         for (ClientHandler con : mClients) {
             remotes.add(con.mSession);
@@ -566,7 +640,7 @@ public class ClientHandler {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put("index", charID);
         args.put("name", name);
-        mData.Module.doHook("create_char", args, new SocketUtils(mSession, this.getRemotes()));
+        mData.Module.doHook("create_char", args, new SocketUtils(mSession, getRemotes()));
 
         return charID;
     }
@@ -579,7 +653,7 @@ public class ClientHandler {
         return (Math.abs(pX - oX) <= pDist && Math.abs(pY - oY) <= pDist);
     }
 
-    private boolean checkAttr(int pX, int pY, short pFloor, DRow pChar) throws IOException {
+    private boolean checkAttr(int pX, int pY, short pFloor, Player pPlayer, DRow pChar) throws IOException {
         Tile tile = mData.Utils.getTile(pX, pY, pFloor);
         if (tile != null) {
             int attr1 = tile.getAttr1();
@@ -599,7 +673,7 @@ public class ClientHandler {
                 int nY = Integer.parseInt(aData[1]);
                 short nF = Short.parseShort(aData[2]);
 
-                mData.Utils.warpPlayer((Integer) pChar.get("id"), nX, nY, nF);
+                mData.Utils.warpPlayer((Integer) pPlayer.getID(), nX, nY, nF);
 
                 return false; //don't continue
             } else if (attr1 == 3 || attr2 == 3) {
@@ -618,8 +692,8 @@ public class ClientHandler {
                 charData.put("floor", nF);
                 pChar.putAll(charData);
                 
-                int pID = (Integer) pChar.get("id");
-                String pName = (String) pChar.get("name");
+                int pID = pPlayer.getID();
+                String pName = pPlayer.getName();
 
                 for (ClientHandler con : mClients) {
                     JSONObject newmsg = new JSONObject();
@@ -631,8 +705,8 @@ public class ClientHandler {
                     newmsg.put("x", pX);
                     newmsg.put("y", pY);
                     newmsg.put("f", nF);
-                    //con.mSession.getAsyncRemote().sendText("floor:" + newmsg.toString());
-                    con.mSession.getAsyncRemote().sendText("warp:" + newmsg.toString());
+                    //con.send("floor:" + newmsg.toString());
+                    con.send("warp:" + newmsg.toString());
                 }
 
                 return false; //don't continue
@@ -648,18 +722,18 @@ public class ClientHandler {
             return "?";
         }
     }
-
-    public void sendAllOther(String msg) {
-        //DRow pchar = mData.Data.get("characters").get((Integer) mSession.getUserProperties().get("char"));
-        for (ClientHandler con : mClients) {
-            if (con.mSession.getUserProperties().containsKey("loaded")) {
-                if (!con.equals(this)) {
-                    //DRow ochar = mData.Data.get("characters").get((Integer) con.mSession.getUserProperties().get("char"));
-                    //if (ochar.get("floor").equals(pchar.get("floor")) && charInRange(pchar, ochar, pD)) {
-                    con.mSession.getAsyncRemote().sendText(msg);
-                    //}
-                }
-            }
+    
+    public void send(String pMessage) {
+        try {
+            this.mSession.getBasicRemote().sendText(pMessage);
+        } catch (IOException e) {
+            mData.Log.log("Unable to send message: " + pMessage);
+        }
+    }
+    
+    public void sendOther(Set<Player> pPlayers, String pMessage) {
+        for (Player p : pPlayers) {
+            p.getClient().send(pMessage);
         }
     }
     

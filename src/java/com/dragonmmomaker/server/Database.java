@@ -36,7 +36,7 @@ public class Database {
         try {
             if (ServerListener.isEmbed) {
                 try {
-                    data = new DBase("org.hsqldb.jdbc.JDBCDriver", "jdbc:hsqldb:file:" + dataDir + "/data;sql.syntax_pgs=true;shutdown=true;", "accounts", "tiles");
+                    data = new DBase("org.hsqldb.jdbc.JDBCDriver", "jdbc:hsqldb:file:" + dataDir + "/data;sql.syntax_pgs=true;shutdown=true;get_column_name=false;", "accounts", "tiles");
                 } catch (final SQLException e) { e.printStackTrace();}
                 try {
                     data.getConnection().prepareStatement("CREATE TYPE BYTEA AS VARBINARY(1000000)").execute(); //support for bytea

@@ -58,7 +58,7 @@ public class ModuleManager {
         //String headers = "function parseInt(string, rad) { return Java.type('jdk.nashorn.internal.runtime.GlobalFunctions').parseInt(null, string, rad).intValue(); }\n";
         StringBuilder headers = new StringBuilder();
         headers.append("var Tile = com.dragonmmomaker.server.data.Tile;\n");
-        headers.append("var Point = com.dragonmmomaker.server.util.GameUtils.Point;\n");
+        headers.append("var Point = com.dragonmmomaker.server.util.Point;\n");
         
         try {
             mEngine.eval(headers.toString());

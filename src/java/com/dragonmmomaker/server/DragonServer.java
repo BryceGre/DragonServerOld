@@ -114,6 +114,8 @@ public class DragonServer {
             tiles = null; //don't keep tiles in memory
         }
         
+        mData.Tree.init();
+        
         mData.Log.log(003, "Loading Modules");
         //load the modules into memory
         try {

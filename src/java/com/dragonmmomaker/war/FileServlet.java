@@ -1,6 +1,7 @@
 package com.dragonmmomaker.war;
 
 import java.io.File;
+import java.util.jar.Manifest;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +46,7 @@ public class FileServlet extends DefaultServlet {
 
         @Override
         public WebResource getResource(String path) {
-            return new FileResource(this, path, new File(mDataDir + path), true);
+            return new FileResource(this, path, new File(mDataDir + path), true, null);
         }
     }
 }

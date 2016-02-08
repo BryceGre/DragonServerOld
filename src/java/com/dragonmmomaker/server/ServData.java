@@ -6,6 +6,8 @@ import java.util.Map;
 import com.dragonmmomaker.datamap.DBase;
 import com.dragonmmomaker.server.module.ModuleManager;
 import com.dragonmmomaker.server.npc.NpcManager;
+import com.dragonmmomaker.server.quadtree.Player;
+import com.dragonmmomaker.server.quadtree.QuadTree;
 import com.dragonmmomaker.server.util.GameUtils;
 import com.dragonmmomaker.server.util.LogCallback;
 
@@ -17,6 +19,7 @@ public class ServData {
     public final Database DB;
     public final DBase Data;
     public final Map<String, Map<String, String>> Config;
+    public final QuadTree<Player> Tree;
     public final GameUtils Utils;
     public final ModuleManager Module;
     public final NpcManager Npcs;
@@ -37,6 +40,7 @@ public class ServData {
         DB = new Database(Config.get("Database"));;
         Data = DB.setup();
         Utils = new GameUtils(this);
+        Tree = new QuadTree(this);
         Module = new ModuleManager(this);
         Npcs = new NpcManager(this);
         Time = new Date();

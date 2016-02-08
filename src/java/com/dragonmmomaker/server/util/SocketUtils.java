@@ -12,6 +12,7 @@ import javax.websocket.Session;
 
 import com.dragonmmomaker.server.handler.AdminHandler;
 import com.dragonmmomaker.server.handler.ClientHandler;
+import com.dragonmmomaker.server.quadtree.Player;
 
 /**
  *
@@ -66,12 +67,15 @@ public class SocketUtils {
     }
     
     public void sendRange(String pMessage) {
-        //TODO: range
-        this.sendAll(pMessage);
+        this.sendRangeOther(pMessage);
+        mSession.getAsyncRemote().sendText(pMessage);
     }
     
     public void sendRangeOther(String pMessage) {
+        Player player = (Player) mSession.getUserProperties().get("player");
         //TODO: range
-        this.sendAllOther(pMessage);
+        for (Player p : player.getPlayers()) {
+            p.getClient().send(pMessage);
+        }
     }
 }

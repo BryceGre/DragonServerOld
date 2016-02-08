@@ -1,8 +1,8 @@
 var Module = new Object();
-const ADD = 0;
-const AVG = 1;
-const MAX = 2;
-const MIN = 3;
+var ADD = 0;
+var AVG = 1;
+var MAX = 2;
+var MIN = 3;
 Module.lastMod = false;
 
 Module.addHook = function(hook, module) {

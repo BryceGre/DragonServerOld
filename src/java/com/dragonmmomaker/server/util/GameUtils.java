@@ -52,6 +52,48 @@ public class GameUtils {
             return null;
         }
     }
+    
+    public int[] getWorldWidth() {
+        String sql = "SELECT MIN(x) AS min, MAX(x) AS max FROM tiles";
+        try (ResultSet rs = mData.DB.Query(sql)) {
+            if (rs.next()) {
+                int[] out = new int[2];
+                out[0] = rs.getInt("min");
+                out[1] = rs.getInt("max");
+                if (out[0] == 0 && out[1] == 0) {
+                    out[0] = 1000000000;
+                    out[1] = 1000000000;
+                }
+                return out;
+            } else {
+                return new int[] { 1000000000, 1000000000 };
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new int[] { 1000000000, 1000000000 };
+        }
+    }
+    
+    public int[] getWorldHeight() {
+        String sql = "SELECT MIN(y) AS min, MAX(y) AS max FROM tiles";
+        try (ResultSet rs = mData.DB.Query(sql)) {
+            if (rs.next()) {
+                int[] out = new int[2];
+                out[0] = rs.getInt("min");
+                out[1] = rs.getInt("max");
+                if (out[0] == 0 && out[1] == 0) {
+                    out[0] = 1000000000;
+                    out[1] = 1000000000;
+                }
+                return out;
+            } else {
+                return new int[] { 1000000000, 1000000000 };
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new int[] { 1000000000, 1000000000 };
+        }
+    }
 
     public void setTile(int x, int y, int floor, Tile tile) {
         //do nothing, since tiles are not cached server side
@@ -182,45 +224,5 @@ public class GameUtils {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.setTime(mData.Time);
         return cal.get(Calendar.SECOND);
-    }
-    
-    public static class Point {
-        private int mX;
-        private int mY;
-        private short mFloor;
-        
-        public Point(int pX, int pY, short pFloor) {
-            this.mX = pX;
-            this.mY = pY;
-            this.mFloor = pFloor;
-        }
-        
-        public int getX() {
-            return this.mX;
-        }
-        
-        public void setX(int pX) {
-            this.mX = pX;
-        }
-        
-        public int getY() {
-            return this.mY;
-        }
-        
-        public void setY(int pY) {
-            this.mY = pY;
-        }
-        
-        public short getFloor() {
-            return this.mFloor;
-        }
-        
-        public void setFloor(short pFloor) {
-            this.mFloor = pFloor;
-        }
-        
-        public String getKey() {
-            return this.mX + "," + this.mY + "," + this.mFloor;
-        }
     }
 }

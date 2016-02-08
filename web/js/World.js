@@ -1,4 +1,4 @@
-const DEFAULT_TILE = "0000.......";
+var DEFAULT_TILE = "0000.......";
 
 _Game.world = new Object();
 var World = _Game.world;

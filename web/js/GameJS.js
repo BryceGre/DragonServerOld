@@ -667,7 +667,9 @@ _Game.onMessage = function(data) {
             break;
         case "enter":
             var n = JSON.parse(message[1]);
-            _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+            if (!_Game.world.players[n.id]) {
+                _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+            }
             break;
         case "leave":
             delete _Game.world.players[parseInt(message[1])];
@@ -676,6 +678,12 @@ _Game.onMessage = function(data) {
             var n = JSON.parse(message[1]);
             //load tiles
             _Game.updateWorld(n.tiles);
+            //load players
+            var players = n.players;
+            for (var i = 0; i < players.length; i++) {
+                var n = players[i];
+                _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+            }
             //load npcs
             for (var i = 0; i < n.npcs.length; i++) {
                 var npc = n.npcs[i].split(",");
