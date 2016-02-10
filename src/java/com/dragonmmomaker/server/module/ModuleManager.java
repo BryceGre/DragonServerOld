@@ -152,6 +152,12 @@ public class ModuleManager {
     //for use within server, on first hook call. Locks to prevent multithreading errors
     public void doHook(String pHook, Map<String, Object> pArgs, SocketUtils pUtils) {
         mData.Utils.setSocket(pUtils);
+        if (pArgs == null) pArgs = new HashMap<String, Object>();
+        if (!pArgs.containsKey("index")) {
+            int index = pUtils.getIndex();
+            if (index >= 0)
+                pArgs.put("index", index);
+        }
         doHook(pHook, pArgs, ADD);
     }
     
@@ -184,10 +190,18 @@ public class ModuleManager {
                     num++;
                 }
             }
+            if (pRet == AVG && num > 0) return (sum / num);
         }
-
-        if (pRet == AVG) return (sum / num);
+        
         return sum;
+    }
+    
+    public int getPref(String pPref) {
+        return getPref(pPref, lastMod.get());
+    }
+    
+    public int getPref(String pPref, String pModule) {
+        return Integer.parseInt(mData.Config.get("Module").get(pModule.toLowerCase() + "_" + pPref.toLowerCase()));
     }
     
     public void log(String pMessage) {

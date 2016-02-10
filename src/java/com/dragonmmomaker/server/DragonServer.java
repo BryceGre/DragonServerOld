@@ -121,6 +121,7 @@ public class DragonServer {
         try {
             mData.Module.loadModules();
         } catch (IOException | ScriptException e) {
+            mData.Log.log("Module Error: " + e.getLocalizedMessage());
             e.printStackTrace();
         }
         

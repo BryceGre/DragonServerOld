@@ -26,7 +26,6 @@
 package com.dragonmmomaker.server.quadtree;
 
 import com.dragonmmomaker.server.ServData;
-import java.util.Set;
 
 /**
  *
@@ -55,7 +54,7 @@ public class QuadTree<E> {
         mWidth = Math.max(xMinMax[1] - xMinMax[0], mSize * 4);
         mHeight = Math.max(yMinMax[1] - yMinMax[0], mSize * 4);
         
-        mData.Log.log("Width: " + mWidth + ", Height: " + mHeight);
+        mData.Log.log("Width: " + (xMinMax[1] - xMinMax[0]) + ", Height: " + (yMinMax[1] - yMinMax[0]));
         
         mZeroX = ((xMinMax[1] - xMinMax[0]) / 2) + xMinMax[0];
         mZeroY = ((yMinMax[1] - yMinMax[0]) / 2) + yMinMax[0];

@@ -56,6 +56,12 @@ Combat.server.onHook = function(hook, args) {
                 var msg = new Object();
                 msg.npc = args.npc.iid; //instanceID
                 msg.dam = damage;
+				//but we should send a progress update
+				if (args.npc.health <= 0) {
+					var newxp = npc.exp;
+					if (!newxp) newxp = 10;
+					Module.doHook("progress_gain", {index:args.index, exp:newxp});
+				}
                 Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
             }
         }

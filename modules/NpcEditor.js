@@ -209,7 +209,7 @@ NpcEditor.client.createUI = function() {
         actions[key] = Data.npc_actions[key].name;
     }
     UI.AddDiv(this.window, "action-label", "Action: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddCombobox(this.window, "action", {width: "48%"}, actions, function() {
+    UI.AddCombobox(this.window, "action", {width: "45%"}, actions, function() {
         NpcEditor.client.currAction = $("#npc-editor-action").val();
         NpcEditor.client.changed = true;
     }, false, {"style": 'display:block;margin:4px 0px;'});

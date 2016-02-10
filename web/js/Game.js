@@ -34,6 +34,7 @@ _Game.playMusic = function(id) {
         //no music object, create and play
         _Game.currMusic = new Audio("SFX/Music/"+id+".mp3");
         _Game.currMusic.loop = true;
+        _Game.currMusic.volume = 0.25;
         _Game.currMusic.play();
     } else if (_Game.nextMusic) {
         //music is fading out, set next music
@@ -57,7 +58,7 @@ _Game.stopMusic = function() {
 _Game.onFadeMusic = function() {
     if (_Game.nextMusic) {
         _Game.currMusic.setAttribute('src', _Game.nextMusic);
-        _Game.currMusic.volume = 1;
+        _Game.currMusic.volume = 0.25;
         _Game.currMusic.play();
         _Game.nextMusic = false;
     } else {

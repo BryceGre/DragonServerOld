@@ -116,7 +116,7 @@ public class AdminHandler {
             Account acc = new Account(mData, data.getString("user"));
             if (acc.getID() >= 0) { //if account exists
                 if (acc.checkPassword(data.getString("pass")) && acc.getAccess() >= ACCESS) {
-                    mSession.getUserProperties().put("player", acc.getID());
+                    mSession.getUserProperties().put("acc", acc.getID());
                     mSession.getAsyncRemote().sendText("login:1");
                     mData.Log.log(110,"(ADMIM): Log-in: " + "name");
                     return;
@@ -126,7 +126,7 @@ public class AdminHandler {
             mSession.getAsyncRemote().sendText("login:0");
             mData.Log.debug("Login failed");
         } else if (message[0].equals("load")) {
-            if (mSession.getUserProperties().containsKey("player")) {
+            if (mSession.getUserProperties().containsKey("acc")) {
                 int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = 1000000000;
                 int pY = 1000000000;
@@ -151,7 +151,7 @@ public class AdminHandler {
         } else if (message[0].equals("loaded")) {
             //pConnection.data("loaded", true);
         } else if (message[0].equals("warp")) {
-            if (mSession.getUserProperties().containsKey("player")) {
+            if (mSession.getUserProperties().containsKey("acc")) {
                 JSONObject data = new JSONObject(message[1]);
                 int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = data.getInt("x");
@@ -174,7 +174,7 @@ public class AdminHandler {
                 mSession.getAsyncRemote().sendText("more:" + newmsg.toString());
             }
         } else if (message[0].equals("move")) {
-            if (mSession.getUserProperties().containsKey("player")) {
+            if (mSession.getUserProperties().containsKey("acc")) {
                 JSONObject data = new JSONObject(message[1]);
                 int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
                 int pX = data.getInt("x");

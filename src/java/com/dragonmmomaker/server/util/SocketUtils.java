@@ -32,6 +32,16 @@ public class SocketUtils {
         mClients = pClients;
     }
     
+    public int getIndex() {
+        if (mSession != null) {
+            if (mSession.getUserProperties().containsKey("char"))
+                return (Integer) mSession.getUserProperties().get("char");
+            if (mSession.getUserProperties().containsKey("acc"))
+                return (Integer) mSession.getUserProperties().get("acc");
+        }
+        return -1;
+    }
+    
     public void send(String pMessage) {
         if (mSession != null) {
             mSession.getAsyncRemote().sendText(pMessage);
