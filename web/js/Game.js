@@ -7,6 +7,7 @@ _Game.currMusic = false;
 _Game.nextMusic = false;
 _Game.userX = 0;
 _Game.userY = 0;
+_Game.stats = new Object();
 
 _Game.loadGame = function() {
     $(document).keydown(_Game.keyDown);

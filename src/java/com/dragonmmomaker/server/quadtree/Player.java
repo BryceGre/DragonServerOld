@@ -20,6 +20,10 @@ public class Player {
     private ServData mData;
     private Leaf<Player> mLeaf;
     
+    private int mInLeaf;
+    private int mInArea;
+    private int mInRange;
+    
     public Player(int pID, short pFloor, String pName, int pSprite, ClientHandler pClient) {
         mID = pID;
         mFloor = pFloor;
@@ -27,6 +31,10 @@ public class Player {
         mClient = pClient;
         mName = pName;
         mSprite = pSprite;
+        
+        mInLeaf = 0;
+        mInArea = 0;
+        mInRange = 0;
     }
     
     public int getID() {
@@ -95,10 +103,19 @@ public class Player {
         LinkedBag<Player> bag = new LinkedBag();
         if (mLeaf == null) return bag;
         
+        mInLeaf = 0;
+        mInArea = 0;
+        mInRange = 0;
+        
         for (Player p : mLeaf.mData) {
-            if (!p.equals(this))
-                if (Math.abs(this.getX() - p.getX()) <= dist && Math.abs(this.getY() - p.getY()) <= dist && this.mFloor == p.mFloor)
+            mInLeaf++;
+            mInArea++;
+            if (!p.equals(this)) {
+                if (Math.abs(this.getX() - p.getX()) <= dist && Math.abs(this.getY() - p.getY()) <= dist && this.mFloor == p.mFloor) {
                     bag.add(p);
+                    mInRange++;
+                }
+            } else mInRange++;
         }
         
         System.out.println("mCurr Size: " + mLeaf.mData.size());
@@ -163,9 +180,13 @@ public class Player {
     }
     
     private void addAllWithCheck(Set<Player> bag, Set<Player> players, int dist) {
-        for (Player p : players)
-            if (Math.abs(this.getX() - p.getX()) <= dist && Math.abs(this.getY() - p.getY()) <= dist && this.mFloor == p.mFloor)
+        for (Player p : players) {
+            mInArea++;
+            if (Math.abs(this.getX() - p.getX()) <= dist && Math.abs(this.getY() - p.getY()) <= dist && this.mFloor == p.mFloor) {
                 bag.add(p);
+                mInRange++;
+            }
+        }
     }
     
     public void remove() {
@@ -191,5 +212,9 @@ public class Player {
     @Override
     public int hashCode() {
         return this.mID;
+    }
+    
+    public String getStats() {
+        return "In Leaf: " + mInLeaf + ", In Area: " + mInArea + ", In Range: " + mInRange;
     }
 }

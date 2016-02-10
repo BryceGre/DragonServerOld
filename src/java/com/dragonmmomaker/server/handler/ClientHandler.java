@@ -414,6 +414,11 @@ public class ClientHandler {
                     newmsg.put("x", player.getX());
                     newmsg.put("y", player.getY());
                     newmsg.put("f", pFloor);
+                    
+                    JSONObject stats = new JSONObject();
+                    stats.put("p", player.getStats());
+                    stats.put("t", mData.Tree.getStats());
+                    newmsg.put("stats", stats);
                     //and send any tiles and npcs that must be loaded in
                     this.send("snap:" + newmsg.toString());
                     
@@ -427,9 +432,6 @@ public class ClientHandler {
                     newmsg.put("f", pFloor);
                     newmsg.put("s", pSprite);
                     this.sendOther(player.getPlayers(), "move:" + newmsg.toString());
-                    for (Player p : player.getPlayers()) {
-                        System.out.println("sending move to: " + p.getID());
-                    }
                     
                     //send any tiles and npcs that must be loaded in
                     newmsg = new JSONObject();

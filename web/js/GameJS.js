@@ -379,6 +379,8 @@ _Game.drawDebug = function() {
     _Game.context.fillText("Player Floor: " + _Game.world.user.floor, 0, 40);
     var date = new Date(_Game.gameTime);
     _Game.context.fillText("Game Time: " + date.getUTCHours() + ":" + date.getUTCMinutes() + ":" + date.getUTCSeconds(), 0, 50);
+    _Game.context.fillText("Player Stats: " + _Game.stats.player, 0, 60);
+    _Game.context.fillText("Q-Tree Stats: " + _Game.stats.tree, 0, 70);
 }
 
 _Game.isBlocked = function(dir, x, y, floor) {
@@ -709,6 +711,9 @@ _Game.onMessage = function(data) {
             _Game.world.players[n.id].direction = n.dir;
             _Game.world.players[n.id].facing = n.dir;
             _Game.world.players[n.id].moved = 0;
+            
+            _Game.stats.player = n.stats.p;
+            _Game.stats.tree = n.stats.t;
             break;
         case "snap":
             var n = JSON.parse(message[1]);
@@ -719,6 +724,8 @@ _Game.onMessage = function(data) {
                 _Game.world.user.y = n.y
                 _Game.world.user.floor = n.f;
             }
+            _Game.stats.player = n.stats.p;
+            _Game.stats.tree = n.stats.t;
             break;
         case "face":
             var n = JSON.parse(message[1]);

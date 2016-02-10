@@ -41,6 +41,9 @@ public class QuadTree<E> {
     private int mLeaf;
     private ServData mData;
     
+    private int mNodes;
+    private int mLeaves;
+    
     public QuadTree(ServData pServData) {
         mData = pServData;
     }
@@ -63,6 +66,9 @@ public class QuadTree<E> {
         while ((mWidth / Pow(2, mLeaf+1)) >= mSize && (mHeight / Pow(2, mLeaf+1)) >= mSize) {
             mLeaf++;
         }
+        
+        mNodes = 1;
+        mLeaves = 0;
     }
     
     Leaf<Player> addPoint(int pX, int pY, E pObject) {
@@ -100,11 +106,13 @@ public class QuadTree<E> {
                 if (pLeaf.mW != null) pLeaf.mW.mE = null;
                 
                 pLeaf.mParent.mData[pLeaf.mLoc] = null;
+                mLeaves--;
                 
                 Node node = pLeaf.mParent;
                 while (node != null && node != mRoot) {
                     if (node.mData[Loc.NE] == null && node.mData[Loc.NW] == null && node.mData[Loc.SE] == null && node.mData[Loc.SW] == null) {
                         node.mParent.mData[node.mLoc] = null;
+                        mNodes--;
                     } else {
                         break;
                     }
@@ -177,6 +185,18 @@ public class QuadTree<E> {
         return this.mSize;
     }
     
+    public int getNodeCount() {
+        return mNodes;
+    }
+    
+    public int getLeafCount() {
+        return mLeaves;
+    }
+    
+    public String getStats() {
+        return "Nodes: " + mNodes + ", Leaves: " + mLeaves;
+    }
+    
     private Leaf<Player> traverseRoot(int pX, int pY, boolean pSoft) {
         short loc;
         Node node;
@@ -190,6 +210,7 @@ public class QuadTree<E> {
                 if (pSoft) return null;
                 node = new Node(mRoot, loc, 2);
                 mRoot.mData[loc] = node;
+                mNodes++;
             } else node = (Node) mRoot.mData[loc];
             newX = pX - node.getWidth();
             newY = pY - node.getHeight();
@@ -200,6 +221,7 @@ public class QuadTree<E> {
                 if (pSoft) return null;
                 node = new Node(mRoot, loc, 2);
                 mRoot.mData[loc] = node;
+                mNodes++;
             } else node = (Node) mRoot.mData[loc];
             newX = pX - node.getWidth();
             newY = pY + node.getHeight();
@@ -210,6 +232,7 @@ public class QuadTree<E> {
                 if (pSoft) return null;
                 node = new Node(mRoot, loc, 2);
                 mRoot.mData[loc] = node;
+                mNodes++;
             } else node = (Node) mRoot.mData[loc];
             newX = pX + node.getWidth();
             newY = pY - node.getHeight();
@@ -220,6 +243,7 @@ public class QuadTree<E> {
                 if (pSoft) return null;
                 node = new Node(mRoot, loc, 2);
                 mRoot.mData[loc] = node;
+                mNodes++;
             } else node = (Node) mRoot.mData[loc];
             newX = pX + node.getWidth();
             newY = pY + node.getHeight();
@@ -239,6 +263,7 @@ public class QuadTree<E> {
                 if (pNode.mData[loc] == null) {
                     if (pSoft) return null;
                     pNode.mData[loc] = new Leaf<Player>(pNode, loc);
+                    mLeaves++;
                 }
                 return (Leaf) pNode.mData[loc];
             } else {
@@ -246,6 +271,7 @@ public class QuadTree<E> {
                     if (pSoft) return null;
                     node = new Node(pNode, loc, pNode.mLevel+1);
                     pNode.mData[loc] = node;
+                    mNodes++;
                 } else node = (Node) pNode.mData[loc];
                 int newX = pX - node.getWidth();
                 int newY = pY - node.getHeight();
@@ -260,6 +286,7 @@ public class QuadTree<E> {
                 if (pNode.mData[loc] == null) {
                     if (pSoft) return null;
                     pNode.mData[loc] = new Leaf<Player>(pNode, loc);
+                    mLeaves++;
                 }
                 return (Leaf) pNode.mData[loc];
             } else {
@@ -267,6 +294,7 @@ public class QuadTree<E> {
                     if (pSoft) return null;
                     node = new Node(pNode, loc, pNode.mLevel+1);
                     pNode.mData[loc] = node;
+                    mNodes++;
                 } else node = (Node) pNode.mData[loc];
                 int newX = pX - node.getWidth();
                 int newY = pY + node.getHeight();
@@ -281,6 +309,7 @@ public class QuadTree<E> {
                 if (pNode.mData[loc] == null) {
                     if (pSoft) return null;
                     pNode.mData[loc] = new Leaf<Player>(pNode, loc);
+                    mLeaves++;
                 }
                 return (Leaf) pNode.mData[loc];
             } else {
@@ -288,6 +317,7 @@ public class QuadTree<E> {
                     if (pSoft) return null;
                     node = new Node(pNode, loc, pNode.mLevel+1);
                     pNode.mData[loc] = node;
+                    mNodes++;
                 } else node = (Node) pNode.mData[loc];
                 int newX = pX + node.getWidth();
                 int newY = pY - node.getHeight();
@@ -302,6 +332,7 @@ public class QuadTree<E> {
                 if (pNode.mData[loc] == null) {
                     if (pSoft) return null;
                     pNode.mData[loc] = new Leaf<Player>(pNode, loc);
+                    mLeaves++;
                 }
                 return (Leaf) pNode.mData[loc];
             } else {
@@ -309,6 +340,7 @@ public class QuadTree<E> {
                     if (pSoft) return null;
                     node = new Node(pNode, loc, pNode.mLevel+1);
                     pNode.mData[loc] = node;
+                    mNodes++;
                 } else node = (Node) pNode.mData[loc];
                 int newX = pX + node.getWidth();
                 int newY = pY + node.getHeight();
