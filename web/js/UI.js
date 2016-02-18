@@ -157,6 +157,21 @@ _UI.AddInput = function(window, name, value, func, tab, attr) {
     return newdiv;
 }
 
+_UI.AddArea = function(window, name, value, func, tab, attr) {
+    var id = window.attr("id");
+    attr = _UI.FixAttr(id + "-" + name, attr);
+    
+    if (tab) {
+        var newdiv = $('<textarea>', attr).appendTo("#" + id + "-tabs-" + tab);
+    } else {
+        var newdiv = $('<textarea>', attr).appendTo(window);
+    }
+    
+    $(newdiv).val(value);
+    $(newdiv).change(func);
+    return newdiv;
+}
+
 _UI.AddSlider = function(window, name, min, max, func, tab, attr) {
     var id = window.attr("id");
     attr = _UI.FixAttr(id + "-" + name, attr);
