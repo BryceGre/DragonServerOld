@@ -140,6 +140,7 @@ Combat.client = {
 		ctx2: null,
 		changed: false,
 		frame: 0,
+		count: 0,
 	},
     sct : new Array(), //scrolling combat text
 };
@@ -195,16 +196,20 @@ Combat.client.onHook = function(hook, args) {
         }
         Combat.client.sct = newSct;
 		if (isAdmin) {
-			Combat.client.editor.frame++;
-			if (Combat.client.editor.frame >= 12)
-				Combat.client.editor.frame = 0;
-            var sprite = Game.gfx.Spells[Combat.client.editor.currObject.anim];
-			if (sprite) {
-				Combat.client.editor.ctx.fillRect(0, 0, 96, 96);
-				var w = Math.floor(sprite.width / 12);
-				var h = Math.floor(sprite.height);
-				var x = Combat.client.editor.frame * w;
-				Combat.client.editor.ctx.drawImage(sprite, x, 0, w, h, 0, 0, w, h);
+			Combat.client.editor.count++;
+			if (Combat.client.editor.count >= 10) {
+				Combat.client.editor.frame++;
+				if (Combat.client.editor.frame >= 12)
+					Combat.client.editor.frame = 0;
+				var sprite = Game.gfx.Spells[Combat.client.editor.currObject.anim];
+				if (sprite) {
+					Combat.client.editor.ctx.fillRect(0, 0, 96, 96);
+					var w = Math.floor(sprite.width / 12);
+					var h = Math.floor(sprite.height);
+					var x = Combat.client.editor.frame * w;
+					Combat.client.editor.ctx.drawImage(sprite, x, 0, w, h, 0, 0, w, h);
+				}
+				Combat.client.editor.count = 0;
 			}
 		}
     } else if (hook == "post_draw") {
@@ -277,7 +282,7 @@ Combat.client.editor.createUI = function() {
                 Combat.client.editor.currAbility = $("#ability-editor-ability").val();
 				console.log(Combat.client.editor.currAbility);
                 Combat.client.editor.loadAbility();
-                Combat.client.changed = false;
+                Combat.client.editor.changed = false;
             } else {
                 $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
 				console.log(Combat.client.editor.currAbility + "," + Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
