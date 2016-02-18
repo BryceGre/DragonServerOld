@@ -14,20 +14,22 @@ _Game.loadGame = function() {
     $(document).keyup(_Game.keyUp);
     $(_Game.canvas).on("click", _Game.onClick);
     $(_Game.canvas).on("contextmenu", _Game.onMenu);
-
+    
+    //setInterval(_Game.gameLoop, 1000 / FRAME_RATE);
     window.requestAnimationFrame(_Game.gameLoop);
 
     _Game.socket.send("loaded");
 }
 
 _Game.gameLoop = function() {
+    window.requestAnimationFrame(_Game.gameLoop);
+    
     var nowTime = $.now();
     var elapsed = nowTime - _Game.lastTime;
     _Game.lastTime = $.now();
+    
     _Game.onUpdate(elapsed);
     _Game.onDraw(elapsed);
-    
-    window.requestAnimationFrame(_Game.gameLoop);
 }
 
 _Game.playMusic = function(id) {

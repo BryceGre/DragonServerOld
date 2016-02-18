@@ -6,6 +6,7 @@ _Game.lastTime = $.now();
 _Game.canvas;
 _Game.context;
 _Game.testcontext;
+_Game.layers = new Array(10);
 _Game.curKey = 0;
 // Debug Variables
 _Game.frameCount = 0;
@@ -59,6 +60,7 @@ _Game.loadWorld = function(string) {
     }
     
     _Game.updateWorld(entities.tiles);
+    _Game.reDraw();
     
     var playerTile = _Game.getTile(_Game.world.user.x, _Game.world.user.y, _Game.world.user.floor);
     if (playerTile && playerTile.music > 0) {
@@ -90,6 +92,7 @@ _Game.onUpdate = function(elapsed) {
                     _Game.world.user.facing = _Game.world.user.direction;
                     //move user
                     _Game.world.user.move();
+                    _Game.reDraw();
                     //send move information
                     _Game.socket.send("move:" + _Game.world.user.direction);
                 }
@@ -125,7 +128,6 @@ _Game.onUpdate = function(elapsed) {
 
 _Game.onDraw = function(elapsed) {
     var nowTime = $.now();
-    var hours = new Date(_Game.gameTime).getUTCHours();
     _Game.context.clearRect(0, 0, _Game.canvas.width, _Game.canvas.height);
 
     // to reduce math, do calculations now:
@@ -144,77 +146,36 @@ _Game.onDraw = function(elapsed) {
     }
     var middleX = (_Game.canvas.width / 2) + offsetX;
     var middleY = (_Game.canvas.height / 2) + offsetY;
-    var night = 0;
-    //day is between 6:00am and 6:00pm //TODO: configurable times
-    if (hours <= 6 || hours >= 18) {
-        night = TILE_SIZE;
-    }
+    var destx = middleX - (TILE_SIZE * DRAW_DISTANCE);
+    var desty = middleY - (TILE_SIZE * DRAW_DISTANCE);
     Module.doHook("pre_draw", {admin: false, elapsed: elapsed});
 
     // Draw objects under player
     for (var f = 0; f <= _Game.world.user.floor; f++) {
-        var destsize = TILE_SIZE - (2 * (_Game.world.user.floor - f));
-        for (var x = (_Game.world.user.x - DRAW_DISTANCE); x < (_Game.world.user.x + DRAW_DISTANCE); x++) {
-            var destx = ((x - _Game.world.user.x) * destsize) + middleX;
-            for (var y = (_Game.world.user.y - DRAW_DISTANCE); y < (_Game.world.user.y + DRAW_DISTANCE); y++) {
-                var desty = ((y - _Game.world.user.y) * destsize) + middleY;
-                var tile = _Game.getTile(x, y, f);
-                if (tile) {
-                    Module.doHook("pre_draw_mask", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    // draw ground
-                    if (tile.grs != 0 || tile.grx != 0 || tile.gry != 0) {
-                        _Game.context.drawImage(tile.gr, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                    }
-                    Module.doHook("draw_gr", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    // draw mask 1
-                    if (tile.m1s != 0 || tile.m1x != 0 || tile.m1y != 0) {
-                        _Game.context.drawImage(tile.m1, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                    }
-                    Module.doHook("draw_m1", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    // draw mask2
-                    if (tile.m2s != 0 || tile.m2x != 0 || tile.m2y != 0) {
-                        // check for door=
-                        if (!_Game.isHideDoor(x, y, f)) {
-                            // no one standing on door, leave shown
-                            _Game.context.drawImage(tile.m2, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                        }
-                    }
-                    Module.doHook("draw_m2", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    // draw mask anim.
-                    if (Math.floor(nowTime / 1000) % 2 == 0) {
-                        if (tile.mas != 0 || tile.max != 0 || tile.may != 0) {
-                            _Game.context.drawImage(tile.ma, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                        }
-                        Module.doHook("draw_ma", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    }
-                    Module.doHook("post_draw_mask", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    if (f < _Game.world.user.floor) {
-                        Module.doHook("pre_draw_fringe", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                        // draw fringe 1
-                        if (tile.f1s != 0 || tile.f1x != 0 || tile.f1y != 0) {
-                            _Game.context.drawImage(tile.f1, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                        }
-                        Module.doHook("draw_f1", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                        // draw fringe 2
-                        if (tile.f2s != 0 || tile.f2x != 0 || tile.f2y != 0) {
-                            // check for roof
-                            if (!_Game.isHideRoof(x, y, f)) {
-                                // no roof above user, keep all roof tiles shown
-                                _Game.context.drawImage(tile.f2, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                            }
-                        }
-                        Module.doHook("draw_f2", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                        // draw fringe anim
-                        if (Math.floor(nowTime / 1000) % 2 == 0) {
-                            if (tile.fas != 0 || tile.fax != 0 || tile.fay != 0) {
-                                _Game.context.drawImage(tile.fa, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, destsize, destsize);
-                            }
-                            Module.doHook("draw_fa", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                        }
-                        Module.doHook("post_draw_fringe", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                    }
-                }
+        var destsize = (TILE_SIZE - (2 * (_Game.world.user.floor - f))) * DRAW_DISTANCE * 2;
+        Module.doHook("pre_draw_mask", {admin: false, "floor": f});
+        // draw ground
+        _Game.context.drawImage(_Game.layers[f].gr, destx, desty, destsize, destsize);
+        // draw mask 1
+        _Game.context.drawImage(_Game.layers[f].m1, destx, desty, destsize, destsize);
+        // draw mask2
+        _Game.context.drawImage(_Game.layers[f].m2, destx, desty, destsize, destsize);
+        // draw mask anim.
+        if (Math.floor(nowTime / 1000) % 2 == 0) {
+            _Game.context.drawImage(_Game.layers[f].ma, destx, desty, destsize, destsize);
+        }
+        Module.doHook("post_draw_mask", {admin: false, "floor": f});
+        if (f < _Game.world.user.floor) {
+            Module.doHook("pre_draw_fringe", {admin: false, "floor": f});
+            // draw fringe 1
+            _Game.context.drawImage(_Game.layers[f].f1, destx, desty, destsize, destsize);
+            // draw fringe 2
+            _Game.context.drawImage(_Game.layers[f].f2, destx, desty, destsize, destsize);
+            // draw fringe anim
+            if (Math.floor(nowTime / 1000) % 2 == 0) {
+                _Game.context.drawImage(_Game.layers[f].fa, destx, desty, destsize, destsize);
             }
+            Module.doHook("post_draw_fringe", {admin: false, "floor": f});
         }
     }
     
@@ -323,38 +284,16 @@ _Game.onDraw = function(elapsed) {
 
     // draw objects above player
     var f = _Game.world.user.floor;
-    for (var x = (_Game.world.user.x - DRAW_DISTANCE); x < (_Game.world.user.x + DRAW_DISTANCE); x++) {
-        var destx = ((x - _Game.world.user.x) * TILE_SIZE) + middleX;
-        for (var y = (_Game.world.user.y - DRAW_DISTANCE); y < (_Game.world.user.y + DRAW_DISTANCE); y++) {
-            var desty = ((y - _Game.world.user.y) * TILE_SIZE) + middleY;
-            var tile = _Game.getTile(x, y, f);
-            if (tile) {
-                Module.doHook("pre_draw_fringe", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                // draw fringe 1
-                if (tile.f1s != 0 || tile.f1x != 0 || tile.f1y != 0) {
-                    _Game.context.drawImage(tile.f1, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
-                }
-                Module.doHook("draw_f1", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                // draw fringe 2
-                if (tile.f2s != 0 || tile.f2x != 0 || tile.f2y != 0) {
-                    // check for roof
-                    if (!_Game.isHideRoof(x, y, f)) {
-                        // no roof above user, keep all roof tiles shown
-                        _Game.context.drawImage(tile.f2, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
-                    }
-                }
-                Module.doHook("draw_f2", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                // draw fringe anim
-                if (tile.fas != 0 || tile.fax != 0 || tile.fay != 0) {
-                    if (Math.floor(nowTime / 1000) % 2 == 0) {
-                        _Game.context.drawImage(tile.fa, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
-                    }
-                    Module.doHook("draw_fa", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-                }
-                Module.doHook("post_draw_fringe", {admin: false, "x": x, "y": y, "floor": f, "tile": tile});
-            }
-        }
+    Module.doHook("pre_draw_fringe", {admin: false, "floor": f});
+    // draw fringe 1
+    _Game.context.drawImage(_Game.layers[f].f1, destx, desty);
+    // draw fringe 2
+    _Game.context.drawImage(_Game.layers[f].f2, destx, desty);
+    // draw fringe anim
+    if (Math.floor(nowTime / 1000) % 2 == 0) {
+        _Game.context.drawImage(_Game.layers[f].fa, destx, desty);
     }
+    Module.doHook("post_draw_fringe", {admin: false, "floor": f});
 
     Module.doHook("post_draw", {admin: false, elapsed: elapsed});
 
@@ -381,6 +320,132 @@ _Game.drawDebug = function() {
     _Game.context.fillText("Game Time: " + date.getUTCHours() + ":" + date.getUTCMinutes() + ":" + date.getUTCSeconds(), 0, 50);
     _Game.context.fillText("Player Stats: " + _Game.stats.player, 0, 60);
     _Game.context.fillText("Q-Tree Stats: " + _Game.stats.tree, 0, 70);
+}
+
+_Game.reDraw = function() {
+    var hours = new Date(_Game.gameTime).getUTCHours();
+    var night = 0;
+    //day is between 6:00am and 6:00pm //TODO: configurable times
+    if (hours <= 6 || hours >= 18) {
+        night = TILE_SIZE;
+    }
+    
+    var size = TILE_SIZE * (DRAW_DISTANCE * 2);
+    
+    for (var f = 0; f <= _Game.world.user.floor; f++) {
+        if (!_Game.layers[f]) {
+            _Game.layers[f] = new Object();
+            //ground
+            _Game.layers[f].gr = document.createElement("canvas");
+            _Game.layers[f].gr.width = size;
+            _Game.layers[f].gr.height = size;
+            //mask1
+            _Game.layers[f].m1 = document.createElement("canvas");
+            _Game.layers[f].m1.width = size;
+            _Game.layers[f].m1.height = size;
+            //mask2
+            _Game.layers[f].m2 = document.createElement("canvas");
+            _Game.layers[f].m2.width = size;
+            _Game.layers[f].m2.height = size;
+            //mask anim.
+            _Game.layers[f].ma = document.createElement("canvas");
+            _Game.layers[f].ma.width = size;
+            _Game.layers[f].ma.height = size;
+            //fringe1
+            _Game.layers[f].f1 = document.createElement("canvas");
+            _Game.layers[f].f1.width = size;
+            _Game.layers[f].f1.height = size;
+            //fringe2
+            _Game.layers[f].f2 = document.createElement("canvas");
+            _Game.layers[f].f2.width = size;
+            _Game.layers[f].f2.height = size;
+            //fringe anim.
+            _Game.layers[f].fa = document.createElement("canvas");
+            _Game.layers[f].fa.width = size;
+            _Game.layers[f].fa.height = size;
+        }
+        _Game.layers[f].gr.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].m1.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].m2.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].ma.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].f1.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].f2.getContext("2d").clearRect(0, 0, size, size);
+        _Game.layers[f].fa.getContext("2d").clearRect(0, 0, size, size);
+        for (var x = (_Game.world.user.x - DRAW_DISTANCE); x < (_Game.world.user.x + DRAW_DISTANCE); x++) {
+            var destx = ((x - _Game.world.user.x) + DRAW_DISTANCE) * TILE_SIZE;
+            for (var y = (_Game.world.user.y - DRAW_DISTANCE); y < (_Game.world.user.y + DRAW_DISTANCE); y++) {
+                var desty = ((y - _Game.world.user.y) + DRAW_DISTANCE) * TILE_SIZE;
+                var tile = _Game.getTile(x, y, f);
+                if (tile) {
+                    // draw ground
+                    if (tile.grs != 0 || tile.grx != 0 || tile.gry != 0) {
+                        _Game.layers[f].gr.getContext("2d").drawImage(tile.gr, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                    // draw mask 1
+                    if (tile.m1s != 0 || tile.m1x != 0 || tile.m1y != 0) {
+                        _Game.layers[f].m1.getContext("2d").drawImage(tile.m1, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                    // draw mask2
+                    if (tile.m2s != 0 || tile.m2x != 0 || tile.m2y != 0) {
+                        // check for door=
+                        if (!_Game.isHideDoor(x, y, f)) {
+                            // no one standing on door, leave shown
+                            _Game.layers[f].m2.getContext("2d").drawImage(tile.m2, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                        }
+                    }
+                    // draw mask anim.
+                    if (tile.mas != 0 || tile.max != 0 || tile.may != 0) {
+                        _Game.layers[f].ma.getContext("2d").drawImage(tile.ma, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                    // draw fringe 1
+                    if (tile.f1s != 0 || tile.f1x != 0 || tile.f1y != 0) {
+                        _Game.layers[f].f1.getContext("2d").drawImage(tile.f1, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                    // draw fringe 2
+                    if (tile.f2s != 0 || tile.f2x != 0 || tile.f2y != 0) {
+                        // check for roof
+                        if (!_Game.isHideRoof(x, y, f)) {
+                            // no roof above user, keep all roof tiles shown
+                            _Game.layers[f].f2.getContext("2d").drawImage(tile.f2, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                        }
+                    }
+                    // draw fringe anim
+                    if (tile.fas != 0 || tile.fax != 0 || tile.fay != 0) {
+                        _Game.layers[f].fa.getContext("2d").context.drawImage(tile.fa, night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+    }
+    
+}
+
+_Game.redrawLayer = function(f, layer) {
+    var hours = new Date(_Game.gameTime).getUTCHours();
+    var night = 0;
+    //day is between 6:00am and 6:00pm //TODO: configurable times
+    if (hours <= 6 || hours >= 18) {
+        night = TILE_SIZE;
+    }
+    
+    _Game.layers[f][layer].getContext("2d").clearRect(0, 0, _Game.canvas.width, _Game.canvas.height);
+    
+    for (var x = (_Game.world.user.x - DRAW_DISTANCE); x < (_Game.world.user.x + DRAW_DISTANCE); x++) {
+        var destx = ((x - _Game.world.user.x) + DRAW_DISTANCE) * TILE_SIZE;
+        for (var y = (_Game.world.user.y - DRAW_DISTANCE); y < (_Game.world.user.y + DRAW_DISTANCE); y++) {
+            var desty = ((y - _Game.world.user.y) + DRAW_DISTANCE) * TILE_SIZE;
+            var tile = _Game.getTile(x, y, f);
+            if (tile) {
+                if (tile[layer+"s"] != 0 || tile[layer+"x"] != 0 || tile[layer+"y"] != 0) {
+                    // check for roof
+                    if (!(layer == "f2" && _Game.isHideRoof(x, y, f)) && !(layer == "m2" && _Game.isHideDoor(x, y, f))) {
+                        // no roof above user, keep all roof tiles shown
+                        _Game.layers[f][layer].getContext("2d").drawImage(tile[layer], night, 0, TILE_SIZE, TILE_SIZE, destx, desty, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+    }
 }
 
 _Game.isBlocked = function(dir, x, y, floor) {
@@ -548,6 +613,7 @@ _Game.keyDown = function(e) {
                     _Game.world.user.facing = key;
                     //move user
                     _Game.world.user.move();
+                    _Game.reDraw();
                     //send move information
                     _Game.socket.send("move:" + _Game.world.user.direction);
                 } else {
@@ -723,6 +789,7 @@ _Game.onMessage = function(data) {
                 _Game.world.user.x = n.x;
                 _Game.world.user.y = n.y
                 _Game.world.user.floor = n.f;
+                _Game.reDraw();
             }
             _Game.stats.player = n.stats.p;
             _Game.stats.tree = n.stats.t;
