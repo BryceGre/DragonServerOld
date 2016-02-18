@@ -26,10 +26,10 @@ Combat.Effect = function() {
 	this.dur = 0; //effect duration
 	this.hps = 0; //health per second
 	this.mps = 0; //mana per second
-	this.dDone = 100; //damage done mod (%)
-	this.dTaken = 100; //damage taken mod (%)
-	this.mHP = 0; //max health mod
-	this.mMP = 0; //max mana mod
+	this.dd = 100; //damage done mod (%)
+	this.dt = 100; //damage taken mod (%)
+	this.mhp = 0; //max health mod
+	this.mmp = 0; //max mana mod
 	this.stun = false; //stun, true or false
 	this.script = ""; //custom scripts / sec
 };
@@ -41,14 +41,14 @@ Combat.Ability = function() {
 	this.cool = 0; //cooldown
 	this.range = 1; //range
 	this.tool = ""; //tooltip
-	this.pHP = 0; //player HP mod
-	this.pMP = 0; //player MP mod
-	this.tHP = 0; //target HP mod
-	this.tMP = 0; //target MP mod
+	this.php = 0; //player HP mod
+	this.pmp = 0; //player MP mod
+	this.thp = 0; //target HP mod
+	this.tmp = 0; //target MP mod
 	this.script = ""; //custom script
 	
-	this.pEffect = new Combat.Effect(); //player effect
-	this.tEffect = new Combat.Effect(); //target effect
+	this.p = new Combat.Effect(); //player effect
+	this.t = new Combat.Effect(); //target effect
 };
 
 /***********************************************/
@@ -134,7 +134,7 @@ Combat.client = {
 		window: null,
 		window2: null,
 		currAbility: 1,
-		currObject: new Object(),
+		currObject: new Combat.Ability(),
 		abilityNames: new Object(),
 		ctx: null,
 		ctx2: null,
@@ -177,9 +177,8 @@ Combat.client.onHook = function(hook, args) {
         }
 		if (args.admin === true && args.head === "loadability") {
 			var ability = JSON.parse(args.body);
-			console.log(ability);
 			$.extend(true, Combat.client.editor.currObject, ability);
-			console.log(Combat.client.editor.currObject);
+			Combat.client.editor.abilityNames[Combat.client.editor.currAbility] = ability.name;
             Combat.client.editor.updateFields();
         } else if (args.admin === true && args.head === "abilitynames") {
             $.extend(Combat.client.editor.abilityNames, JSON.parse(args.body));
@@ -228,15 +227,38 @@ Combat.client.editor.loadNames = function() {
 }
 
 Combat.client.editor.updateFields = function() {
-	var object = Combat.client.editor.currObject;
-    $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
-    $("#ability-editor-name").val(object.name);
-    $("#ability-editor-animation").val(object.anim);
+    $("#ability-editor-ability").val(this.currAbility, this.abilityNames[this.currAbility]);
+	console.log(this.currAbility + "," + this.abilityNames[this.currAbility]);
+    $("#ability-editor-name").val(this.currObject.name);
+    $("#ability-editor-animation").val(this.currObject.anim);
     Combat.client.editor.ctx.fillRect(0, 0, 96, 96);
-    var sprite = Game.gfx.Spells[object.anim];
+    var sprite = Game.gfx.Spells[this.currObject.anim];
     var w = Math.floor(sprite.width / 12);
     var h = Math.floor(sprite.height);
     Combat.client.editor.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
+	$("#ability-editor-icon").val(this.currObject.icon);
+    Combat.client.editor.ctx2.fillRect(0, 0, 32, 32);
+    sprite = Game.gfx.Icons[this.currObject.icon];
+    Combat.client.editor.ctx2.drawImage(sprite, 0, 0, 32, 32, 0, 0, 32, 32);
+	$("#ability-editor-tooltip").val(this.currObject.tool);
+	$("#ability-editor-effects-cooldown").val(this.currObject.cool);
+	$("#ability-editor-effects-range").val(this.currObject.range);
+	$("#ability-editor-effects-php").val(this.currObject.php);
+	$("#ability-editor-effects-pmp").val(this.currObject.pmp);
+	$("#ability-editor-effects-thp").val(this.currObject.thp);
+	$("#ability-editor-effects-tmp").val(this.currObject.tmp);
+	$("#ability-editor-effects-p-duration").val(this.currObject.p.dur);
+	$("#ability-editor-effects-p-hps").val(this.currObject.p.hps);
+	$("#ability-editor-effects-p-mps").val(this.currObject.p.mps);
+	$("#ability-editor-effects-p-dd").val(this.currObject.p.dd);
+	$("#ability-editor-effects-p-dt").val(this.currObject.p.dt);
+	$("#ability-editor-effects-p-stun").prop("checked", this.currObject.p.stun);
+	$("#ability-editor-effects-t-duration").val(this.currObject.t.dur);
+	$("#ability-editor-effects-t-hps").val(this.currObject.t.hps);
+	$("#ability-editor-effects-t-mps").val(this.currObject.t.mps);
+	$("#ability-editor-effects-t-dd").val(this.currObject.t.dd);
+	$("#ability-editor-effects-t-dt").val(this.currObject.t.dt);
+	$("#ability-editor-effects-t-stun").prop("checked", this.currObject.t.stun);
 }
 
 Combat.client.editor.createUI = function() {
@@ -246,19 +268,23 @@ Combat.client.editor.createUI = function() {
     UI.AddSpinner(this.window, "ability", {min: 1, stop: function() {
             var value = $("#ability-editor-ability").val();
             $("#ability-editor-ability").val(value, Combat.client.editor.abilityNames[value]);
+			console.log(value + "," + Combat.client.editor.abilityNames[value]);
         }
     }, false, {"style": 'display:inline-block;float:left;margin:4px auto;'});
     UI.AddButton(this.window, "ability-edit", "Edit", function() {
         if (Combat.client.editor.changed) {
             if (confirm("Any unsaved changes to the current Ability will be lost!")) {
                 Combat.client.editor.currAbility = $("#ability-editor-ability").val();
+				console.log(Combat.client.editor.currAbility);
                 Combat.client.editor.loadAbility();
                 Combat.client.changed = false;
             } else {
                 $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
+				console.log(Combat.client.editor.currAbility + "," + Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
             }
         } else {
             Combat.client.editor.currAbility = $("#ability-editor-ability").val();
+			console.log(Combat.client.editor.currAbility);
             Combat.client.editor.loadAbility();
         }
     }, false, {"style": 'display:inline-block;float:right;margin:0px auto;'});
@@ -318,6 +344,7 @@ Combat.client.editor.createUI = function() {
     /***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
      * ***** Tab 1: Ability ******
      **************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+	
 	UI.AddDiv(this.window2, "label", "<i>Ability effects when cast:</i>", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
 	
 	UI.AddDiv(this.window2, "cooldown-label", "Cooldown: (seconds)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
@@ -336,33 +363,139 @@ Combat.client.editor.createUI = function() {
 	
 	UI.AddDiv(this.window2, "label2", "<i>(use negative to decrease)</i>", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
 	
-	UI.AddDiv(this.window2, "pHP-label", "Player HP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddSpinner(this.window2, "pHP", {min: 0, max: 999999999, spin: function(event, ui) {
-            Combat.client.editor.currObject.pHP = ui.value;
+	UI.AddDiv(this.window2, "php-label", "Player HP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "php", {min: -99999999, max: 99999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.php = ui.value;
             Combat.client.editor.changed = true;
         }
     }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
 	
-	UI.AddDiv(this.window2, "pMP-label", "Player MP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddSpinner(this.window2, "pMP", {min: 0, max: 999999999, spin: function(event, ui) {
-            Combat.client.editor.currObject.pMP = ui.value;
+	UI.AddDiv(this.window2, "pmp-label", "Player MP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "pmp", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.pmp = ui.value;
             Combat.client.editor.changed = true;
         }
     }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
 	
-	UI.AddDiv(this.window2, "tHP-label", "Target HP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddSpinner(this.window2, "tHP", {min: 0, max: 999999999, spin: function(event, ui) {
-            Combat.client.editor.currObject.tHP = ui.value;
+	UI.AddDiv(this.window2, "thp-label", "Target HP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "thp", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.thp = ui.value;
             Combat.client.editor.changed = true;
         }
     }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
 	
-	UI.AddDiv(this.window2, "tMP-label", "Target MP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
-    UI.AddSpinner(this.window2, "tMP", {min: 0, max: 999999999, spin: function(event, ui) {
-            Combat.client.editor.currObject.tMP = ui.value;
+	UI.AddDiv(this.window2, "tmp-label", "Target MP Mod: (on cast)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "tmp", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.tmp = ui.value;
             Combat.client.editor.changed = true;
         }
     }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+    /***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+     * ***** Tab 2: Player ******
+     **************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+	 
+	UI.AddDiv(this.window2, "p-label", "<i>Player effect over time:</i>", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+	
+	UI.AddDiv(this.window2, "p-duration-label", "Duration: (seconds)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "p-duration", {min: 0, max: 86400, spin: function(event, ui) {
+            Combat.client.editor.currObject.p.dur = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "p-hps-label", "HP Mod: (per sec)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "p-hps", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.p.hps = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "p-mps-label", "MP Mod: (per sec)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "p-mps", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.p.mps = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "p-dd-label", "Damage Done: (%)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "p-dd", {min: 0, max: 1000, spin: function(event, ui) {
+            Combat.client.editor.currObject.p.dd = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "p-dt-label", "Damage Taken: (%)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "p-dt", {min: 0, max: 1000, spin: function(event, ui) {
+            Combat.client.editor.currObject.p.dt = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "p-stun-label", "Stun: (on or off)", 2, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddCheckbox(this.window2, "p-stun", "Stun", false, function(event, ui) {
+		if ($("#ability-editor-effects-p-stun-check").prop('checked')) {
+			Combat.client.editor.currObject.p.stun = true;
+		} else {
+			Combat.client.editor.currObject.p.stun = false;
+		}
+		Combat.client.editor.changed = true;
+    }, 2, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+    /***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+     * ***** Tab 3: Target ******
+     **************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+	
+	UI.AddDiv(this.window2, "t-label", "<i>Target effect over time:</i>", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+	
+	UI.AddDiv(this.window2, "t-duration-label", "Duration: (seconds)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "t-duration", {min: 0, max: 86400, spin: function(event, ui) {
+            Combat.client.editor.currObject.t.dur = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "t-hps-label", "HP Mod: (per sec)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "t-hps", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.t.hps = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "t-mps-label", "MP Mod: (per sec)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "t-mps", {min: -999999999, max: 999999999, spin: function(event, ui) {
+            Combat.client.editor.currObject.t.mps = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "t-dd-label", "Damage Done: (%)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "t-dd", {min: 0, max: 1000, spin: function(event, ui) {
+            Combat.client.editor.currObject.t.dd = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "t-dt-label", "Damage Taken: (%)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(this.window2, "t-dt", {min: 0, max: 1000, spin: function(event, ui) {
+            Combat.client.editor.currObject.t.dt = ui.value;
+            Combat.client.editor.changed = true;
+        }
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	UI.AddDiv(this.window2, "t-stun-label", "Stun: (on or off)", 3, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddCheckbox(this.window2, "t-stun", "Stun", false, function(event, ui) {
+		if ($("#ability-editor-effects-t-stun-check").prop('checked')) {
+			Combat.client.editor.currObject.t.stun = true;
+		} else {
+			Combat.client.editor.currObject.t.stun = false;
+		}
+		Combat.client.editor.changed = true;
+    }, 3, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+    /***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+     * ***** End Tabs ******
+     **************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 	
     UI.AddButton(this.window, "save", "Save", function(e) {
         e.preventDefault();
@@ -370,6 +503,7 @@ Combat.client.editor.createUI = function() {
         //update ability name
         Combat.client.editor.abilityNames[Combat.client.editor.currAbility] = Combat.client.editor.currObject.name;
         $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.currObject.name);
+		console.log(Combat.client.editor.currAbility + ", " + Combat.client.editor.currObject.name);
     }, false, {'style': 'display:block;float:right;'});
 
     Game.menus["Ability Editor"] = function() {

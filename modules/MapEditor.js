@@ -416,7 +416,7 @@ MapEditor.client.createUI = function() {
     });
 
     UI.AddCheckbox(this.window, "autotile", "AutoTile", false, function(e) {
-        if ($("#map-editor-autotile-check").is(':checked')) {
+        if ($("#map-editor-autotile-check").prop('checked')) {
             MapEditor.client.currAuto = true;
             MapEditor.client.currMultiX = 3;
             MapEditor.client.currMultiY = 4;

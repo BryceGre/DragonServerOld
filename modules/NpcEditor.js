@@ -125,6 +125,7 @@ NpcEditor.client.onHook = function(hook, args) {
             this.currSprite = data.sprite;
             this.currAction = data.action;
             this.currBehavior = data.behavior
+			this.npcNames[this.currNpc] = this.currName;
             this.updateFields();
         } else if (args.admin === true && args.head === "npcnames") {
             $.extend(this.npcNames, JSON.parse(args.body));
@@ -182,7 +183,7 @@ NpcEditor.client.createUI = function() {
 
     UI.AddRaw(this.window, "<div style='display:block;'><hr></div>");
 
-    UI.AddRaw(this.window, "<canvas id='npc-editor-preview' width='96px' height='96px' style='display:inline-block;float:right;width:48%;'></canvas>");
+    UI.AddRaw(this.window, "<canvas id='npc-editor-preview' width='96px' height='96px' style='display:inline-block;float:right;width:45%;'></canvas>");
     this.ctx = $("#npc-editor-preview")[0].getContext("2d");
     this.ctx.fillRect(0, 0, 128, 128);
 
@@ -190,7 +191,7 @@ NpcEditor.client.createUI = function() {
     UI.AddInput(this.window, "name", "", function() {
         NpcEditor.client.currName = $("#npc-editor-name").val();
         NpcEditor.client.changed = true;
-    }, false, {"style": 'display:block;width:48%;margin:4px 0px;'});
+    }, false, {"style": 'display:block;width:45%;margin:4px 0px;'});
 
     UI.AddDiv(this.window, "sprite-label", "Sprite: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
     UI.AddSpinner(this.window, "sprite", {min: 1, max: GFX.Sprites, spin: function(event, ui) {
@@ -202,7 +203,7 @@ NpcEditor.client.createUI = function() {
             var h = Math.floor(sprite.height / 4);
             NpcEditor.client.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
         }
-    }, false, {"style": 'display:block;width:45%;margin:4px 0px;'});
+    }, false, {"style": 'display:block;width:40%;margin:4px 0px;'});
 
     var actions = new Object();
     for (key in Data.npc_actions) {

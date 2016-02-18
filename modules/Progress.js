@@ -167,7 +167,6 @@ Progress.client.onHook = function(hook, args) {
 				console.log("Progress: Exp: "+ this.exp);
 				
 				$.extend(true, this.stats, msg.progress.stats);
-				console.log("Progress: Stats: " + JSON.stringify(this.stats));
 				$.extend(true, this.reset, this.stats);
 				console.log("Progress: Stats: " + JSON.stringify(this.stats));
 				$("#stats-damage").text(Progress.prefs.stat_damage + ": " + this.stats.damage);
