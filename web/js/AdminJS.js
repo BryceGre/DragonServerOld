@@ -129,7 +129,7 @@ _Game.onDraw = function(elapsed) {
                             if (attr) {
                                 _Game.context.save();
                                 _Game.context.fillStyle = attr.color;
-                                _Game.context.fillText(attr.display, destx + (TILE_SIZE / 2) + 4, desty + (TILE_SIZE / 2) + 12);
+                                _Game.context.fillText(attr.display, destx + HALF_SIZE + 4, desty + HALF_SIZE + 12);
                                 _Game.context.restore();
                             }
                         }

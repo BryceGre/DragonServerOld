@@ -1,3 +1,5 @@
+//Global Variables
+var HALF_SIZE = (TILE_SIZE / 2);
 //Global Variable Buckets
 var _Game = new Object();
 var Game = _Game;
