@@ -51,6 +51,7 @@ _Game.loadWorld = function(string) {
     for (var i = 0; i < players.length; i++) {
         var n = players[i];
         _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+        _Game.reDrawDoor(_Game.world.players[n.id]);
     }
     
     var npcs = entities.npcs;
@@ -453,6 +454,77 @@ _Game.reDraw = function() {
     }
 }
 
+_Game.reDrawDoor = function(a, b, c) {
+    var destx, desty;
+    var minx, maxx, miny, maxy;
+    var f;
+    var tile;
+    
+    if (b === undefined || c === undefined) {
+        f = a.lastPoint.floor;
+        tile = _Game.getTile(a.x, a.y, a.floor);
+        if (tile.attr1 == 5 || tile.attr2 == 5) {
+            if (a.lastDoor == true)
+                return;
+            a.lastDoor = true;
+            minx = (a.x - 1)
+            maxx = (a.x + 1);
+            miny = (a.y - 1);
+            maxy = (a.y + 1);
+        } else {
+            if (a.lastDoor == false)
+                return;
+            a.lastDoor = false;
+            minx = (a.lastPoint.x - 1)
+            maxx = (a.lastPoint.x + 1);
+            miny = (a.lastPoint.y - 1);
+            maxy = (a.lastPoint.y + 1);
+        }
+    } else {
+        minx = (a - 1)
+        maxx = (a + 1);
+        miny = (b - 1);
+        maxy = (b + 1);
+        f = c;
+        tile = _Game.getTile(a, b, c);
+    }
+    if (_Game.world.user.floor != f)
+        return;
+    if (_Game.world.tiles[f]) {
+        
+        console.log("reDrawDoor");
+
+        var ctx_m1 = _Game.layers.m1.getContext("2d");
+        desty = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
+        destx = (DRAW_DISTANCE + (minx - _Game.world.user.x)) * TILE_SIZE;
+        
+        ctx_m1.clearRect(destx, desty, TILE_SIZE*3, TILE_SIZE*3);
+        
+        for (var x = minx; x <= maxx; x++) {
+            if (_Game.world.tiles[f][x]) {
+                desty = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
+                for (var y = miny; y <= maxy; y++) {
+                    var tile = _Game.world.tiles[f][x][y];
+                    if (tile) {
+                        // draw mask2 + mask1 + ground
+                        if (tile.m2e && !_Game.isHideDoor(x, y, f)) {
+                            ctx_m1.drawImage(tile.m2, destx, desty);
+                        // draw mask1 + ground
+                        } else if (tile.m1e) {
+                            ctx_m1.drawImage(tile.m1, destx, desty);
+                        //draw ground
+                        } else if (tile.gre) {
+                            ctx_m1.drawImage(tile.gr, destx, desty);
+                        }
+                    }
+                    desty += TILE_SIZE;
+                }
+            }
+            destx += TILE_SIZE;
+        }
+    }
+}
+
 _Game.isBlocked = function(dir, x, y, floor) {
     var tile;
     if (dir == 37) { // left
@@ -743,10 +815,16 @@ _Game.onMessage = function(data) {
             var n = JSON.parse(message[1]);
             if (!_Game.world.players[n.id]) {
                 _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             }
             break;
         case "leave":
-            delete _Game.world.players[parseInt(message[1])];
+            var n = parseInt(message[1]);
+            var x = _Game.world.players[n].x;
+            var y = _Game.world.players[n].y;
+            var f = _Game.world.players[n].floor;
+            delete _Game.world.players[n];
+            _Game.reDrawDoor(x, y, f);
             break;
         case "more":
             var n = JSON.parse(message[1]);
@@ -759,6 +837,7 @@ _Game.onMessage = function(data) {
             for (var i = 0; i < players.length; i++) {
                 var n = players[i];
                 _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             }
             //load npcs
             for (var i = 0; i < n.npcs.length; i++) {
@@ -776,11 +855,13 @@ _Game.onMessage = function(data) {
             var n = JSON.parse(message[1]);
             if (!_Game.world.players[n.id]) {
                 _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             } else {
                 _Game.world.players[n.id].resetLastPoint();
                 _Game.world.players[n.id].x = n.x;
                 _Game.world.players[n.id].y = n.y;
                 _Game.world.players[n.id].floor = n.f;
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             }
             _Game.world.players[n.id].direction = n.dir;
             _Game.world.players[n.id].facing = n.dir;
@@ -813,9 +894,12 @@ _Game.onMessage = function(data) {
                 _Game.world.players[n.id].x = n.x;
                 _Game.world.players[n.id].y = n.y;
                 _Game.world.players[n.id].floor = n.f;
-                _Game.world.players[n.id].floor = n.f;
                 _Game.world.players[n.id].moved = 0;
                 _Game.world.players[n.id].direction = 0;
+                _Game.reDrawDoor(_Game.world.players[n.id]);
+                _Game.world.players[n.id].resetLastPoint();
+                _Game.world.players[n.id].lastDoor = false;
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             } else {
                 _Game.world.user.x = n.x;
                 _Game.world.user.y = n.y;
@@ -824,6 +908,7 @@ _Game.onMessage = function(data) {
                 _Game.world.user.direction = 0;
                 //load tiles
                 _Game.updateWorld(n.tiles);
+                _Game.reDraw();
                 //load npcs
                 for (var i = 0; i < n.npcs.length; i++) {
                     var npc = n.npcs[i].split(",");
@@ -843,6 +928,10 @@ _Game.onMessage = function(data) {
                 _Game.world.players[n.id].floor = n.f;
                 _Game.world.players[n.id].moved = 0;
                 _Game.world.players[n.id].direction = 0;
+                _Game.reDrawDoor(_Game.world.players[n.id]);
+                _Game.world.players[n.id].resetLastPoint();
+                _Game.world.players[n.id].lastDoor = false;
+                _Game.reDrawDoor(_Game.world.players[n.id]);
             } else {
                 _Game.world.user.floor = n.f;
                 _Game.world.user.moved = 0;

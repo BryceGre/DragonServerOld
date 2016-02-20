@@ -218,11 +218,11 @@ Tile.key = function(x, y, floor) {
 
 Tile.drawTile = function(tile, chain) {
     if (tile) {
-        if (tile.lis != 0 || tile.lix != 0 || tile.liy != 0) {
+        /*if (tile.lis != 0 || tile.lix != 0 || tile.liy != 0) {
             var ctx = tile.li.getContext("2d");
             ctx.clearRect(0, 0, tile.li.width, tile.li.height);
             ctx.drawImage(_Game.tilesets[tile.lis], (tile.lix * TILE_SIZE), (tile.liy * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
-        }
+        }*/
 
         //Module.doHook("pre_draw", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw ground

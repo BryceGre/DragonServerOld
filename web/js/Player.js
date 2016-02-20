@@ -12,6 +12,7 @@ function Character(name, x, y, floor, sprite) {
     this.name = name;
     this.sprite = parseInt(sprite);
     this.target = null;
+    this.lastDoor = false;
 }
 
 Character.prototype.resetLastPoint = function() {
