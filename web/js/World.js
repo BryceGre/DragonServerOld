@@ -24,29 +24,41 @@ _Game.updateWorld = function(tiles) {
 }
 
 _Game.setTile = function(x, y, floor, tile) {
-    if (!_Game.world.tiles[x]) {
-        _Game.world.tiles[x] = new Object();
+    if (!_Game.world.tiles[floor]) {
+        _Game.world.tiles[floor] = new Object();
+        _Game.world.tiles[floor].size = 0;
     }
-    if (!_Game.world.tiles[x][y]) {
-        _Game.world.tiles[x][y] = new Object();
+    if (!_Game.world.tiles[floor][x]) {
+        _Game.world.tiles[floor].size++;
+        _Game.world.tiles[floor][x] = new Object();
+        _Game.world.tiles[floor][x].size = 0;
     }
-    if (tile)
-        _Game.world.tiles[x][y][floor] = tile;
-    else
-        delete _Game.world.tiles[x][y][floor];
+    if (tile) {
+        _Game.world.tiles[floor][x].size++;
+        _Game.world.tiles[floor][x][y] = tile;
+    } else if (_Game.world.tiles[floor][x][y]) {
+        delete _Game.world.tiles[floor][x][y];
+        _Game.world.tiles[floor][x].size--;
+        if (_Game.world.tiles[floor][x].size == 0) {
+            delete _Game.world.tiles[floor][x];
+            _Game.world.tiles[floor].size--;
+            if (_Game.world.tiles[floor].size == 0)
+                delete _Game.world.tiles[floor];
+        }
+    }
 }
 
 _Game.getTile = function(x, y, floor) {
-    if (!_Game.world.tiles[x]) {
+    if (!_Game.world.tiles[floor]) {
         return false;
     }
-    if (!_Game.world.tiles[x][y]) {
+    if (!_Game.world.tiles[floor][x]) {
         return false;
     }
-    if (!_Game.world.tiles[x][y][floor]) {
+    if (!_Game.world.tiles[floor][x][y]) {
         return false;
     }
-    return _Game.world.tiles[x][y][floor];
+    return _Game.world.tiles[floor][x][y];
 }
 
 // note that the x and y attributes are the positions on the tilesheet, not the positions on the map
@@ -102,6 +114,14 @@ function Tile(x, y, floor, data, a1d, a2d, skipDraw) {
         this.liy = parseInt(datas[7].substr(2, 2), 36);
     } else { this.lis = 0; this.lix = 0; this.liy = 0; }
     
+    this.gre = (this.grs != 0 || this.grx != 0 || this.gry != 0);
+    this.m1e = (this.m1s != 0 || this.m1x != 0 || this.m1y != 0);
+    this.m2e = (this.m2s != 0 || this.m2x != 0 || this.m2y != 0);
+    this.mae = (this.mas != 0 || this.max != 0 || this.may != 0);
+    this.f1e = (this.f1s != 0 || this.f1x != 0 || this.f1y != 0);
+    this.f2e = (this.f2s != 0 || this.f2x != 0 || this.f2y != 0);
+    this.fae = (this.fas != 0 || this.fax != 0 || this.fay != 0);
+    
     if (a1d !== undefined) {
         this.a1data = a1d;
     }
@@ -110,19 +130,19 @@ function Tile(x, y, floor, data, a1d, a2d, skipDraw) {
     }
     
     this.gr = document.createElement('canvas');
-    this.gr.width = TILE_SIZE*2; this.gr.height = TILE_SIZE;
+    this.gr.width = TILE_SIZE; this.gr.height = TILE_SIZE;
     this.m1 = document.createElement('canvas');
-    this.m1.width = TILE_SIZE*2; this.m1.height = TILE_SIZE;
+    this.m1.width = TILE_SIZE; this.m1.height = TILE_SIZE;
     this.m2 = document.createElement('canvas');
-    this.m2.width = TILE_SIZE*2; this.m2.height = TILE_SIZE;
+    this.m2.width = TILE_SIZE; this.m2.height = TILE_SIZE;
     this.ma = document.createElement('canvas');
-    this.ma.width = TILE_SIZE*2; this.ma.height = TILE_SIZE;
+    this.ma.width = TILE_SIZE; this.ma.height = TILE_SIZE;
     this.f1 = document.createElement('canvas');
-    this.f1.width = TILE_SIZE*2; this.f1.height = TILE_SIZE;
+    this.f1.width = TILE_SIZE; this.f1.height = TILE_SIZE;
     this.f2 = document.createElement('canvas');
-    this.f2.width = TILE_SIZE*2; this.f2.height = TILE_SIZE;
+    this.f2.width = TILE_SIZE; this.f2.height = TILE_SIZE;
     this.fa = document.createElement('canvas');
-    this.fa.width = TILE_SIZE*2; this.fa.height = TILE_SIZE;
+    this.fa.width = TILE_SIZE; this.fa.height = TILE_SIZE;
     
     this.li = document.createElement('canvas');
     this.li.width = TILE_SIZE; this.li.height = TILE_SIZE;
@@ -206,43 +226,45 @@ Tile.drawTile = function(tile, chain) {
 
         //Module.doHook("pre_draw", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw ground
-        if (tile.grs != 0 || tile.grx != 0 || tile.gry != 0) {
-            var ctx = tile.gr.getContext("2d");
-            ctx.clearRect(0, 0, tile.gr.width, tile.gr.height);
+        var ctx = tile.gr.getContext("2d");
+        ctx.clearRect(0, 0, tile.gr.width, tile.gr.height);
+        if (tile.gre) {
             if (tile.grs > 9) {
                 Tile.autoTile(tile, ctx, "gr", chain);
             } else {
                 ctx.drawImage(_Game.tilesets[tile.grs], (tile.grx * TILE_SIZE), (tile.gry * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_gr", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw mask 1
-        if (tile.m1s != 0 || tile.m1x != 0 || tile.m1y != 0) {
-            var ctx = tile.m1.getContext("2d");
-            ctx.clearRect(0, 0, tile.m1.width, tile.m1.height);
+        var ctx = tile.m1.getContext("2d");
+        ctx.clearRect(0, 0, tile.m1.width, tile.m1.height);
+        ctx.drawImage(tile.gr, 0, 0);
+        if (tile.m1e) {
             if (tile.m1s > 9) {
                 Tile.autoTile(tile, ctx, "m1", chain);
             } else {
                 ctx.drawImage(_Game.tilesets[tile.m1s], (tile.m1x * TILE_SIZE), (tile.m1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_m1", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw mask 2
-        if (tile.m2s != 0 || tile.m2x != 0 || tile.m2y != 0) {
+        if (tile.m2e) {
             var ctx = tile.m2.getContext("2d");
             ctx.clearRect(0, 0, tile.m2.width, tile.m2.height);
+            ctx.drawImage(tile.m1, 0, 0);
             if (tile.m2s > 9) {
                 Tile.autoTile(tile, ctx, "m2", chain);
             } else {
                 ctx.drawImage(_Game.tilesets[tile.m2s], (tile.m2x * TILE_SIZE), (tile.m2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_m2", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw mask anim.
-        if (tile.mas != 0 || tile.max != 0 || tile.may != 0) {
+        if (tile.mae) {
             var ctx = tile.ma.getContext("2d");
             ctx.clearRect(0, 0, tile.ma.width, tile.ma.height);
             if (tile.mas > 9) {
@@ -250,35 +272,36 @@ Tile.drawTile = function(tile, chain) {
             } else {
                 ctx.drawImage(_Game.tilesets[tile.mas], (tile.max * TILE_SIZE), (tile.may * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_ma", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw fringe 1
-        if (tile.f1s != 0 || tile.f1x != 0 || tile.f1y != 0) {
-            var ctx = tile.f1.getContext("2d");
-            ctx.clearRect(0, 0, tile.f1.width, tile.f1.height);
+        var ctx = tile.f1.getContext("2d");
+        ctx.clearRect(0, 0, tile.f1.width, tile.f1.height);
+        if (tile.f1e) {
             if (tile.f1s > 9) {
                 Tile.autoTile(tile, ctx, "f1", chain);
             } else {
                 ctx.drawImage(_Game.tilesets[tile.f1s], (tile.f1x * TILE_SIZE), (tile.f1y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_f1", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw fringe 2
-        if (tile.f2s != 0 || tile.f2x != 0 || tile.f2y != 0) {
+        if (tile.f2e) {
             var ctx = tile.f2.getContext("2d");
             ctx.clearRect(0, 0, tile.f2.width, tile.f2.height);
+            ctx.drawImage(tile.f1, 0, 0);
             if (tile.f2s > 9) {
                 Tile.autoTile(tile, ctx, "f2", chain);
             } else {
                 ctx.drawImage(_Game.tilesets[tile.f2s], (tile.f2x * TILE_SIZE), (tile.f2y * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx, true);
+            //Tile.copyNight(tile, ctx, true);
         }
         //Module.doHook("draw_f2", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw fringe anim.
-        if (tile.fas != 0 || tile.fax != 0 || tile.fay != 0) {
+        if (tile.fae) {
             var ctx = tile.fa.getContext("2d");
             ctx.clearRect(0, 0, tile.fa.width, tile.fa.height);
             if (tile.fas > 9) {
@@ -286,7 +309,7 @@ Tile.drawTile = function(tile, chain) {
             } else {
                 ctx.drawImage(_Game.tilesets[tile.fas], (tile.fax * TILE_SIZE), (tile.fay * TILE_SIZE), TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
             }
-            Tile.copyNight(tile, ctx);
+            //Tile.copyNight(tile, ctx);
         }
         //Module.doHook("draw_fa", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
     }

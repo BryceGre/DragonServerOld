@@ -12,9 +12,7 @@ import com.dragonmmomaker.server.util.GameUtils;
 import com.dragonmmomaker.server.util.LogCallback;
 
 public class ServData {
-
     public static ServData _CurData; //use carefully, preferably only with modules
-;
     public final String DataDir;
     public final Database DB;
     public final DBase Data;
