@@ -226,9 +226,9 @@ Tile.drawTile = function(tile, chain) {
 
         //Module.doHook("pre_draw", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw ground
-        var ctx = tile.gr.getContext("2d");
-        ctx.clearRect(0, 0, tile.gr.width, tile.gr.height);
         if (tile.gre) {
+            var ctx = tile.gr.getContext("2d");
+            ctx.clearRect(0, 0, tile.gr.width, tile.gr.height);
             if (tile.grs > 9) {
                 Tile.autoTile(tile, ctx, "gr", chain);
             } else {
@@ -238,10 +238,10 @@ Tile.drawTile = function(tile, chain) {
         }
         //Module.doHook("draw_gr", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw mask 1
-        var ctx = tile.m1.getContext("2d");
-        ctx.clearRect(0, 0, tile.m1.width, tile.m1.height);
-        ctx.drawImage(tile.gr, 0, 0);
         if (tile.m1e) {
+            var ctx = tile.m1.getContext("2d");
+            ctx.clearRect(0, 0, tile.m1.width, tile.m1.height);
+            if (tile.gre)       ctx.drawImage(tile.gr, 0, 0);
             if (tile.m1s > 9) {
                 Tile.autoTile(tile, ctx, "m1", chain);
             } else {
@@ -254,7 +254,8 @@ Tile.drawTile = function(tile, chain) {
         if (tile.m2e) {
             var ctx = tile.m2.getContext("2d");
             ctx.clearRect(0, 0, tile.m2.width, tile.m2.height);
-            ctx.drawImage(tile.m1, 0, 0);
+            if (tile.m1e)       ctx.drawImage(tile.m1, 0, 0);
+            else if (tile.gre)  ctx.drawImage(tile.gr, 0, 0);
             if (tile.m2s > 9) {
                 Tile.autoTile(tile, ctx, "m2", chain);
             } else {
@@ -276,9 +277,9 @@ Tile.drawTile = function(tile, chain) {
         }
         //Module.doHook("draw_ma", {admin: false, "x": tile.x, "y": tile.y, "floor": tile.floor, "tile": tile});
         // draw fringe 1
-        var ctx = tile.f1.getContext("2d");
-        ctx.clearRect(0, 0, tile.f1.width, tile.f1.height);
         if (tile.f1e) {
+            var ctx = tile.f1.getContext("2d");
+            ctx.clearRect(0, 0, tile.f1.width, tile.f1.height);
             if (tile.f1s > 9) {
                 Tile.autoTile(tile, ctx, "f1", chain);
             } else {
@@ -291,7 +292,7 @@ Tile.drawTile = function(tile, chain) {
         if (tile.f2e) {
             var ctx = tile.f2.getContext("2d");
             ctx.clearRect(0, 0, tile.f2.width, tile.f2.height);
-            ctx.drawImage(tile.f1, 0, 0);
+            if (tile.f1e)       ctx.drawImage(tile.f1, 0, 0);
             if (tile.f2s > 9) {
                 Tile.autoTile(tile, ctx, "f2", chain);
             } else {
