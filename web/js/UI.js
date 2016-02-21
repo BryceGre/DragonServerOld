@@ -307,6 +307,34 @@ _UI.AddCombobox = function(window, name, options, members, func, tab, attr) {
     return newdiv;
 }
 
+_UI.AddDrag = function(window, name, hook, args, tab, attr) {
+    var id = window.attr("id");
+    attr = _UI.FixAttr(id + "-" + name, attr);
+    
+    if (tab) {
+        var newdiv = $('<canvas>', attr).appendTo("#" + id + "-tabs-" + tab);
+    } else {
+        var newdiv = $('<canvas>', attr).appendTo(window);
+    }
+    
+    $(newdiv).draggable({
+        appendTo: "#ui",
+        stack: "div",
+        helper: function() {
+            var helper = $("<img>");
+            helper.attr("src", newdiv[0].toDataURL());
+            helper.data("hook", hook);
+            helper.data("args", args);
+            _UI.scaleWidth(helper);
+            return helper;
+        },
+        cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
+        stop: _UI.onDragStop,
+    });
+
+    return newdiv;
+}
+
 _UI.FixAttr = function(id, attr) {
     if (attr) {
         attr['id'] = id;
@@ -397,7 +425,6 @@ _UI.NewPrompt = function(title, fields, func, width, height) {
         var results = new Object();
         for (var field in fields) {
             results[field] = $("#" + id + "-" + field).val();
-            console.log("result: field: '" + field + "' result: '" + results[field]) + "'";
         }
         func(results);
         $(this).dialog('close');
@@ -451,7 +478,6 @@ _UI.ShowMenu = function(x, y, floor) {
         of: "#"+id
     });
     $(newdiv).show();
-    console.log("left+"+tileX+" top+"+tileY);
     
     return newdiv;
 }
@@ -475,36 +501,94 @@ $.fn.val = function () {
 
 _UI.initLayout = function() {
     console.log("init layout");
-    $("#HUD").droppable({
-        drop: function(event, ui) {
-            for (var key in _UI.Drops) {
-                //_UI.Drops[key]
-            }
-            //ui.draggable
-        }
-    });
+    
     _UI.canvas = $("#HUD")[0];
     _UI.context = _UI.canvas.getContext("2d");
     
+    //allow dragging of drops on action bars
+    $("#HUD").draggable({
+        appendTo: "#ui",
+        //stack: "div",
+        zIndex: 1001,
+        helper: function(e) {
+            var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
+            var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
+            var key = _UI.findDrop(x, y);
+            if (key) {
+                var pref = _Game.getPref("drop-" + key);
+                if (pref) {
+                    //create helper
+                    var helper = $("<img>");
+                    helper.attr("src", pref.image);
+                    helper.data("hook", pref.hook);
+                    helper.data("args", pref.args);
+                    _UI.scaleWidth(helper);
+                    
+                    //remove from bar
+                    _Game.HUD.find("#" + key).attr('src', _UI.Drops[key].oldsrc);
+                    _Game.setPref("drop-" + key, null);
+                    _UI.reDraw();
+                    
+                    return helper;
+                }
+            }
+            return $("<div>");
+        },
+        cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
+        stop: _UI.onDragStop,
+    });
+    
+    $(_UI.canvas).on("click", function(e) {
+        var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
+        var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
+        var key = _UI.findDrop(x, y);
+        if (key) {
+            var pref = _Game.getPref("drop-" + key);
+            if (pref) {
+                Module.doHook(pref.hook, pref.args);
+            }
+            return false;
+        } else {
+            return _Game.onClick(e);
+        }
+    });
+    $(_UI.canvas).on("contextmenu", function(e) {
+        var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
+        var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
+        var key = _UI.findDrop(x, y);
+        if (key) {
+            var pref = _Game.getPref("drop-" + key);
+            if (pref) {
+               _Game.HUD.find("#" + key).attr('src', _UI.Drops[key].oldsrc);
+               _Game.setPref("drop-" + key, null);
+                _UI.reDraw();
+            }
+            return false;
+        } else {
+            return _Game.onMenu(e);
+        }
+    });
+    
     var requests = 0;
     var complete = 0;
-    
     _Game.HUD.find('[src]').each(function() {
         var src = $(this).attr('src');
-        _UI.Images[src] = new Image();
-        _UI.Images[src].onload = function() {
-            complete++;
-            if (complete == requests)
-                _UI.reDraw();
+        if (src.lastIndexOf("data:image", 0) !== 0) {
+            _UI.Images[src] = new Image();
+            _UI.Images[src].onload = function() {
+                complete++;
+                if (complete == requests)
+                    _UI.reDraw();
+            }
+            _UI.Images[src].onerror = function() {
+                console.error("Unable to load HUD image: " + src);
+                complete++;
+                if (complete == requests)
+                    _UI.reDraw();
+            }
+            requests++;
+            _UI.Images[src].src = src;
         }
-        _UI.Images[src].onerror = function() {
-            console.error("Unable to load HUD image: " + src);
-            complete++;
-            if (complete == requests)
-                _UI.reDraw();
-        }
-        requests++;
-        _UI.Images[src].src = src;
     });
     if (requests == 0)
         _UI.reDraw();
@@ -525,19 +609,17 @@ _UI.reDraw = function() {
 
 _UI.reDrawChild = function(child, width, height) {
     _UI.transform.save();
-    //console.log("child: <" + child.prop("tagName") + " id='" + child.attr('id') + "' />");
     
-    if (child.prop("tagName") == "div" || child.prop("tagName") == "drop") {
-        var dx = child.attr('x') || 0;
-        var dy = child.attr('y') || 0;
-        if (child.prop("tagName") == "div") {
-            var dw = child.attr('width') || (width - dx);
-            var dh = child.attr('height') || (height - dx);
+    if (child.prop("tagName").toLowerCase() == "div" || child.prop("tagName").toLowerCase() == "drop") {
+        var dx = parseInt(child.attr('x')) || 0;
+        var dy = parseInt(child.attr('y')) || 0;
+        if (child.prop("tagName").toLowerCase() == "div") {
+            var dw = parseInt(child.attr('width')) || (width - dx);
+            var dh = parseInt(child.attr('height')) || (height - dx);
         } else {
             var dw = TILE_SIZE;
             var dh = TILE_SIZE;
-            var id = child.attr('id');
-            _UI.registerDrop(id, dx, dy, dw, dh);
+            _UI.initDrop(child);
         }
         var color = child.attr('color') || null;
         if (color) {
@@ -546,12 +628,18 @@ _UI.reDrawChild = function(child, width, height) {
         }
         var src = child.attr('src') || null;
         if (src) {
-            _UI.context.drawImage(_UI.Images[src], dx, dy, dw, dh);
+            if (_UI.Images[src]) {
+                _UI.context.drawImage(_UI.Images[src], dx, dy, dw, dh);
+            } else if (src.lastIndexOf("data:image", 0) === 0) {
+                var img = new Image();
+                img.src = src;
+                _UI.context.drawImage(img, dx, dy, dw, dh);
+            } 
         }
         _UI.transform.translate(dx, dy);
         width = dw;
         height = dh;
-    } else if (child.prop("tagName") == "anchor") {
+    } else if (child.prop("tagName").toLowerCase() == "anchor") {
         var x = 0;
         var y = 0;
         switch(child.attr('x')) {
@@ -586,11 +674,45 @@ _UI.reDrawChild = function(child, width, height) {
     _UI.transform.restore();
 }
 
-_UI.registerDrop = function(id, x, y, w, h) {
-    var tr = _UI.transform.get();
-    x += tr.x;
-    y += tr.y;
-    _UI.Drops[id] = {x:x, y:y, w:w, h:h};
+_UI.findDrop = function(x, y) {
+    var drop = null;
+    for (var key in _UI.Drops) {
+        if (_UI.Drops[key].left < x && _UI.Drops[key].top < y) {
+            if (_UI.Drops[key].right > x && _UI.Drops[key].bottom > y) {
+                if (drop == null) {
+                    drop = key;
+                } else if (_UI.Drops[key].zindex > _UI.Drops[drop].zindex) {
+                    drop = key;
+                }
+            }
+        }
+    }
+    return drop;
+}
+
+_UI.initDrop = function(drop) {
+    var id = drop.attr('id');
+    if (!_UI.Drops[id]) {
+        var x = parseInt(drop.attr('x')) || 0;
+        var y = parseInt(drop.attr('y')) || 0;
+        var z = parseInt(drop.attr('z')) || 0;
+        var w = TILE_SIZE;
+        var h = TILE_SIZE;
+        
+        var tr = _UI.transform.get();
+        x += tr.x;
+        y += tr.y;
+        w += x;
+        h += y;
+        _UI.Drops[id] = {left:x, top:y, right:w, bottom:h, zindex:z};
+        
+        //also restore image from saved drops
+        _UI.Drops[id].oldsrc = drop.attr('src');
+        var pref = _Game.getPref("drop-" + id);
+        if (pref) {
+            drop.attr('src', pref.image);
+        }
+    }
 }
 
 _UI.transform = new Object();
@@ -609,4 +731,24 @@ _UI.transform.restore = function() {
 }
 _UI.transform.get = function() {
     return _UI.Translate;
+}
+
+_UI.scaleWidth = function(element) {
+    var width =  element[0].width  * ($("#game").width()  / CLIENT_WIDTH );
+    var height = element[0].height * ($("#game").height() / CLIENT_HEIGHT);
+    element.width (width );
+    element.height(height);
+}
+
+_UI.onDragStop = function(e, ui) {
+    if (ui.helper.prop("tagName").toLowerCase() == "img") {
+        var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
+        var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
+        var key = _UI.findDrop(x, y);
+        if (key) {
+            _Game.HUD.find("#" + key).attr('src', ui.helper.attr('src'));
+            _Game.setPref("drop-" + key, {image: ui.helper.attr('src'), hook: ui.helper.data("hook"), args: ui.helper.data("args")});
+            _UI.reDraw();
+        }
+    }
 }

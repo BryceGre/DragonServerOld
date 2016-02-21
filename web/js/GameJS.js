@@ -355,14 +355,14 @@ _Game.onDraw = function(elapsed) {
 }
 
 _Game.drawDebug = function() {
-    _Game.context.fillText("_Game.FPS: " + _Game.FPS, 0, 10);
-    _Game.context.fillText("Player X: " + (_Game.world.user.x - 1000000000), 0, 20);
-    _Game.context.fillText("Player Y: " + (_Game.world.user.y - 1000000000), 0, 30);
-    _Game.context.fillText("Player Floor: " + _Game.world.user.floor, 0, 40);
+    _Game.context.fillText("Game FPS: " + _Game.FPS, 256, 10);
+    _Game.context.fillText("Player X: " + (_Game.world.user.x - 1000000000), 256, 20);
+    _Game.context.fillText("Player Y: " + (_Game.world.user.y - 1000000000), 256, 30);
+    _Game.context.fillText("Player Floor: " + _Game.world.user.floor, 256, 40);
     var date = new Date(_Game.gameTime);
-    _Game.context.fillText("Game Time: " + date.getUTCHours() + ":" + date.getUTCMinutes() + ":" + date.getUTCSeconds(), 0, 50);
-    _Game.context.fillText("Player Stats: " + _Game.stats.player, 0, 60);
-    _Game.context.fillText("Q-Tree Stats: " + _Game.stats.tree, 0, 70);
+    _Game.context.fillText("Game Time: " + date.getUTCHours() + ":" + date.getUTCMinutes() + ":" + date.getUTCSeconds(), 256, 50);
+    _Game.context.fillText("Player Stats: " + _Game.stats.player, 256, 60);
+    _Game.context.fillText("Q-Tree Stats: " + _Game.stats.tree, 256, 70);
 }
 
 _Game.reDraw = function() {
@@ -384,13 +384,9 @@ _Game.reDraw = function() {
     
     var basex = (DRAW_DISTANCE - (_Game.world.user.x - minx)) * TILE_SIZE;
     var basey = (DRAW_DISTANCE - (_Game.world.user.y - miny)) * TILE_SIZE;
-    
-    console.log("base: (" + basex + "," + basey + ")")
-    console.log("size: (" + (maxx-minx) + "," + (maxy-miny) + ")"); 
    
     var ctx_m1, ctx_ma, ctx_f1, ctx_fa;
     
-    var now = $.now();
     for (var f = 0; f <= _Game.world.user.floor; f++) {
         if (f < _Game.world.user.floor) {
             if (_Game.floors[f].changed) {
@@ -453,7 +449,6 @@ _Game.reDraw = function() {
             }
         }
     }
-    console.log("reDraw time: " + ($.now() - now));
     
     for (var f = _Game.world.user.floor+1; f < 10; f++) {
         if (_Game.floors[f].changed) {
@@ -500,9 +495,6 @@ _Game.reDrawDoor = function(a, b, c) {
     if (_Game.world.user.floor != f)
         return;
     if (_Game.world.tiles[f]) {
-        
-        console.log("reDrawDoor");
-
         var ctx_m1 = _Game.layers.m1.getContext("2d");
         var basey = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
         
@@ -839,9 +831,7 @@ _Game.onMessage = function(data) {
         case "more":
             var n = JSON.parse(message[1]);
             //load tiles
-            var now = $.now();
             _Game.updateWorld(n.tiles);
-            console.log("more tiime: " + ($.now() - now));
             //load players
             var players = n.players;
             for (var i = 0; i < players.length; i++) {
