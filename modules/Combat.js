@@ -142,6 +142,9 @@ Combat.client = {
 		frame: 0,
 		count: 0,
 	},
+	abilities : {
+		window: null,
+	},
     sct : new Array(), //scrolling combat text
 };
 
@@ -153,6 +156,7 @@ Combat.client.onInit = function() {
 		
 	} else {
 		Module.addHook("post_draw");
+		Module.addHook("ability_cast");
 	}
 	Module.addHook("on_update");
 	Module.addHook("game_load");
@@ -163,6 +167,10 @@ Combat.client.onInit = function() {
 Combat.client.onHook = function(hook, args) {
 	if (isAdmin && hook === "game_load") {
 		Combat.client.editor.createUI();
+	} else if (hook == "game_load") {
+		Combat.client.abilities.createUI();
+	} else if (hook == "ability_cast") {
+		console.log("ability cast: " + args.id);
     } else if (hook == "message") {
         if (args.head === "npc-damage") {
             var n = JSON.parse(args.body);
@@ -233,7 +241,6 @@ Combat.client.editor.loadNames = function() {
 
 Combat.client.editor.updateFields = function() {
     $("#ability-editor-ability").val(this.currAbility, this.abilityNames[this.currAbility]);
-	console.log(this.currAbility + "," + this.abilityNames[this.currAbility]);
     $("#ability-editor-name").val(this.currObject.name);
     $("#ability-editor-animation").val(this.currObject.anim);
     Combat.client.editor.ctx.fillRect(0, 0, 96, 96);
@@ -273,23 +280,19 @@ Combat.client.editor.createUI = function() {
     UI.AddSpinner(this.window, "ability", {min: 1, stop: function() {
             var value = $("#ability-editor-ability").val();
             $("#ability-editor-ability").val(value, Combat.client.editor.abilityNames[value]);
-			console.log(value + "," + Combat.client.editor.abilityNames[value]);
         }
     }, false, {"style": 'display:inline-block;float:left;margin:4px auto;'});
     UI.AddButton(this.window, "ability-edit", "Edit", function() {
         if (Combat.client.editor.changed) {
             if (confirm("Any unsaved changes to the current Ability will be lost!")) {
                 Combat.client.editor.currAbility = $("#ability-editor-ability").val();
-				console.log(Combat.client.editor.currAbility);
                 Combat.client.editor.loadAbility();
                 Combat.client.editor.changed = false;
             } else {
                 $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
-				console.log(Combat.client.editor.currAbility + "," + Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
             }
         } else {
             Combat.client.editor.currAbility = $("#ability-editor-ability").val();
-			console.log(Combat.client.editor.currAbility);
             Combat.client.editor.loadAbility();
         }
     }, false, {"style": 'display:inline-block;float:right;margin:0px auto;'});
@@ -508,12 +511,32 @@ Combat.client.editor.createUI = function() {
         //update ability name
         Combat.client.editor.abilityNames[Combat.client.editor.currAbility] = Combat.client.editor.currObject.name;
         $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.currObject.name);
-		console.log(Combat.client.editor.currAbility + ", " + Combat.client.editor.currObject.name);
     }, false, {'style': 'display:block;float:right;'});
 
     Game.menus["Ability Editor"] = function() {
         $("#ability-editor").dialog("open");
         Combat.client.editor.currAbility = 1;
         Combat.client.editor.loadNames();
+    };
+}
+
+Combat.client.abilities.createUI = function() {
+    this.window = UI.NewWindow("abilities", "Ability List", "336px");
+	
+	function buildFunc(c) {
+		return 
+	}
+    
+	for (var i=1; i<=5; i++) {
+		var canvas = UI.AddDrag(this.window, "ability"+i, "ability_cast", {id:i}, false, {"style": 'display:inline-block;width:20%;'});
+		canvas.attr("width", '32px');
+		canvas.attr("height", '32px');
+		var ctx = canvas[0].getContext("2d");
+		ctx.clearRect(0, 0, 32, 32);
+		ctx.drawImage(Game.gfx.Icons[i], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+	}
+	
+    Game.menus["Abilities"] = function() {
+        $("#abilities").dialog("open");
     };
 }
