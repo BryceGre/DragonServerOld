@@ -39,11 +39,22 @@ span.ui-dialog-title {
 }
 
 #game {
-  display:block;
+  position:absolute;
+  z-index: 0;
   margin: 0 auto;
   padding: 0;
   background-color: white;
-  /*border:8px ridge gray;*/
+  left: 0;
+  right: 0;
+}
+
+#HUD {
+  position:absolute;
+  z-index: 0;
+  margin: 0 auto;
+  padding: 0;
+  left: 0;
+  right: 0;
 }
 
 #menubutton {

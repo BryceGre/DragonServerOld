@@ -78,7 +78,9 @@ _Game.module_loaded = function() {
         _Game.canvas = $("#game")[0];
         _Game.context = _Game.canvas.getContext("2d");
         _Game.testcontext = $("#tiletest")[0].getContext("2d");
-
+        
+        _UI.initLayout();
+        
         _Game.setupConfig();
         _Game.module_onLoaded();
         _Game.onLoaded();
@@ -95,6 +97,7 @@ _Game.loadResources = function() {
 
     for (var key in GFX) {
         _Game.gfx[key] = new Array();
+        if (key == "UI") continue;
         for (var i = 1; i < GFX[key]; i++) {
             _Game.gfx[key][i] = _Game.loadImage("GFX/"+key+"/" + i + ".png");
         }
@@ -138,11 +141,15 @@ _Game.setupConfig = function() {
     // setup globals
     $("#game")[0].width = CLIENT_WIDTH;
     $("#game")[0].height = CLIENT_HEIGHT;
+    $("#HUD")[0].width = CLIENT_WIDTH;
+    $("#HUD")[0].height = CLIENT_HEIGHT;
 
     // setup prefs
     if (_Game.getPref("FillScreen")) {
         $("#game").css("width", "100%");
         $("#game").css("height", "100%");
+        $("#HUD").css("width", "100%");
+        $("#HUD").css("height", "100%");
     }
 }
 
@@ -167,6 +174,12 @@ $(document).ready(function() {
     _Game.includeJS("SHA");
     _Game.includeJS("Module");
     _Game.includeJS("Data");
+    
+    $.get("/layout.xml", function(data) {
+        _Game.HUD = $(data);
+        _Game.include_loaded();
+    });
+    _Data.includes_requested++;
     
     _Game.setPref("FillScreen", InitPrefs['FillScreen']);
     for (var key in InitPrefs) {

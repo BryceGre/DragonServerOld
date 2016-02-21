@@ -3,6 +3,10 @@ var UI = _UI;
 
 _UI.UI_Top = new Object();
 _UI.VAL = new Object();
+_UI.Images = new Object();
+_UI.Drops = new Object();
+_UI.Translate = {x:0, y:0};
+_UI.SaveStack = new Array();
 
 _UI.NewWindow = function(id, title, width, height) {
     var newdiv =
@@ -469,3 +473,140 @@ $.fn.val = function () {
     }
 };
 
+_UI.initLayout = function() {
+    console.log("init layout");
+    $("#HUD").droppable({
+        drop: function(event, ui) {
+            for (var key in _UI.Drops) {
+                //_UI.Drops[key]
+            }
+            //ui.draggable
+        }
+    });
+    _UI.canvas = $("#HUD")[0];
+    _UI.context = _UI.canvas.getContext("2d");
+    
+    var requests = 0;
+    var complete = 0;
+    
+    _Game.HUD.find('[src]').each(function() {
+        var src = $(this).attr('src');
+        _UI.Images[src] = new Image();
+        _UI.Images[src].onload = function() {
+            complete++;
+            if (complete == requests)
+                _UI.reDraw();
+        }
+        _UI.Images[src].onerror = function() {
+            console.error("Unable to load HUD image: " + src);
+            complete++;
+            if (complete == requests)
+                _UI.reDraw();
+        }
+        requests++;
+        _UI.Images[src].src = src;
+    });
+    if (requests == 0)
+        _UI.reDraw();
+}
+
+_UI.getHUDById = function(id) {
+    return _Game.HUD.find('#'+id);
+}
+
+_UI.reDraw = function() {
+    _UI.Translate.x = 0;
+    _UI.Translate.y = 0;
+    _UI.context.clearRect(0, 0, _UI.canvas.width, _UI.canvas.height);
+    _Game.HUD.find("layout").children().each(function () {
+        _UI.reDrawChild($(this), _UI.canvas.width, _UI.canvas.height);
+    });
+}
+
+_UI.reDrawChild = function(child, width, height) {
+    _UI.transform.save();
+    console.log("child: <" + child.prop("tagName") + " id='" + child.attr('id') + "' />");
+    
+    if (child.prop("tagName") == "div" || child.prop("tagName") == "drop") {
+        var dx = child.attr('x') || 0;
+        var dy = child.attr('y') || 0;
+        if (child.prop("tagName") == "div") {
+            var dw = child.attr('width') || (width - dx);
+            var dh = child.attr('height') || (height - dx);
+        } else {
+            var dw = TILE_SIZE;
+            var dh = TILE_SIZE;
+            var id = child.attr('id');
+            _UI.registerDrop(id, dx, dy, dw, dh);
+        }
+        var color = child.attr('color') || null;
+        if (color) {
+            _UI.context.fillStyle = color;
+            _UI.context.fillRect(dx,dy,dw,dh);
+        }
+        var src = child.attr('src') || null;
+        if (src) {
+            _UI.context.drawImage(_UI.Images[src], dx, dy, dw, dh);
+        }
+        _UI.transform.translate(dx, dy);
+        width = dw;
+        height = dh;
+    } else if (child.prop("tagName") == "anchor") {
+        var x = 0;
+        var y = 0;
+        switch(child.attr('x')) {
+            case "left":
+                x = 0;
+                break;
+            case "center":
+                x = (width / 2);
+                break;
+            case "right":
+                x = width;
+                break;
+        }
+        switch(child.attr('y')) {
+            case "top":
+                y = 0;
+                break;
+            case "middle":
+                y = (height / 2);
+                break;
+            case "bottom":
+                y = height;
+                break;
+        }
+        _UI.transform.translate(x, y);
+    }
+    
+    child.children().each(function() {
+        _UI.reDrawChild($(this), width, height);
+    });
+    
+    _UI.transform.restore();
+}
+
+_UI.registerDrop = function(id, x, y, w, h) {
+    var tr = _UI.transform.get();
+    x += tr.x;
+    y += tr.y;
+    _UI.Drops[id] = {x:x, y:y, w:w, h:h};
+}
+
+_UI.transform = new Object();
+_UI.transform.translate = function(x, y) {
+    _UI.context.translate(x, y);
+    _UI.Translate.x += x;
+    _UI.Translate.y += y;
+}
+_UI.transform.save = function() {
+    _UI.context.save();
+    _UI.SaveStack.push(jQuery.extend({}, _UI.Translate));
+}
+_UI.transform.restore = function() {
+    _UI.context.restore();
+    _UI.Translate = _UI.SaveStack.pop();
+}
+_UI.transform.get = function() {
+    return _UI.Translate;
+}

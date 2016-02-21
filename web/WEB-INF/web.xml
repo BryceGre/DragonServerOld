@@ -11,23 +11,7 @@
     </servlet>
   
     <servlet>
-	<servlet-name>modules</servlet-name>
-	<servlet-class>
-            com.dragonmmomaker.war.FileServlet
-	</servlet-class>
-	<load-on-startup>1</load-on-startup>
-    </servlet>
-  
-    <servlet>
-	<servlet-name>GFX</servlet-name>
-	<servlet-class>
-            com.dragonmmomaker.war.FileServlet
-	</servlet-class>
-	<load-on-startup>1</load-on-startup>
-    </servlet>
-  
-    <servlet>
-	<servlet-name>SFX</servlet-name>
+	<servlet-name>static</servlet-name>
 	<servlet-class>
             com.dragonmmomaker.war.FileServlet
 	</servlet-class>
@@ -38,25 +22,30 @@
         <servlet-name>admin</servlet-name>
         <jsp-file>/admin.html</jsp-file>
     </servlet>
-
+    
     <servlet-mapping>
        <servlet-name>admin</servlet-name>
        <url-pattern>/admin</url-pattern>
     </servlet-mapping>
   
     <servlet-mapping>
-	<servlet-name>modules</servlet-name>
+	<servlet-name>static</servlet-name>
 	<url-pattern>/modules/*</url-pattern>
     </servlet-mapping>
   
     <servlet-mapping>
-	<servlet-name>GFX</servlet-name>
+	<servlet-name>static</servlet-name>
 	<url-pattern>/GFX/*</url-pattern>
     </servlet-mapping>
   
     <servlet-mapping>
-	<servlet-name>SFX</servlet-name>
+	<servlet-name>static</servlet-name>
 	<url-pattern>/SFX/*</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+	<servlet-name>static</servlet-name>
+	<url-pattern>/layout.xml</url-pattern>
     </servlet-mapping>
   
     <servlet-mapping>
