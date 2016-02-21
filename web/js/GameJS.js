@@ -373,12 +373,21 @@ _Game.reDraw = function() {
         //night = TILE_SIZE;
     //}
     
-    var destx, desty;
-    var minx = (_Game.world.user.x - DRAW_DISTANCE)
-    var maxx = (_Game.world.user.x + DRAW_DISTANCE);
-    var miny = (_Game.world.user.y - DRAW_DISTANCE);
-    var maxy = (_Game.world.user.y + DRAW_DISTANCE);
+    var width = Math.ceil((_Game.canvas.width / 2) / TILE_SIZE);
+    var height = Math.ceil((_Game.canvas.height / 2) / TILE_SIZE);
     
+    var destx, desty;
+    var minx = Math.max(_Game.world.user.x - DRAW_DISTANCE, Math.min(_Game.world.user.x - width,  _Game.world.user.lastPoint.x - width ));
+    var maxx = Math.min(_Game.world.user.x + DRAW_DISTANCE, Math.max(_Game.world.user.x + width,  _Game.world.user.lastPoint.x + width ));
+    var miny = Math.max(_Game.world.user.y - DRAW_DISTANCE, Math.min(_Game.world.user.y - height, _Game.world.user.lastPoint.y - height));
+    var maxy = Math.min(_Game.world.user.y + DRAW_DISTANCE, Math.max(_Game.world.user.y + height, _Game.world.user.lastPoint.y + height));
+    
+    var basex = (DRAW_DISTANCE - (_Game.world.user.x - minx)) * TILE_SIZE;
+    var basey = (DRAW_DISTANCE - (_Game.world.user.y - miny)) * TILE_SIZE;
+    
+    console.log("base: (" + basex + "," + basey + ")")
+    console.log("size: (" + (maxx-minx) + "," + (maxy-miny) + ")"); 
+   
     var ctx_m1, ctx_ma, ctx_f1, ctx_fa;
     
     var now = $.now();
@@ -404,10 +413,10 @@ _Game.reDraw = function() {
         }
         if (_Game.world.tiles[f]) {
             _Game.floors[f].changed = true;
-            destx = 0;
+            destx = basex;
             for (var x = minx; x < maxx; x++) {
                 if (_Game.world.tiles[f][x]) {
-                    desty = 0;
+                    desty = basey;
                     for (var y = miny; y < maxy; y++) {
                         var tile = _Game.world.tiles[f][x][y];
                         if (tile) {
@@ -495,17 +504,18 @@ _Game.reDrawDoor = function(a, b, c) {
         console.log("reDrawDoor");
 
         var ctx_m1 = _Game.layers.m1.getContext("2d");
-        desty = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
+        var basey = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
+        
+        //ctx_m1.clearRect(destx, desty, TILE_SIZE*3, TILE_SIZE*3);
+        
         destx = (DRAW_DISTANCE + (minx - _Game.world.user.x)) * TILE_SIZE;
-        
-        ctx_m1.clearRect(destx, desty, TILE_SIZE*3, TILE_SIZE*3);
-        
         for (var x = minx; x <= maxx; x++) {
             if (_Game.world.tiles[f][x]) {
-                desty = (DRAW_DISTANCE + (miny - _Game.world.user.y)) * TILE_SIZE;
+                desty = basey;
                 for (var y = miny; y <= maxy; y++) {
                     var tile = _Game.world.tiles[f][x][y];
-                    if (tile) {
+                    if (tile && tile.attr1 == 5 || tile.attr2 == 5) {
+                        ctx_m1.clearRect(destx, desty, TILE_SIZE, TILE_SIZE);
                         // draw mask2 + mask1 + ground
                         if (tile.m2e && !_Game.isHideDoor(x, y, f)) {
                             ctx_m1.drawImage(tile.m2, destx, desty);
@@ -866,9 +876,6 @@ _Game.onMessage = function(data) {
             _Game.world.players[n.id].direction = n.dir;
             _Game.world.players[n.id].facing = n.dir;
             _Game.world.players[n.id].moved = 0;
-            
-            _Game.stats.player = n.stats.p;
-            _Game.stats.tree = n.stats.t;
             break;
         case "snap":
             var n = JSON.parse(message[1]);

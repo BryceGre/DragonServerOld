@@ -525,7 +525,7 @@ _UI.reDraw = function() {
 
 _UI.reDrawChild = function(child, width, height) {
     _UI.transform.save();
-    console.log("child: <" + child.prop("tagName") + " id='" + child.attr('id') + "' />");
+    //console.log("child: <" + child.prop("tagName") + " id='" + child.attr('id') + "' />");
     
     if (child.prop("tagName") == "div" || child.prop("tagName") == "drop") {
         var dx = child.attr('x') || 0;
