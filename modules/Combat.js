@@ -214,11 +214,11 @@ Combat.server.onHook = function(hook, args) {
 						Game.socket.send("abilityfail:Out of range!");
 						return;
 					}
-					if (!player.health) {
+					if (!player.maxhealth) {
 						player.health = 100;
 						player.maxhealth = 100;
 					}
-					if (!player.mana) {
+					if (!player.maxmana) {
 						player.mana = 100;
 						player.maxmana = 100;
 					}
@@ -243,7 +243,7 @@ Combat.server.onHook = function(hook, args) {
 					msg.phpm = user.maxhealth;
 					msg.pmp = user.mana;
 					msg.pmpm = user.maxmana;
-					msg.tid = data.id;
+					msg.tid = data.tid;
 					msg.thp = player.health;
 					msg.thpx = player.maxhealth;
 					msg.tmp = player.mana;
@@ -420,7 +420,7 @@ Combat.client.onHook = function(hook, args) {
 					this.mana = data.tmp; this.manaMax = data.tmpx;
 					this.updateHUD();
 				} else if (Game.world.players[data.tid]) {
-					this.animation = new Combat.Animation(data.anim, Game.world.players[data.pid]);
+					this.animation = new Combat.Animation(data.anim, Game.world.players[data.tid]);
 				}
 			}
 			
