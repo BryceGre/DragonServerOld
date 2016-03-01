@@ -79,8 +79,6 @@ _Game.module_loaded = function() {
         _Game.context = _Game.canvas.getContext("2d");
         _Game.testcontext = $("#tiletest")[0].getContext("2d");
         
-        _UI.initLayout();
-        
         _Game.setupConfig();
         _Game.module_onLoaded();
         _Game.onLoaded();
@@ -141,6 +139,7 @@ _Game.setupConfig = function() {
     // setup globals
     $("#game")[0].width = CLIENT_WIDTH;
     $("#game")[0].height = CLIENT_HEIGHT;
+    
     $("#HUD")[0].width = CLIENT_WIDTH;
     $("#HUD")[0].height = CLIENT_HEIGHT;
 
@@ -181,7 +180,6 @@ $(document).ready(function() {
     });
     _Data.includes_requested++;
     
-    _Game.setPref("FillScreen", InitPrefs['FillScreen']);
     for (var key in InitPrefs) {
         if (_Game.getPref(key) === null) {
             _Game.setPref(key, InitPrefs[key]);

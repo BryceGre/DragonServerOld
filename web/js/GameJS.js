@@ -2,6 +2,7 @@ var isAdmin = false;
 _Game.gameTime = 0;
 // Game Variables
 _Game.updateTime = 0;
+_Game.tickTime = 0;
 _Game.lastTime = $.now();
 _Game.canvas;
 _Game.context;
@@ -21,6 +22,7 @@ _Game.onLoaded = function() {
     Module.doHook("game_load", {admin: false});
     
     _Game.setupMenu();
+    _UI.HUD.init();
     
     if (window.Worker)
         //_Game.tileWorker = new Worker("js/worker/tile.js");
@@ -63,7 +65,7 @@ _Game.loadWorld = function(string) {
         var f = parseInt(n[3]);
         var s = parseInt(n[4]);
         
-        _Game.world.npcs[id] = new NPC(n[5], x, y, f, s);
+        _Game.world.npcs[id] = new NPC(id, n[5], x, y, f, s);
         _Game.world.npcTile[Tile.key(x, y, f)] = id;
     }
     
@@ -171,6 +173,13 @@ _Game.onUpdate = function(elapsed) {
         Module.doHook("on_update", {admin: false});
     }
     
+    //tick every second
+    _Game.tickTime += elapsed;
+    while (_Game.tickTime >= 1000) {
+        Module.doHook("game_tick");
+        _Game.tickTime -= 1000;
+    }
+    
     Module.doHook("raw_update", {admin: false, elapsed: elapsed});
 }
 
@@ -185,23 +194,10 @@ _Game.onDraw = function(elapsed) {
     _Game.context.clearRect(0, 0, _Game.canvas.width, _Game.canvas.height);
 
     // to reduce math, do calculations now:
-    var offsetX = 0;
-    var offsetY = 0;
-    if (_Game.world.user.direction != 0) {
-        if (_Game.world.user.direction == 37) { // left
-            offsetX -= (TILE_SIZE - _Game.world.user.moved);
-        } else if (_Game.world.user.direction == 38) { // up
-            offsetY -= (TILE_SIZE - _Game.world.user.moved);
-        } else if (_Game.world.user.direction == 39) { // right
-            offsetX += (TILE_SIZE - _Game.world.user.moved);
-        } else if (_Game.world.user.direction == 40) { // down
-            offsetY += (TILE_SIZE - _Game.world.user.moved);
-        }
-    }
-    var middleX = (_Game.canvas.width / 2) + offsetX;
-    var middleY = (_Game.canvas.height / 2) + offsetY;
-    var destx = middleX - (TILE_SIZE * DRAW_DISTANCE);
-    var desty = middleY - (TILE_SIZE * DRAW_DISTANCE);
+    var offsetX = _Game.getMovedX(_Game.world.user);
+    var offsetY = _Game.getMovedY(_Game.world.user);
+    var destx = (_Game.canvas.width / 2) + offsetX - (TILE_SIZE * DRAW_DISTANCE);
+    var desty = (_Game.canvas.height / 2) + offsetY - (TILE_SIZE * DRAW_DISTANCE);
     
     Module.doHook("pre_draw", {admin: false, elapsed: elapsed});
     
@@ -227,19 +223,8 @@ _Game.onDraw = function(elapsed) {
     
     //draw target indicator below all characters
     if (_Game.world.user.target) {
-        var targetX = ((_Game.world.user.target.x - _Game.world.user.x) * TILE_SIZE) + middleX;
-        var targetY = ((_Game.world.user.target.y - _Game.world.user.y) * TILE_SIZE) + middleY;
-        if (_Game.world.user.target.direction != 0) {
-            if (_Game.world.user.target.direction == 37) { // left
-                targetX += (TILE_SIZE - _Game.world.user.target.moved);
-            } else if (_Game.world.user.target.direction == 38) { // up
-                targetY += (TILE_SIZE - _Game.world.user.target.moved);
-            } else if (_Game.world.user.target.direction == 39) { // right
-                targetX -= (TILE_SIZE - _Game.world.user.target.moved);
-            } else if (_Game.world.user.target.direction == 40) { // down
-                targetY -= (TILE_SIZE - _Game.world.user.target.moved);
-            }
-        }
+        var targetX = _Game.getCanvasX(_Game.world.user.target.x, offsetX) - _Game.getMovedX(_Game.world.user.target);
+        var targetY = _Game.getCanvasY(_Game.world.user.target.y, offsetY) - _Game.getMovedY(_Game.world.user.target);
         _Game.context.drawImage(_Game.target, 0, 0, TILE_SIZE, TILE_SIZE, targetX, targetY, TILE_SIZE, TILE_SIZE);
     }
     
@@ -262,19 +247,8 @@ _Game.onDraw = function(elapsed) {
         if (_Game.world.players[key].floor == _Game.world.user.floor) {
             var w = Math.floor(_Game.gfx.Sprites[_Game.world.players[key].sprite].width / 4);
             var h = Math.floor(_Game.gfx.Sprites[_Game.world.players[key].sprite].height / 4);
-            var playerX = ((_Game.world.players[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
-            var playerY = ((_Game.world.players[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
-            if (_Game.world.players[key].direction != 0) {
-                if (_Game.world.players[key].direction == 37) { // left
-                    playerX += (TILE_SIZE - _Game.world.players[key].moved);
-                } else if (_Game.world.players[key].direction == 38) { // up
-                    playerY += (TILE_SIZE - _Game.world.players[key].moved);
-                } else if (_Game.world.players[key].direction == 39) { // right
-                    playerX -= (TILE_SIZE - _Game.world.players[key].moved);
-                } else if (_Game.world.players[key].direction == 40) { // down
-                    playerY -= (TILE_SIZE - _Game.world.players[key].moved);
-                }
-            }
+            var playerX = _Game.getCanvasX(_Game.world.players[key].x, offsetX) - _Game.getMovedX(_Game.world.players[key]) - ((w/2) - (TILE_SIZE/2));
+            var playerY = _Game.getCanvasY(_Game.world.players[key].y, offsetY) - _Game.getMovedY(_Game.world.players[key]) - (h - TILE_SIZE);
             //add player to queue
             if (!queue[_Game.world.players[key].y]) {
                 queue[_Game.world.players[key].y] = new Array();
@@ -292,19 +266,8 @@ _Game.onDraw = function(elapsed) {
         if (_Game.world.npcs[key].floor == _Game.world.user.floor) {
             var w = Math.floor(_Game.gfx.Sprites[_Game.world.npcs[key].sprite].width / 4);
             var h = Math.floor(_Game.gfx.Sprites[_Game.world.npcs[key].sprite].height / 4);
-            var npcX = ((_Game.world.npcs[key].x - _Game.world.user.x) * TILE_SIZE) + middleX - ((w/2) - (TILE_SIZE/2));
-            var npcY = ((_Game.world.npcs[key].y - _Game.world.user.y) * TILE_SIZE) + middleY - (h - TILE_SIZE);
-            if (_Game.world.npcs[key].direction != 0) {
-                if (_Game.world.npcs[key].direction == 37) { // left
-                    npcX += (TILE_SIZE - _Game.world.npcs[key].moved);
-                } else if (_Game.world.npcs[key].direction == 38) { // up
-                    npcY += (TILE_SIZE - _Game.world.npcs[key].moved);
-                } else if (_Game.world.npcs[key].direction == 39) { // right
-                    npcX -= (TILE_SIZE - _Game.world.npcs[key].moved);
-                } else if (_Game.world.npcs[key].direction == 40) { // down
-                    npcY -= (TILE_SIZE - _Game.world.npcs[key].moved);
-                }
-            }
+            var npcX = _Game.getCanvasX(_Game.world.npcs[key].x, offsetX) - _Game.getMovedX(_Game.world.npcs[key]) - ((w/2) - (TILE_SIZE/2));
+            var npcY = _Game.getCanvasY(_Game.world.npcs[key].y, offsetY) - _Game.getMovedY(_Game.world.npcs[key]) - (h - TILE_SIZE);
             //add npc to queue
             if (!queue[_Game.world.npcs[key].y]) {
                 queue[_Game.world.npcs[key].y] = new Array();
@@ -350,7 +313,7 @@ _Game.onDraw = function(elapsed) {
     }
 
     if (DEBUG) {
-        _Game.drawDebug();
+        //_Game.drawDebug();
     }
 }
 
@@ -525,6 +488,58 @@ _Game.reDrawDoor = function(a, b, c) {
             destx += TILE_SIZE;
         }
     }
+}
+
+_Game.getCanvasX = function(x, offsetX) {
+    if (offsetX === undefined) {
+        offsetX = 0;
+        if (_Game.world.user.direction != 0) {
+            if (_Game.world.user.direction == 37) { // left
+                offsetX -= (TILE_SIZE - _Game.world.user.moved);
+            } else if (_Game.world.user.direction == 39) { // right
+                offsetX += (TILE_SIZE - _Game.world.user.moved);
+            }
+        }
+    }
+    var middleX = (_Game.canvas.width / 2) + offsetX;
+    return ((x - _Game.world.user.x) * TILE_SIZE) + middleX;
+}
+
+_Game.getCanvasY = function(y, offsetY) {
+    if (offsetY === undefined) {
+        offsetY = 0;
+        if (_Game.world.user.direction != 0) {
+            if (_Game.world.user.direction == 38) { // up
+                offsetY -= (TILE_SIZE - _Game.world.user.moved);
+            } else if (_Game.world.user.direction == 40) { // down
+                offsetY += (TILE_SIZE - _Game.world.user.moved);
+            }
+        }
+    }
+    var middleY = (_Game.canvas.height / 2) + offsetY;
+    return ((y - _Game.world.user.y) * TILE_SIZE) + middleY;
+}
+
+_Game.getMovedX = function(char) {
+    if (char.direction != 0) {
+        if (char.direction == 37) { // left
+            return 0 - (TILE_SIZE - char.moved);
+        } else if (char.direction == 39) { // right
+            return 0 + (TILE_SIZE - char.moved);
+        }
+    }
+    return 0;
+}
+
+_Game.getMovedY = function(char) {
+    if (char.direction != 0) {
+        if (char.direction == 38) { // up
+            return 0 - (TILE_SIZE - char.moved);
+        } else if (char.direction == 40) { // down
+            return 0 + (TILE_SIZE - char.moved);
+        }
+    }
+    return 0;
 }
 
 _Game.isBlocked = function(dir, x, y, floor) {
@@ -715,6 +730,8 @@ _Game.keyDown = function(e) {
     // if (e.which == 16) {
     // _Game.world.user.sprinting = true;
     // }
+    
+    _UI.keyDown(e);
 }
 
 _Game.keyUp = function(e) {
@@ -779,6 +796,8 @@ _Game.onClick = function(e) {
             }
         }
     }
+    
+    Module.doHook("click", {admin:false, x: x, y: y});
 }
 
 _Game.onMessage = function(data) {
@@ -847,7 +866,7 @@ _Game.onMessage = function(data) {
                 var y = parseInt(npc[2]);
                 var f = parseInt(npc[3]);
                 var s = parseInt(npc[4]);
-                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
+                _Game.world.npcs[id] = new NPC(id, npc[5], x, y, f, s);
                 _Game.world.npcTile[Tile.key(x, y, f)] = id;
             }
             break;
@@ -914,7 +933,7 @@ _Game.onMessage = function(data) {
                     var y = parseInt(npc[2]);
                     var f = parseInt(npc[3]);
                     var s = parseInt(npc[4]);
-                    _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
+                    _Game.world.npcs[id] = new NPC(id, npc[5], x, y, f, s);
                     _Game.world.npcTile[Tile.key(x, y, f)] = id;
                 }
             }
@@ -946,7 +965,7 @@ _Game.onMessage = function(data) {
             var s = parseInt(npc[4]);
             
             if (!_Game.world.npcs[id]) {
-                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
+                _Game.world.npcs[id] = new NPC(id, npc[5], x, y, f, s);
             } else {
                 delete _Game.world.npcTile[Tile.key(_Game.world.npcs[id].x, _Game.world.npcs[id].y, _Game.world.npcs[id].floor)];
                 _Game.world.npcs[id].resetLastPoint();
@@ -989,7 +1008,7 @@ _Game.onMessage = function(data) {
             var s = parseInt(npc[4]);
             if (!_Game.world.npcs[id]) {
                 //spawn npc
-                _Game.world.npcs[id] = new NPC(npc[5], x, y, f, s);
+                _Game.world.npcs[id] = new NPC(id, npc[5], x, y, f, s);
                 _Game.world.npcTile[Tile.key(x, y, f)] = id;
             } else {
                 //move npc back to spawn

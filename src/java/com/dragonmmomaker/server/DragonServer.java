@@ -180,6 +180,7 @@ public class DragonServer {
         public void run() {
             //add {mTimeFactor} seconds to the game time
             mData.Time.setTime(mData.Time.getTime() + (mTimeFactor * 1000));
+            mData.Module.doHook("game_tick");
             //also run the garbage collecter every second to keep memory consumption down.
             count++;
             if (count >= GC_FREQ) {

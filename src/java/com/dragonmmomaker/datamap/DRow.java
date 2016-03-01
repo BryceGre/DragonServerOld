@@ -254,7 +254,10 @@ public class DRow extends HashMap<Object, Object> {
         try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql1 + sql2)) {
             for (int i=0; i<count; i++) {
                 if (i == key)
-                    statement.setString(i+1, data[i].toString());
+                    if (data[i] == null)
+                        statement.setString(i+1, null);
+                    else
+                        statement.setString(i+1, data[i].toString());
                 else
                     statement.setBytes(i+1, BinaryDB.prepareObject(data[i]));
             }

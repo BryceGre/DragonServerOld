@@ -31,6 +31,7 @@ import com.dragonmmomaker.server.data.DummyTile;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.util.SocketUtils;
+import java.util.ArrayList;
 
 /**
  *
@@ -42,6 +43,7 @@ public class NpcManager {
     private Timer mTimer;
     private NpcUpdateTask mUpdateTask;
     private Map<String,Npc> mNpcData;
+    private HashMap<Integer,Npc> mNpcList;
     private Queue<Npc> mRespawn;
 
     private int mCount;
@@ -49,6 +51,7 @@ public class NpcManager {
     public NpcManager(final ServData pServData) {
         mData = pServData;
         mNpcData = new ConcurrentHashMap();
+        mNpcList = new HashMap();
         mRespawn = new LinkedList();
         
         mCount = 1;
@@ -81,6 +84,7 @@ public class NpcManager {
     
     public void spawnNPC(Tile pTile, int pNpc, Map<Object,Object> pInfo) {
         Npc npc = new Npc(mCount);
+        mNpcList.put(mCount, npc);
         npc.setId(pNpc);
         npc.setX(pTile.getX());
         npc.setY(pTile.getY());
@@ -92,7 +96,7 @@ public class NpcManager {
         npc.setHealth(100); //TODO: Health
         npc.setLastMove(new Date().getTime());
         mNpcData.put(Tile.key(pTile), npc);
-
+        
         mCount++;
         
         Map<String,Object> args = new HashMap();
@@ -153,6 +157,14 @@ public class NpcManager {
 
     public void respawnAll() {
         //TODO: respawn all NPCs (for map editing)
+    }
+    
+    public Npc getNpc(int pID) {
+        try {
+            return mNpcList.get(pID);
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     public Npc getNpc(int pX, int pY, short pFloor) {

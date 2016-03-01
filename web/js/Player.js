@@ -47,6 +47,7 @@ function User(name, x, y, floor, sprite) {
     this.nextDir = 0;
     this.sprinting = false;
     this.command = 0;
+    this.user = true;
 }
 
 //A Player is any player other than the local user
@@ -56,10 +57,13 @@ function Player(id, name, x, y, floor, sprite) {
     this.sprinting = false;
     this.command = 0;
     this.id = parseInt(id);
+    this.player = true;
 }
 
-function NPC(name, x, y, floor, sprite) {
+function NPC(id, name, x, y, floor, sprite) {
     Character.call(this, name, x, y, floor, sprite);
+    this.id = parseInt(id);
+    this.npc = true;
 }
 
 User.prototype = Object.create(Character.prototype);

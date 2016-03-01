@@ -61,6 +61,7 @@ Chat.client.onInit = function() {
     Module.addHook("game_load");
     Module.addHook("world_load");
     Module.addHook("message");
+	Module.addHook("click");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
@@ -69,12 +70,15 @@ Chat.client.onHook = function(hook, args) {
         Chat.client.createUI();
     } else if (hook == "world_load") {
         $(this.window).dialog("open");
+		$("#chat-box").blur();
     } else if (hook == "message") {
         if (args.head == "chat") {
             $("#chat-area").append(args.body);
             $("#chat-area").scrollTop($("#chat-area").prop("scrollHeight"));
         }
-    }
+    } else if (hook == "click") {
+		$("#chat-box").blur();
+	}
 }
 
 /***** helper *****/
@@ -100,6 +104,7 @@ Chat.client.createUI = function() {
     
     Game.menus["Chat"] = function() {
         $("#chat").dialog("open");
+		$("#chat-box").blur();
     };
 }
 
@@ -113,5 +118,7 @@ Chat.client.sendMsg = function() {
 
         $("#chat-box").val("");
         Chat.client.message = "";
+		
+		$("#chat-box").blur();
     }
 }

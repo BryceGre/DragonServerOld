@@ -1,12 +1,14 @@
 var _UI = new Object();
+_UI.HUD = new Object();
 var UI = _UI;
 
 _UI.UI_Top = new Object();
 _UI.VAL = new Object();
-_UI.Images = new Object();
-_UI.Drops = new Object();
-_UI.Translate = {x:0, y:0};
-_UI.SaveStack = new Array();
+_UI.HUD.Images = new Object();
+_UI.HUD.Drops = new Object();
+_UI.HUD.Binds = new Object();
+_UI.HUD.Translate = {x:0, y:0};
+_UI.HUD.SaveStack = new Array();
 
 _UI.NewWindow = function(id, title, width, height) {
     var newdiv =
@@ -325,11 +327,11 @@ _UI.AddDrag = function(window, name, hook, args, tab, attr) {
             helper.attr("src", newdiv[0].toDataURL());
             helper.data("hook", hook);
             helper.data("args", args);
-            _UI.scaleWidth(helper);
+            _UI.HUD.scaleWidth(helper);
             return helper;
         },
         cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
-        stop: _UI.onDragStop,
+        stop: _UI.HUD.onDragStop,
     });
 
     return newdiv;
@@ -499,7 +501,16 @@ $.fn.val = function () {
     }
 };
 
-_UI.initLayout = function() {
+_UI.keyDown = function(e) {
+    if (_UI.HUD.Binds[e.which]) {
+        var pref = _Game.getPref("drop-" + _UI.HUD.Binds[e.which]);
+        if (pref) {
+            Module.doHook(pref.hook, pref.args);
+        }
+    }
+}
+
+_UI.HUD.init = function() {
     console.log("init layout");
     
     _UI.canvas = $("#HUD")[0];
@@ -513,7 +524,7 @@ _UI.initLayout = function() {
         helper: function(e) {
             var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
             var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
-            var key = _UI.findDrop(x, y);
+            var key = _UI.HUD.findDrop(x, y);
             if (key) {
                 var pref = _Game.getPref("drop-" + key);
                 if (pref) {
@@ -522,12 +533,12 @@ _UI.initLayout = function() {
                     helper.attr("src", pref.image);
                     helper.data("hook", pref.hook);
                     helper.data("args", pref.args);
-                    _UI.scaleWidth(helper);
+                    _UI.HUD.scaleWidth(helper);
                     
                     //remove from bar
-                    _Game.HUD.find("#" + key).attr('src', _UI.Drops[key].oldsrc);
+                    _Game.HUD.find("#" + key).attr('src', _UI.HUD.Drops[key].oldsrc);
                     _Game.setPref("drop-" + key, null);
-                    _UI.reDraw();
+                    _UI.HUD.reDraw();
                     
                     return helper;
                 }
@@ -535,13 +546,13 @@ _UI.initLayout = function() {
             return $("<div>");
         },
         cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
-        stop: _UI.onDragStop,
+        stop: _UI.HUD.onDragStop,
     });
     
     $(_UI.canvas).on("click", function(e) {
         var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
         var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
-        var key = _UI.findDrop(x, y);
+        var key = _UI.HUD.findDrop(x, y);
         if (key) {
             var pref = _Game.getPref("drop-" + key);
             if (pref) {
@@ -555,13 +566,13 @@ _UI.initLayout = function() {
     $(_UI.canvas).on("contextmenu", function(e) {
         var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
         var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
-        var key = _UI.findDrop(x, y);
+        var key = _UI.HUD.findDrop(x, y);
         if (key) {
             var pref = _Game.getPref("drop-" + key);
             if (pref) {
-               _Game.HUD.find("#" + key).attr('src', _UI.Drops[key].oldsrc);
+               _Game.HUD.find("#" + key).attr('src', _UI.HUD.Drops[key].oldsrc);
                _Game.setPref("drop-" + key, null);
-                _UI.reDraw();
+                _UI.HUD.reDraw();
             }
             return false;
         } else {
@@ -574,41 +585,41 @@ _UI.initLayout = function() {
     _Game.HUD.find('[src]').each(function() {
         var src = $(this).attr('src');
         if (src.lastIndexOf("data:image", 0) !== 0) {
-            _UI.Images[src] = new Image();
-            _UI.Images[src].onload = function() {
+            _UI.HUD.Images[src] = new Image();
+            _UI.HUD.Images[src].onload = function() {
                 complete++;
                 if (complete == requests)
-                    _UI.reDraw();
+                    _UI.HUD.reDraw();
             }
-            _UI.Images[src].onerror = function() {
+            _UI.HUD.Images[src].onerror = function() {
                 console.error("Unable to load HUD image: " + src);
                 complete++;
                 if (complete == requests)
-                    _UI.reDraw();
+                    _UI.HUD.reDraw();
             }
             requests++;
-            _UI.Images[src].src = src;
+            _UI.HUD.Images[src].src = src;
         }
     });
     if (requests == 0)
-        _UI.reDraw();
+        _UI.HUD.reDraw();
 }
 
-_UI.getHUDById = function(id) {
-    return _Game.HUD.find('#'+id);
+_UI.HUD.get = function(id) {
+    return _Game.HUD.find(id);
 }
 
-_UI.reDraw = function() {
-    _UI.Translate.x = 0;
-    _UI.Translate.y = 0;
+_UI.HUD.reDraw = function() {
+    _UI.HUD.Translate.x = 0;
+    _UI.HUD.Translate.y = 0;
     _UI.context.clearRect(0, 0, _UI.canvas.width, _UI.canvas.height);
     _Game.HUD.find("layout").children().each(function () {
-        _UI.reDrawChild($(this), _UI.canvas.width, _UI.canvas.height);
+        _UI.HUD.reDrawChild($(this), _UI.canvas.width, _UI.canvas.height);
     });
 }
 
-_UI.reDrawChild = function(child, width, height) {
-    _UI.transform.save();
+_UI.HUD.reDrawChild = function(child, width, height) {
+    _UI.HUD.transform.save();
     
     if (child.prop("tagName").toLowerCase() == "div" || child.prop("tagName").toLowerCase() == "drop") {
         var dx = parseInt(child.attr('x')) || 0;
@@ -619,7 +630,7 @@ _UI.reDrawChild = function(child, width, height) {
         } else {
             var dw = TILE_SIZE;
             var dh = TILE_SIZE;
-            _UI.initDrop(child);
+            _UI.HUD.initDrop(child);
         }
         var color = child.attr('color') || null;
         if (color) {
@@ -628,17 +639,29 @@ _UI.reDrawChild = function(child, width, height) {
         }
         var src = child.attr('src') || null;
         if (src) {
-            if (_UI.Images[src]) {
-                _UI.context.drawImage(_UI.Images[src], dx, dy, dw, dh);
+            if (_UI.HUD.Images[src]) {
+                _UI.context.drawImage(_UI.HUD.Images[src], dx, dy, dw, dh);
             } else if (src.lastIndexOf("data:image", 0) === 0) {
                 var img = new Image();
                 img.src = src;
                 _UI.context.drawImage(img, dx, dy, dw, dh);
             } 
         }
-        _UI.transform.translate(dx, dy);
+        _UI.HUD.transform.translate(dx, dy);
         width = dw;
         height = dh;
+    } else if (child.prop("tagName").toLowerCase() == "text") {
+        var x = parseInt(child.attr('x')) || 0;
+        var y = parseInt(child.attr('y')) || 0;
+        var text = child.text() || "";
+        var size = child.attr('size') || "12px";
+        var font = child.attr('font') || "Arial";
+        var color =  child.attr('color') || "black";
+        var align =  child.attr('align') || "left";
+        _UI.context.font = size + " " + font;
+        _UI.context.fillStyle = color;
+        _UI.context.textAlign = align;
+        _UI.context.fillText(text, x, y);
     } else if (child.prop("tagName").toLowerCase() == "anchor") {
         var x = 0;
         var y = 0;
@@ -664,24 +687,24 @@ _UI.reDrawChild = function(child, width, height) {
                 y = height;
                 break;
         }
-        _UI.transform.translate(x, y);
+        _UI.HUD.transform.translate(x, y);
     }
     
     child.children().each(function() {
-        _UI.reDrawChild($(this), width, height);
+        _UI.HUD.reDrawChild($(this), width, height);
     });
     
-    _UI.transform.restore();
+    _UI.HUD.transform.restore();
 }
 
-_UI.findDrop = function(x, y) {
+_UI.HUD.findDrop = function(x, y) {
     var drop = null;
-    for (var key in _UI.Drops) {
-        if (_UI.Drops[key].left < x && _UI.Drops[key].top < y) {
-            if (_UI.Drops[key].right > x && _UI.Drops[key].bottom > y) {
+    for (var key in _UI.HUD.Drops) {
+        if (_UI.HUD.Drops[key].left < x && _UI.HUD.Drops[key].top < y) {
+            if (_UI.HUD.Drops[key].right > x && _UI.HUD.Drops[key].bottom > y) {
                 if (drop == null) {
                     drop = key;
-                } else if (_UI.Drops[key].zindex > _UI.Drops[drop].zindex) {
+                } else if (_UI.HUD.Drops[key].zindex > _UI.HUD.Drops[drop].zindex) {
                     drop = key;
                 }
             }
@@ -690,65 +713,69 @@ _UI.findDrop = function(x, y) {
     return drop;
 }
 
-_UI.initDrop = function(drop) {
+_UI.HUD.initDrop = function(drop) {
     var id = drop.attr('id');
-    if (!_UI.Drops[id]) {
+    if (!_UI.HUD.Drops[id]) {
         var x = parseInt(drop.attr('x')) || 0;
         var y = parseInt(drop.attr('y')) || 0;
         var z = parseInt(drop.attr('z')) || 0;
         var w = TILE_SIZE;
         var h = TILE_SIZE;
         
-        var tr = _UI.transform.get();
+        var tr = _UI.HUD.transform.get();
         x += tr.x;
         y += tr.y;
         w += x;
         h += y;
-        _UI.Drops[id] = {left:x, top:y, right:w, bottom:h, zindex:z};
+        _UI.HUD.Drops[id] = {left:x, top:y, right:w, bottom:h, zindex:z};
         
         //also restore image from saved drops
-        _UI.Drops[id].oldsrc = drop.attr('src');
+        _UI.HUD.Drops[id].oldsrc = drop.attr('src');
         var pref = _Game.getPref("drop-" + id);
         if (pref) {
             drop.attr('src', pref.image);
         }
+        
+        var key = parseInt(drop.attr('key')) || 0;
+        if (!_UI.HUD.Binds[key])
+            _UI.HUD.Binds[key] = id;
     }
 }
 
-_UI.transform = new Object();
-_UI.transform.translate = function(x, y) {
+_UI.HUD.transform = new Object();
+_UI.HUD.transform.translate = function(x, y) {
     _UI.context.translate(x, y);
-    _UI.Translate.x += x;
-    _UI.Translate.y += y;
+    _UI.HUD.Translate.x += x;
+    _UI.HUD.Translate.y += y;
 }
-_UI.transform.save = function() {
+_UI.HUD.transform.save = function() {
     _UI.context.save();
-    _UI.SaveStack.push(jQuery.extend({}, _UI.Translate));
+    _UI.HUD.SaveStack.push(jQuery.extend({}, _UI.HUD.Translate));
 }
-_UI.transform.restore = function() {
+_UI.HUD.transform.restore = function() {
     _UI.context.restore();
-    _UI.Translate = _UI.SaveStack.pop();
+    _UI.HUD.Translate = _UI.HUD.SaveStack.pop();
 }
-_UI.transform.get = function() {
-    return _UI.Translate;
+_UI.HUD.transform.get = function() {
+    return _UI.HUD.Translate;
 }
 
-_UI.scaleWidth = function(element) {
+_UI.HUD.scaleWidth = function(element) {
     var width =  element[0].width  * ($("#game").width()  / CLIENT_WIDTH );
     var height = element[0].height * ($("#game").height() / CLIENT_HEIGHT);
     element.width (width );
     element.height(height);
 }
 
-_UI.onDragStop = function(e, ui) {
+_UI.HUD.onDragStop = function(e, ui) {
     if (ui.helper.prop("tagName").toLowerCase() == "img") {
         var x = (e.pageX - $("#game").offset().left) * (CLIENT_WIDTH  / $("#game").width() );
         var y = (e.pageY - $("#game").offset().top ) * (CLIENT_HEIGHT / $("#game").height());
-        var key = _UI.findDrop(x, y);
+        var key = _UI.HUD.findDrop(x, y);
         if (key) {
             _Game.HUD.find("#" + key).attr('src', ui.helper.attr('src'));
             _Game.setPref("drop-" + key, {image: ui.helper.attr('src'), hook: ui.helper.data("hook"), args: ui.helper.data("args")});
-            _UI.reDraw();
+            _UI.HUD.reDraw();
         }
     }
 }

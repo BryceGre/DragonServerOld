@@ -51,6 +51,13 @@ Combat.Ability = function() {
 	this.t = new Combat.Effect(); //target effect
 };
 
+Combat.Animation = function(pAnim, pTarget) {
+	this.anim = pAnim;
+	this.target = pTarget;
+	this.count = 0;
+	this.frame = 0;
+}
+
 /***********************************************/
 /***** Server **********************************/
 /***********************************************/
@@ -58,21 +65,48 @@ Combat.server = {
     /***** variables *****/
 	editor : {
 		currAbility: 1,
-	}
+	},
+	cooldowns : new Object(),
 };
 
 /***** functions *****/
 //onInit: Called when the server is started, or the module is installed
 Combat.server.onInit = function() {
     //hook into events here
+	Module.addHook("on_load");
     Module.addHook("npc_act");
+	Module.addHook("message");
     Module.addHook("admin_message");
+	Module.addHook("game_tick");
 };
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 Combat.server.onHook = function(hook, args) {
     //argument "hook" contains which event has triggered
-    if (hook === "npc_act") {
+	if (hook === "on_load") {
+		if (args.index) {
+			var user = Data.characters[args.index];
+			
+			if (!user.health) {
+				user.health = 100;
+				user.maxhealth = 100;
+			}
+			if (!user.mana) {
+				user.mana = 100;
+				user.maxmana = 100;
+			}
+			
+			//append to message
+			var msg = JSON.parse(args.msg);
+			msg.combat = {
+				hp: user.health,
+				hpx: user.maxhealth,
+				mp: user.mana,
+				mpx : user.maxmana,
+			}
+			args.msg = JSON.stringify(msg);
+		}
+	} else if (hook === "npc_act") {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
             if (npc.action == "attack") {
@@ -97,8 +131,129 @@ Combat.server.onHook = function(hook, args) {
                 Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
             }
         }
-    }
-    if (hook === "admin_message") {
+    } else if (hook === "message") {
+		if (args.head === "castability") {
+			var data = JSON.parse(args.body);
+			var msg = new Object();
+			//make sure ability exists
+			if (Data.abilities.containsID(data.id)) {
+				var ability = Data.abilities[data.id];
+				//make sure ability is not on cooldown
+				var last = this.cooldowns[data.id];
+				var now = new Date();
+				if ((now.getTime() - last) / 1000 < ability.cool) {
+					Game.socket.send("abilityfail:Ability on cooldown!");
+					return;
+				}
+				var user = Data.characters[args.index];
+				if (!user.health) {
+					user.health = 100;
+					user.maxhealth = 100;
+				}
+				if (!user.mana) {
+					user.mana = 100;
+					user.maxmana = 100;
+				}
+				if (user.mana + ability.pmp < 0) {
+					Game.socket.send("abilityfail:Not enough mana!");
+					return;
+				}
+				user.health += ability.php;
+				user.mana += ability.pmp;
+				//determine target
+				if (data.target === null) {
+					user.health += ability.thp;
+					user.mana += ability.tmp;
+					//record cooldown
+					this.cooldowns[data.id] = now;
+					//record changes
+					msg.anim = ability.anim;
+					msg.tar = null;
+					msg.pid = args.index;
+					msg.php = user.health;
+					msg.phpx = user.maxhealth;
+					msg.pmp = user.mana;
+					msg.pmpx = user.maxmana;
+					//send update message
+					Game.socket.sendRange("ability:" + JSON.stringify(msg));
+				} else if (data.target === "npc") {
+					var npc = Game.getNPC(data.tid);
+					//if npc exists
+					if (npc) {
+						//also be sure that the target is within range
+						if (Math.sqrt(Math.pow(npc.x - user.x, 2) + Math.pow(npc.y - user.y, 2)) > ability.range)  {
+							Game.socket.send("abilityfail:Out of range!");
+							return;
+						}
+						npc.health += ability.thp;
+						//record cooldown
+						this.cooldowns[data.id] = now;
+						//record changes
+						msg.anim = ability.anim;
+						msg.tar = "npc";
+						msg.pid = args.index;
+						msg.php = user.health;
+						msg.phpx = user.maxhealth;
+						msg.pmp = user.mana;
+						msg.pmpx = user.maxmana;
+						msg.tid = data.tid;
+						msg.dam = ability.thp;
+						//send update message
+						Game.socket.sendRange("ability:" + JSON.stringify(msg));
+						//send progress update
+						if (npc.health <= 0) {
+							var newxp = npc.exp;
+							if (!newxp) newxp = 10;
+							Module.doHook("progress_gain", {index:args.index, exp:newxp});
+						}
+					}
+				} else if (data.target === "player") {
+					var player = Data.characters[data.tid];
+					//also be sure that the target is within range
+					if (Math.sqrt(Math.pow(player.x - user.x, 2) + Math.pow(player.y - user.y, 2)) > ability.range) {
+						Game.socket.send("abilityfail:Out of range!");
+						return;
+					}
+					if (!player.health) {
+						player.health = 100;
+						player.maxhealth = 100;
+					}
+					if (!player.mana) {
+						player.mana = 100;
+						player.maxmana = 100;
+					}
+					player.health += ability.thp;
+					if (player.health > player.maxhealth)
+						player.health = player.maxhealth;
+					if (player.health < 0) {
+						//TODO: die
+					}
+					player.mana += ability.tmp;
+					if (player.mana > player.maxmana)
+						player.mana = player.maxmana;
+					if (player.mana < 0)
+						player.mana = 0;
+					//record cooldown
+					this.cooldowns[data.id] = now;
+					//record changes
+					msg.anim = ability.anim;
+					msg.tar = "player";
+					msg.pid = args.index;
+					msg.php = user.health;
+					msg.phpm = user.maxhealth;
+					msg.pmp = user.mana;
+					msg.pmpm = user.maxmana;
+					msg.tid = data.id;
+					msg.thp = player.health;
+					msg.thpx = player.maxhealth;
+					msg.tmp = player.mana;
+					msg.tmpx = player.maxmana;
+					//send update message
+					Game.socket.sendRange("ability:" + JSON.stringify(msg));
+				}
+			}
+		}
+	} else if (hook === "admin_message") {
         if (args.head === "saveability") {
             var data = JSON.parse(args.body);
 			
@@ -120,6 +275,22 @@ Combat.server.onHook = function(hook, args) {
 			
             Game.socket.send("abilitynames:" + JSON.stringify(names));
         }
+	} else if (hook === "game_tick") {
+		//ticks every second (hopefully)
+		if (Data.characters) {
+			var list = Data.characters.list("id");
+			for (var key in list) {
+				var data = Data.characters[key];
+				if (data.health) {
+					if (data.health < data.maxhealth)
+						data.health += 1;
+				}
+				if (data.mana) {
+					if (data.mana < data.maxmana)
+						data.mana += 1;
+				}
+			}
+		}
 	}
 }
 
@@ -145,6 +316,11 @@ Combat.client = {
 	abilities : {
 		window: null,
 	},
+	animation : null,
+	health : 100,
+	healthMax : 100,
+	mana : 100,
+	manaMax : 100,
     sct : new Array(), //scrolling combat text
 };
 
@@ -155,8 +331,10 @@ Combat.client.onInit = function() {
 	if (isAdmin) {
 		
 	} else {
+		Module.addHook("pre_draw_fringe");
 		Module.addHook("post_draw");
 		Module.addHook("ability_cast");
+		Module.addHook("game_tick");
 	}
 	Module.addHook("on_update");
 	Module.addHook("game_load");
@@ -171,8 +349,29 @@ Combat.client.onHook = function(hook, args) {
 		Combat.client.abilities.createUI();
 	} else if (hook == "ability_cast") {
 		console.log("ability cast: " + args.id);
+		var data = new Object();
+		data.id = args.id;
+		if (Game.world.user.target == null) {
+			data.target = null;
+			data.tid = 0;
+		} else if (Game.world.user.target.npc) {
+			data.target = "npc";
+			data.tid = Game.world.user.target.id;
+		} else if (Game.world.user.target.player) {
+			data.target = "player";
+			data.tid = Game.world.user.target.id;
+		}
+		Game.socket.send("castability:" + JSON.stringify(data));
     } else if (hook == "message") {
-        if (args.head === "npc-damage") {
+		if (args.head === "load") {
+			var msg = JSON.parse(args.body);
+			if (msg.combat) {
+				health = msg.hp;
+				healthMax = msg.hpx;
+				mana = msg.mp;
+				manaMax = msg.mpx;
+			}
+		} else if (args.head === "npc-damage") {
             var n = JSON.parse(args.body);
             var npc = Game.world.npcs[n.npc];
             if (npc) {
@@ -183,7 +382,49 @@ Combat.client.onHook = function(hook, args) {
                     y: 0
                 });
             }
-        }
+        } else if (args.head === "ability") {
+			var data = JSON.parse(args.body);
+			if (data.tar === null) {
+				if (data.pid == Game.userID) {
+					this.animation = new Combat.Animation(data.anim, Game.world.user);
+					this.health = data.php; this.healthMax = data.phpx;
+					this.mana = data.pmp; this.manaMax = data.pmpx;
+					this.updateHUD();
+				} else if (Game.world.players[data.pid]) {
+					this.animation = new Combat.Animation(data.anim, Game.world.players[data.pid]);
+				}
+			} else if (data.tar === "npc") {
+				if (data.pid == Game.userID) {
+					this.health = data.php; this.healthMax = data.phpx;
+					this.mana = data.pmp; this.manaMax = data.pmpx;
+					this.updateHUD();
+				}
+				if (Game.world.npcs[data.tid]) {
+					Combat.client.sct.push({
+						npc: Game.world.npcs[data.tid],
+						num: data.dam,
+						col: "red",
+						y: 0
+					});
+					this.animation = new Combat.Animation(data.anim, Game.world.npcs[data.tid]);
+				}
+			} else if (data.tar === "player") {
+				if (data.pid == Game.userID) {
+					this.health = data.php; this.healthMax = data.phpx;
+					this.mana = data.pmp; this.manaMax = data.pmpx;
+					this.updateHUD();
+				}
+				if (data.tid == Game.userID) {
+					this.animation = new Combat.Animation(data.anim, Game.world.user);
+					this.health = data.thp; this.healthMax = data.thpx;
+					this.mana = data.tmp; this.manaMax = data.tmpx;
+					this.updateHUD();
+				} else if (Game.world.players[data.tid]) {
+					this.animation = new Combat.Animation(data.anim, Game.world.players[data.pid]);
+				}
+			}
+			
+		}
 		if (args.admin === true && args.head === "loadability") {
 			var ability = JSON.parse(args.body);
 			$.extend(true, Combat.client.editor.currObject, ability);
@@ -220,6 +461,29 @@ Combat.client.onHook = function(hook, args) {
 				Combat.client.editor.count = 0;
 			}
 		}
+	} else if (hook == "pre_draw_fringe") {
+		if (this.animation != null) {
+			var sp = Game.gfx.Spells[this.animation.anim];
+			var sw = Math.floor(sp.width / 12);
+			var sh = Math.floor(sp.height);
+			var ts = Game.gfx.Sprites[this.animation.target.sprite];
+			var tw = Math.floor(ts.width / 4);
+			var th = Math.floor(ts.height / 4);
+			var tx = Game.getCanvasX(this.animation.target.x) - _Game.getMovedX(this.animation.target) - ((tw/2) - (TILE_SIZE/2));
+			var ty = Game.getCanvasY(this.animation.target.y) - _Game.getMovedY(this.animation.target) - (th - TILE_SIZE);
+			
+			Game.context.drawImage(sp, this.animation.frame * sw, 0, sw, sh, tx, ty, tw, th);
+			
+			this.animation.count ++;
+			if (this.animation.count >= 10) {
+				this.animation.frame ++;
+				if (this.animation.frame >= 12) {
+					this.animation = null;
+				} else {
+					this.animation.count = 0;
+				}
+			}
+		}
     } else if (hook == "post_draw") {
         for (var key in Combat.client.sct) {
             var text = Combat.client.sct[key];
@@ -228,10 +492,24 @@ Combat.client.onHook = function(hook, args) {
                 Game.context.fillText(text.num, Game.getTileX(text.npc.x), Game.getTileY(text.npc.y)-text.y);
             }
         }
-    }
+    } else if (hook == "game_tick") {
+		if (this.health < this.healthMax)
+			this.health += 1;
+		if (this.mana < this.manaMax)
+			this.mana += 1;
+		this.updateHUD();
+	}
 }
 
 /***** helper *****/
+Combat.client.updateHUD = function() {
+	var hpw = (this.health / this.healthMax) * parseInt(UI.HUD.get("#health-max").attr('width'));
+	UI.HUD.get("#health").attr('width', Math.floor(hpw));
+	var mpw = (this.mana / this.manaMax) * parseInt(UI.HUD.get("#mana-max").attr('width'));
+	UI.HUD.get("#mana").attr('width', Math.floor(mpw));
+	UI.HUD.reDraw();
+}
+
 Combat.client.editor.loadAbility = function() {
     Game.socket.send("loadability:" + this.currAbility);
 }
@@ -524,7 +802,7 @@ Combat.client.abilities.createUI = function() {
     this.window = UI.NewWindow("abilities", "Ability List", "336px");
 	
 	function buildFunc(c) {
-		return 
+		return;
 	}
     
 	for (var i=1; i<=5; i++) {
