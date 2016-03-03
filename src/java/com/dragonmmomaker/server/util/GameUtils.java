@@ -118,6 +118,10 @@ public class GameUtils {
         return mData.Npcs.getNpc(id);
     }
     
+    public Map<Integer,Npc> getAllNPCs() {
+        return mData.Npcs.getAll();
+    }
+    
     public void warpPlayer(int id, int x, int y, short floor) {
         DRow pChar = mData.Data.get("characters").get(id);
         int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));

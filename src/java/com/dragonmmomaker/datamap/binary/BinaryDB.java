@@ -34,8 +34,11 @@ public class BinaryDB {
         if (o instanceof ScriptObjectMirror) {
             o = ScriptUtils.unwrap(o); //may or may not work
         }
+        
         //basic Java objects
-        if (o.getClass() == Byte.class) {
+        if (o == null) {
+            buff = ByteBuffer.allocate(0);
+        } else if (o.getClass() == Byte.class) {
             buff = ByteBuffer.allocate(1+1);
             buff.put((byte)0x00);
             buff.put((Byte)o);

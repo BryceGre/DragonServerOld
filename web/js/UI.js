@@ -333,6 +333,12 @@ _UI.AddDrag = function(window, name, hook, args, tab, attr) {
         cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
         stop: _UI.HUD.onDragStop,
     });
+    $(newdiv).tooltip({
+        content: function () {
+            return this.getAttribute("title");
+        },
+        track: true,
+    });
 
     return newdiv;
 }

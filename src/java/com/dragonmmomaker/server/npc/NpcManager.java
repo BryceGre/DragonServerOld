@@ -31,7 +31,6 @@ import com.dragonmmomaker.server.data.DummyTile;
 import com.dragonmmomaker.server.data.Tile;
 import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.util.SocketUtils;
-import java.util.ArrayList;
 
 /**
  *
@@ -172,6 +171,10 @@ public class NpcManager {
             return mNpcData.get(Tile.key(pX, pY, pFloor));
         }
         return null;
+    }
+    
+    public Map<Integer,Npc> getAll() {
+        return mNpcList;
     }
 
     public boolean checkAttr(int pX, int pY, short pFloor, Npc pNpc, Set<String> pPlayerData) {
