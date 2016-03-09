@@ -73,6 +73,9 @@ NpcEditor.server.onHook = function(hook, args) {
             if (npc.behavior === null) {
                 npc.behavior = [];
             }
+			if (npc.data === null) {
+				npc.data = {};
+			}
 
             Game.socket.send("loadnpc:" + JSON.stringify(npc));
         } else if (args.head === "npcnames") {
@@ -92,10 +95,12 @@ NpcEditor.server.onHook = function(hook, args) {
 NpcEditor.client = {
     /***** variables *****/
     window: null,
+	data: null,
     currName: "",
     currSprite: 1,
     currAction: "none",
     currBehavior: new Array(),
+	currData: new Object(),
     currNpc: 1,
     npcNames: new Object(),
     ctx: null,
@@ -125,6 +130,7 @@ NpcEditor.client.onHook = function(hook, args) {
             this.currSprite = data.sprite;
             this.currAction = data.action;
             this.currBehavior = data.behavior
+			this.currData = data.data;
 			this.npcNames[this.currNpc] = this.currName;
             this.updateFields();
         } else if (args.admin === true && args.head === "npcnames") {
@@ -155,6 +161,8 @@ NpcEditor.client.updateFields = function() {
     var w = Math.floor(sprite.width / 4);
     var h = Math.floor(sprite.height / 4);
     NpcEditor.client.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
+	$(this.data).empty();
+	Module.doHook("npc_editor_data", {window: this.data, action: this.currAction, data: this.currData});
 }
 
 NpcEditor.client.createUI = function() {
@@ -212,6 +220,9 @@ NpcEditor.client.createUI = function() {
     UI.AddDiv(this.window, "action-label", "Action: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
     UI.AddCombobox(this.window, "action", {width: "45%"}, actions, function() {
         NpcEditor.client.currAction = $("#npc-editor-action").val();
+		NpcEditor.client.currData = {};
+		$(NpcEditor.client.data).empty();
+		Module.doHook("npc_editor_data", {window: NpcEditor.client.data, action: NpcEditor.client.currAction, data: NpcEditor.client.currData});
         NpcEditor.client.changed = true;
     }, false, {"style": 'display:block;margin:4px 0px;'});
 
@@ -224,6 +235,9 @@ NpcEditor.client.createUI = function() {
         NpcEditor.client.currBehavior = $("#npc-editor-behavior").val() || [];
         NpcEditor.client.changed = true;
     }, false, {"style": 'display:block;margin:4px 0px;', "multiple": "multiple"});
+	
+	this.data = UI.AddDiv(this.window, "data", "", false, {"style": 'display:block;margin:4px auto;'});
+	Module.doHook("npc_editor_data", {window: this.data, action: this.currAction, data: this.currData});
 
     UI.AddButton(this.window, "save", "Save", function(e) {
         e.preventDefault();
@@ -232,6 +246,8 @@ NpcEditor.client.createUI = function() {
         JSONObject.sprite = NpcEditor.client.currSprite;
         JSONObject.action = NpcEditor.client.currAction;
         JSONObject.behavior = NpcEditor.client.currBehavior;
+		JSONObject.data = new Object();
+		Module.doHook("npc_editor_save", {data: JSONObject.data});
         Game.socket.send("savenpc:" + JSON.stringify(JSONObject));
         //update npc name
         NpcEditor.client.npcNames[NpcEditor.client.currNpc] = NpcEditor.client.currName;

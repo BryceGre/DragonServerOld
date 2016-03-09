@@ -6,13 +6,14 @@
 
 package com.dragonmmomaker.server.util;
 
+import com.dragonmmomaker.server.ServData;
 import java.util.Set;
 
 import javax.websocket.Session;
 
 import com.dragonmmomaker.server.handler.AdminHandler;
 import com.dragonmmomaker.server.handler.ClientHandler;
-import com.dragonmmomaker.server.quadtree.Player;
+import com.dragonmmomaker.server.player.Player;
 
 /**
  *
@@ -21,15 +22,18 @@ import com.dragonmmomaker.server.quadtree.Player;
 public class SocketUtils {
     private Session mSession;
     private Set<Session> mClients;
+    private ServData mData;
     
-    public SocketUtils() {
+    public SocketUtils(ServData pData) {
         mSession = null;
         mClients = null;
+        mData = pData;
     }
 
-    public SocketUtils(Session pSession, Set<Session> pClients) {
+    public SocketUtils(Session pSession, Set<Session> pClients, ServData pData) {
         mSession = pSession;
         mClients = pClients;
+        mData = pData;
     }
     
     public int getIndex() {
@@ -82,7 +86,8 @@ public class SocketUtils {
     }
     
     public void sendRangeOther(String pMessage) {
-        Player player = (Player) mSession.getUserProperties().get("player");
+        int pID = (Integer) mSession.getUserProperties().get("char");
+        Player player = mData.Players.getPlayer(pID);
         //TODO: range
         for (Player p : player.getPlayers()) {
             p.getClient().send(pMessage);

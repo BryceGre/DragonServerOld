@@ -68,6 +68,7 @@ Combat.server = {
 	},
 	cooldowns : new Object(),
 	npcEffects : new Object(),
+	currTrainer : new Object(),
 };
 
 /***** functions *****/
@@ -78,6 +79,7 @@ Combat.server.onInit = function() {
     Module.addHook("npc_act");
 	Module.addHook("message");
     Module.addHook("admin_message");
+	Module.addHook("admin_on_load");
 	Module.addHook("game_tick");
 };
 
@@ -105,22 +107,33 @@ Combat.server.onHook = function(hook, args) {
 				mp: user.mana,
 				mpx : user.maxmana,
 			}
+			
 			msg.abilities = {};
-			var names = Data.abilities.list("name");
-			for (var key in names) {
-				msg.abilities[key] = new Object();
-				msg.abilities[key].name = names[key];
+			if (!user.abilities) {
+				user.abilities = new Object();
 			}
-			var tools = Data.abilities.list("tool");
-			for (var key in tools) {
-				msg.abilities[key].tool = tools[key];
-			}
-			var icons = Data.abilities.list("icon");
-			for (var key in icons) {
-				msg.abilities[key].icon = icons[key];
+			var list = Data.abilities.listAll();
+			for (var key in user.abilities) {
+				if (user.abilities[key]) {
+					msg.abilities[key] = new Object();
+					msg.abilities[key].name = list[key].name;
+					msg.abilities[key].tool = list[key].tool;
+					msg.abilities[key].icon = list[key].icon;
+				}
 			}
 			args.msg = JSON.stringify(msg);
 		}
+	} else if (hook === "admin_on_load") {
+		var msg = JSON.parse(args.msg);
+		msg.abilities = {};
+		var list = Data.abilities.listAll();
+		for (var key in list) {
+			msg.abilities[key] = new Object();
+			msg.abilities[key].name = list[key].name;
+			msg.abilities[key].tool = list[key].tool;
+			msg.abilities[key].icon = list[key].icon;
+		}
+		args.msg = JSON.stringify(msg);
 	} else if (hook === "npc_act") {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
@@ -144,7 +157,25 @@ Combat.server.onHook = function(hook, args) {
 					Module.doHook("progress_gain", {index:args.index, exp:newxp});
 				}
                 Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
-            }
+            } else if (npc.action == "trainer") {
+				var msg = new Object();
+				msg.abilities = {};
+				msg.items = {};
+				var list = Data.abilities.listAll();
+				for (var key in list) {
+					msg.abilities[key] = new Object();
+					msg.abilities[key].name = list[key].name;
+					msg.abilities[key].tool = list[key].tool;
+					msg.abilities[key].icon = list[key].icon;
+					msg.items[key] = new Object();
+					msg.items[key].name = "";
+					msg.items[key].tool = "";
+					msg.items[key].icon = 1;
+					msg.items[key].count = 0;
+				}
+				Game.socket.send("trainer:" + JSON.stringify(msg));
+				this.currTrainer[args.index] = msg;
+			}
         }
     } else if (hook === "message") {
 		if (args.head === "castability") {
@@ -183,8 +214,10 @@ Combat.server.onHook = function(hook, args) {
 				if (newUser.health > newUser.maxhealth)
 					newUser.health = newUser.maxhealth;
 				if (newUser.health <= 0) {
-					//TODO: die
-					newUser.health = 1;
+					//die
+					Game.warpPlayer(args.index, 0, 0, 3);
+					newUser.health = newUser.maxhealth;
+					newUser.effects = new Array();
 				}
 				newUser.mana += ability.pmp;
 				if (newUser.mana > newUser.maxmana)
@@ -202,7 +235,10 @@ Combat.server.onHook = function(hook, args) {
 					if (newUser.health > newUser.maxhealth)
 						newUser.health = newUser.maxhealth;
 					if (newUser.health <= 0) {
-						//TODO: die
+						//die
+						Game.warpPlayer(args.index, 0, 0, 3);
+						newUser.health = newUser.maxhealth;
+						newUser.effects = new Array();
 					}
 					newUser.mana += ability.tmp;
 					if (newUser.mana > newUser.maxmana)
@@ -285,8 +321,10 @@ Combat.server.onHook = function(hook, args) {
 					if (newPlayer.health > player.maxhealth)
 						newPlayer.health = player.maxhealth;
 					if (newPlayer.health <= 0) {
-						//TODO: die
-						newPlayer.health = 1;
+						//die
+						Game.warpPlayer(data.tid, 0, 0, 3);
+						newPlayer.health = newPlayer.maxhealth;
+						newPlayer.effects = new Array();
 					}
 					newPlayer.mana += ability.tmp;
 					if (newPlayer.mana > player.maxmana)
@@ -319,6 +357,41 @@ Combat.server.onHook = function(hook, args) {
 				}
 				user.putAll(newUser);
 			}
+		} else if (args.head === "train") {
+			var key = parseInt(args.body);
+			if (this.currTrainer[args.index]) {
+				var ability = this.currTrainer[args.index].abilities[key];
+				if (ability) {
+					var item = this.currTrainer[args.index].items[key];
+					var user = Data.characters[args.index];
+					if (!user.abilities) {
+						user.abilities = new Object();
+					}
+					var learned = user.abilities;
+					if (!learned[args.body]) {
+						learned[args.body] = true;
+						user.abilities = learned;
+						
+						var msg = {
+							ability: new Object(),
+							item: new Object(),
+						};
+						msg.ability.key = key;
+						msg.ability.name = ability.name;
+						msg.ability.tool = ability.tool;
+						msg.ability.icon = ability.icon;
+						msg.item.name = item.name;
+						msg.item.tool = item.tool;
+						msg.item.icon = item.icon;
+						msg.item.count = item.count;
+						
+						Game.socket.send("train:" + JSON.stringify(msg));
+					}
+				}
+			}
+		} else if (args.head === "move") {
+			//player moved
+			this.currTrainer[args.index] = null;
 		}
 	} else if (hook === "admin_message") {
         if (args.head === "saveability") {
@@ -336,11 +409,6 @@ Combat.server.onHook = function(hook, args) {
 			}
 			
             Game.socket.send("loadability:" + JSON.stringify(ability));
-        } else if (args.head === "abilitynames") {
-            //retrieve a list of names of abilities. Example: names[id] == "guy"
-            var names = Data.abilities.list("name");
-			
-            Game.socket.send("abilitynames:" + JSON.stringify(names));
         }
 	} else if (hook === "game_tick") {
 		//ticks every second (hopefully)
@@ -370,6 +438,13 @@ Combat.server.onHook = function(hook, args) {
 						if (newData.effects[k]) {
 							newData.health += newData.effects[k].hps;
 							msg.dam += newData.effects[k].hps;
+							if (newData.health <= 0) {
+								//die
+								Game.warpPlayer(key, 0, 0, 3);
+								newData.health = newData.maxhealth;
+								newData.effects = new Array();
+								continue;
+							}
 							newData.mana += newData.effects[k].mps;
 							msg.man += newData.effects[k].mps;
 							newData.effects[k].dur --;
@@ -415,14 +490,14 @@ Combat.server.onHook = function(hook, args) {
 /***********************************************/
 Combat.client = {
     /***** variables *****/
+	abilityData: new Object(),
 	editor : {
 		window: null,
 		window2: null,
 		currAbility: 1,
 		currObject: new Combat.Ability(),
-		abilityNames: new Object(),
 		ctx: null,
-		ctx2: null,
+		icon: null,
 		changed: false,
 		frame: 0,
 		count: 0,
@@ -430,6 +505,16 @@ Combat.client = {
 	abilities : {
 		window: null,
 	},
+	trainer : {
+		window: null,
+	},
+	npcEditor : {
+		window: null,
+		currData: new Object(),
+		currList: new Array(),
+		divCount: 0,
+	},
+	learned : new Object(),
 	animation : null,
 	health : 100,
 	healthMax : 100,
@@ -442,8 +527,9 @@ Combat.client = {
 //onInit: Called when the client page loads, as this module is loaded
 Combat.client.onInit = function() {
 	Data.npc_actions["attack"] = {name: "Attack"};
+	Data.npc_actions["trainer"] = {name: "Trainer"};
 	if (isAdmin) {
-		
+		Module.addHook("npc_editor_data");
 	} else {
 		Module.addHook("pre_draw_fringe");
 		Module.addHook("post_draw");
@@ -459,8 +545,14 @@ Combat.client.onInit = function() {
 Combat.client.onHook = function(hook, args) {
 	if (isAdmin && hook === "game_load") {
 		Combat.client.editor.createUI();
+	} else if (isAdmin && hook === "npc_editor_data") {
+		if (args.action == "trainer") {
+			Combat.client.npcEditor.currData = args.data;
+			Combat.client.npcEditor.createUI(args.window);
+		}
 	} else if (hook == "game_load") {
 		Combat.client.abilities.createUI();
+		Combat.client.trainer.createUI();
 	} else if (hook == "ability_cast") {
 		console.log("ability cast: " + args.id);
 		var data = new Object();
@@ -479,24 +571,31 @@ Combat.client.onHook = function(hook, args) {
     } else if (hook == "message") {
 		if (args.head === "load") {
 			var msg = JSON.parse(args.body);
-			if (msg.combat) {
-				health = msg.hp;
-				healthMax = msg.hpx;
-				mana = msg.mp;
-				manaMax = msg.mpx;
-			}
-			if (msg.abilities) {
-				for (var key in msg.abilities) {
-					var i = key;
-					var tooltip = "<b>" + msg.abilities[key].name + "</b><br>" + msg.abilities[key].tool;
-					var canvas = UI.AddDrag(Combat.client.abilities.window, "ability"+i, "ability_cast", {id:i}, false,
-					{"style": 'display:inline-block;width:20%;', "title": tooltip});
-					canvas.attr("width", '32px');
-					canvas.attr("height", '32px');
-					var ctx = canvas[0].getContext("2d");
-					ctx.clearRect(0, 0, 32, 32);
-					ctx.drawImage(Game.gfx.Icons[msg.abilities[key].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+			if (isAdmin) {
+				if (msg.abilities) {
+					$.extend(true, this.abilityData, msg.abilities);
 				}
+			} else {
+				if (msg.combat) {
+					this.health = msg.hp;
+					this.healthMax = msg.hpx;
+					this.mana = msg.mp;
+					this.manaMax = msg.mpx;
+				}
+				if (msg.abilities) {
+					for (var key in msg.abilities) {
+						var i = key;
+						var tooltip = "<b>" + msg.abilities[key].name + "</b><br>" + msg.abilities[key].tool;
+						var canvas = UI.AddDrag(Combat.client.abilities.window, "ability"+i, "ability_cast", {id:i}, false, {"style": 'display:inline-block;width:20%;', "title": tooltip});
+						canvas.attr("width", '32px');
+						canvas.attr("height", '32px');
+						var ctx = canvas[0].getContext("2d");
+						ctx.clearRect(0, 0, 32, 32);
+						ctx.drawImage(Game.gfx.Icons[msg.abilities[key].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+						this.learned[key] = true;
+					}
+				}
+
 			}
 		} else if (args.head === "npc-damage") {
             var n = JSON.parse(args.body);
@@ -510,46 +609,85 @@ Combat.client.onHook = function(hook, args) {
                 });
             }
         } else if (args.head === "ability") {
-			var data = JSON.parse(args.body);
-			if (data.tar === null) {
-				if (data.pid == Game.userID) {
-					this.animation = new Combat.Animation(data.anim, Game.world.user);
-					this.health = data.php; this.healthMax = data.phpx;
-					this.mana = data.pmp; this.manaMax = data.pmpx;
+			var msg = JSON.parse(args.body);
+			if (msg.tar === null) {
+				if (msg.pid == Game.userID) {
+					this.animation = new Combat.Animation(msg.anim, Game.world.user);
+					this.health = msg.php; this.healthMax = msg.phpx;
+					this.mana = msg.pmp; this.manaMax = msg.pmpx;
 					this.updateHUD();
-				} else if (Game.world.players[data.pid]) {
-					this.animation = new Combat.Animation(data.anim, Game.world.players[data.pid]);
+				} else if (Game.world.players[msg.pid]) {
+					this.animation = new Combat.Animation(msg.anim, Game.world.players[msg.pid]);
 				}
-			} else if (data.tar === "npc") {
-				if (data.pid == Game.userID) {
-					this.health = data.php; this.healthMax = data.phpx;
-					this.mana = data.pmp; this.manaMax = data.pmpx;
+			} else if (msg.tar === "npc") {
+				if (msg.pid == Game.userID) {
+					this.health = msg.php; this.healthMax = msg.phpx;
+					this.mana = msg.pmp; this.manaMax = msg.pmpx;
 					this.updateHUD();
 				}
-				if (Game.world.npcs[data.tid]) {
+				if (Game.world.npcs[msg.tid]) {
 					Combat.client.sct.push({
-						npc: Game.world.npcs[data.tid],
-						num: data.dam,
+						npc: Game.world.npcs[msg.tid],
+						num: msg.dam,
 						col: "red",
 						y: 0
 					});
-					this.animation = new Combat.Animation(data.anim, Game.world.npcs[data.tid]);
+					this.animation = new Combat.Animation(msg.anim, Game.world.npcs[msg.tid]);
 				}
-			} else if (data.tar === "player") {
-				if (data.pid == Game.userID) {
-					this.health = data.php; this.healthMax = data.phpx;
-					this.mana = data.pmp; this.manaMax = data.pmpx;
+			} else if (msg.tar === "player") {
+				if (msg.pid == Game.userID) {
+					this.health = msg.php; this.healthMax = msg.phpx;
+					this.mana = msg.pmp; this.manaMax = msg.pmpx;
 					this.updateHUD();
 				}
-				if (data.tid == Game.userID) {
-					this.animation = new Combat.Animation(data.anim, Game.world.user);
-					this.health = data.thp; this.healthMax = data.thpx;
-					this.mana = data.tmp; this.manaMax = data.tmpx;
+				if (msg.tid == Game.userID) {
+					this.animation = new Combat.Animation(msg.anim, Game.world.user);
+					this.health = msg.thp; this.healthMax = msg.thpx;
+					this.mana = msg.tmp; this.manaMax = msg.tmpx;
 					this.updateHUD();
-				} else if (Game.world.players[data.tid]) {
-					this.animation = new Combat.Animation(data.anim, Game.world.players[data.tid]);
+				} else if (Game.world.players[msg.tid]) {
+					this.animation = new Combat.Animation(msg.anim, Game.world.players[msg.tid]);
 				}
 			}
+		} else if (args.head === "trainer") {
+			var win = Combat.client.trainer.window;
+			$(win).empty();
+			var msg = JSON.parse(args.body);
+			for (var key in msg.abilities) {
+				var i = key;
+				if (msg.abilities[i].icon === null || msg.items[i].icon === null) continue;
+				if (this.learned[i]) continue;
+				//msg.abilities[i], msg.items[i]
+				//.name, .tool, .icon, .count (for items)
+				var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
+				var tooltip = "<b>" + msg.abilities[i].name + "</b><br>" + msg.abilities[i].tool;
+				var aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:left;width:32px;height:32px;', "title": tooltip});
+				aicon.setImage(Game.gfx.Icons[msg.abilities[i].icon], 0, 0, 32, 32);
+				UI.AddDiv(newDiv, "text", msg.abilities[i].name, false, {"style": 'display:inline-block;float:left;height:16px;margin:8px;', "title": tooltip});
+				UI.AddButton(newDiv, "buy", "Buy", function(i, div, e) {
+					Game.socket.send("train:" + i);
+					$(div).remove()
+				}.bind(this, i, newDiv), false, {"style": 'display:inline-block;float:right;height:16px;'});
+				var tooltip2 = "<b>" + msg.items[i].name + "</b><br>" + msg.items[i].tool;
+				UI.AddDiv(newDiv, "count", "x" +  msg.items[i].count, false, {"style": 'display:inline-block;float:right;height:16px;margin:8px auto;', "title": tooltip2});
+				var iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:right;width:32px;height:32px;', "title": tooltip2});
+				iicon.setImage(Game.gfx.Items[msg.items[i].icon], 0, 0, 32, 32);
+				UI.AddDiv(newDiv, "desc", "Cost:", false, {"style": 'display:inline-block;float:right;height:16px;margin:8px;'});
+			}
+			$("#trainer").dialog("open");
+		}else if (args.head === "train") {
+			var msg = JSON.parse(args.body);
+			var i = msg.ability.key;
+			var tooltip = "<b>" + msg.ability.name + "</b><br>" + msg.ability.tool;
+			var canvas = UI.AddDrag(Combat.client.abilities.window, "ability"+i, "ability_cast", {id:i}, false, {"style": 'display:inline-block;width:20%;', "title": tooltip});
+			canvas.attr("width", '32px');
+			canvas.attr("height", '32px');
+			var ctx = canvas[0].getContext("2d");
+			ctx.clearRect(0, 0, 32, 32);
+			ctx.drawImage(Game.gfx.Icons[msg.ability.icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+		} else if (args.head === "snap") {
+			//player began to move
+			$("#trainer").dialog("close");
 		} else if (args.head === "abilityfail") {
 			Combat.client.sct.push({
 				npc: Game.world.user,
@@ -558,36 +696,36 @@ Combat.client.onHook = function(hook, args) {
 				y: 0
 			});
 		} else if (args.head === "effect") {
-			var data = JSON.parse(args.body);
-			if (data.tar === "npc") {
-				if (data.pid == Game.userID) {
-					this.health = data.php; this.healthMax = data.phpx;
-					this.mana = data.pmp; this.manaMax = data.pmpx;
+			var msg = JSON.parse(args.body);
+			if (msg.tar === "npc") {
+				if (msg.pid == Game.userID) {
+					this.health = msg.php; this.healthMax = msg.phpx;
+					this.mana = msg.pmp; this.manaMax = msg.pmpx;
 					this.updateHUD();
 				}
-				if (Game.world.npcs[data.tid]) {
+				if (Game.world.npcs[msg.tid]) {
 					Combat.client.sct.push({
-						npc: Game.world.npcs[data.tid],
-						num: data.dam,
+						npc: Game.world.npcs[msg.tid],
+						num: msg.dam,
 						col: "red",
 						y: 0
 					});
 				}
-			} else if (data.tar === "player") {
-				if (data.tid == Game.userID) {
-					this.health += data.dam;
-					this.mana += data.man;
+			} else if (msg.tar === "player") {
+				if (msg.tid == Game.userID) {
+					this.health += msg.dam;
+					this.mana += msg.man;
 					this.updateHUD();
 					Combat.client.sct.push({
 						npc: Game.world.user,
-						num: data.dam,
+						num: msg.dam,
 						col: "red",
 						y: 0
 					});
-				} else if (Game.world.players[data.tid]) {
+				} else if (Game.world.players[msg.tid]) {
 					Combat.client.sct.push({
-						npc: Game.world.players[data.tid],
-						num: data.dam,
+						npc: Game.world.players[msg.tid],
+						num: msg.dam,
 						col: "red",
 						y: 0
 					});
@@ -597,11 +735,7 @@ Combat.client.onHook = function(hook, args) {
 		if (args.admin === true && args.head === "loadability") {
 			var ability = JSON.parse(args.body);
 			$.extend(true, Combat.client.editor.currObject, ability);
-			Combat.client.editor.abilityNames[Combat.client.editor.currAbility] = ability.name;
             Combat.client.editor.updateFields();
-        } else if (args.admin === true && args.head === "abilitynames") {
-            $.extend(Combat.client.editor.abilityNames, JSON.parse(args.body));
-            Combat.client.editor.loadAbility();
         }
     } else if (hook == "on_update") {
         var newSct = new Array();
@@ -682,12 +816,12 @@ Combat.client.updateHUD = function() {
 Combat.client.editor.loadAbility = function() {
     Game.socket.send("loadability:" + this.currAbility);
 }
-Combat.client.editor.loadNames = function() {
-    Game.socket.send("abilitynames");
-}
 
 Combat.client.editor.updateFields = function() {
-    $("#ability-editor-ability").val(this.currAbility, this.abilityNames[this.currAbility]);
+	if (Combat.client.abilityData[this.currAbility])
+		$("#ability-editor-ability").val(this.currAbility, Combat.client.abilityData[this.currAbility].name);
+	else
+		$("#ability-editor-ability").val(this.currAbility);
     $("#ability-editor-name").val(this.currObject.name);
     $("#ability-editor-animation").val(this.currObject.anim);
     Combat.client.editor.ctx.fillRect(0, 0, 96, 96);
@@ -696,9 +830,8 @@ Combat.client.editor.updateFields = function() {
     var h = Math.floor(sprite.height);
     Combat.client.editor.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
 	$("#ability-editor-icon").val(this.currObject.icon);
-    Combat.client.editor.ctx2.fillRect(0, 0, 32, 32);
     sprite = Game.gfx.Icons[this.currObject.icon];
-    Combat.client.editor.ctx2.drawImage(sprite, 0, 0, 32, 32, 0, 0, 32, 32);
+    Combat.client.editor.icon.setImage(sprite, 0, 0, 32, 32);
 	$("#ability-editor-tooltip").val(this.currObject.tool);
 	$("#ability-editor-effects-cooldown").val(this.currObject.cool);
 	$("#ability-editor-effects-range").val(this.currObject.range);
@@ -726,7 +859,10 @@ Combat.client.editor.createUI = function() {
     UI.AddDiv(this.window, "ability-label", "Ability ID: ", false, {"style": 'display:inline-block;float:left;margin:8px auto;'});
     UI.AddSpinner(this.window, "ability", {min: 1, stop: function() {
             var value = $("#ability-editor-ability").val();
-            $("#ability-editor-ability").val(value, Combat.client.editor.abilityNames[value]);
+			if (Combat.client.abilityData[value])
+				$("#ability-editor-ability").val(value, Combat.client.abilityData[value].name);
+			else
+				$("#ability-editor-ability").val(value);
         }
     }, false, {"style": 'display:inline-block;float:left;margin:4px auto;'});
     UI.AddButton(this.window, "ability-edit", "Edit", function() {
@@ -736,7 +872,7 @@ Combat.client.editor.createUI = function() {
                 Combat.client.editor.loadAbility();
                 Combat.client.editor.changed = false;
             } else {
-                $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.abilityNames[Combat.client.editor.currAbility]);
+                $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.abilityData[Combat.client.editor.currAbility].name);
             }
         } else {
             Combat.client.editor.currAbility = $("#ability-editor-ability").val();
@@ -774,17 +910,17 @@ Combat.client.editor.createUI = function() {
     UI.AddSpinner(this.window, "icon", {min: 1, max: GFX.Icons, spin: function(event, ui) {
             Combat.client.editor.currObject.icon = ui.value;
             Combat.client.editor.changed = true;
-            Combat.client.editor.ctx2.fillRect(0, 0, 32, 32);
             var sprite = Game.gfx.Icons[Combat.client.editor.currObject.icon];
 			if (sprite) {
-				Combat.client.editor.ctx2.drawImage(sprite, 0, 0, 32, 32, 0, 0, 32, 32);
+				Combat.client.editor.icon.setImage(sprite, 0, 0, 32, 32);
+			} else {
+				Combat.client.editor.icon.clearImage();
 			}
         }
     }, false, {"style": 'display:block;width:70%;margin:4px 0px;'});
 	
-    UI.AddRaw(this.window, "<canvas id='ability-editor-image' width='32px' height='32px' style='display:inline-block;float:right;width:20%;'></canvas>");
-    this.ctx2 = $("#ability-editor-image")[0].getContext("2d");
-    this.ctx2.fillRect(0, 0, 32, 32);
+	this.icon = UI.AddIcon(this.window, "image", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:right;width:64px;height:64px;'});
+	this.icon.clearImage();
 	
     UI.AddDiv(this.window, "tooltip-label", "Tooltip: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
 	UI.AddArea(this.window, "tooltip", "", function() {
@@ -955,26 +1091,82 @@ Combat.client.editor.createUI = function() {
     UI.AddButton(this.window, "save", "Save", function(e) {
         e.preventDefault();
         Game.socket.send("saveability:" + JSON.stringify(Combat.client.editor.currObject));
-        //update ability name
-        Combat.client.editor.abilityNames[Combat.client.editor.currAbility] = Combat.client.editor.currObject.name;
+        //update ability data
+		Combat.client.abilityData[Combat.client.editor.currAbility] = new Object();
+        Combat.client.abilityData[Combat.client.editor.currAbility].name = Combat.client.editor.currObject.name;
+		Combat.client.abilityData[Combat.client.editor.currAbility].tool = Combat.client.editor.currObject.tool;
+		Combat.client.abilityData[Combat.client.editor.currAbility].icon = Combat.client.editor.currObject.icon;
+		//revert changed
+        Combat.client.editor.changed = false;
+		//update ability field
         $("#ability-editor-ability").val(Combat.client.editor.currAbility, Combat.client.editor.currObject.name);
     }, false, {'style': 'display:block;float:right;'});
 
     Game.menus["Ability Editor"] = function() {
         $("#ability-editor").dialog("open");
         Combat.client.editor.currAbility = 1;
-        Combat.client.editor.loadNames();
     };
 }
 
 Combat.client.abilities.createUI = function() {
     this.window = UI.NewWindow("abilities", "Ability List", "336px");
 	
-	function buildFunc(c) {
-		return;
-	}
-	
     Game.menus["Abilities"] = function() {
         $("#abilities").dialog("open");
     };
+}
+
+Combat.client.trainer.createUI = function() {
+	this.window = UI.NewWindow("trainer", "Trainer", "336px");
+}
+
+Combat.client.npcEditor.createUI = function(win) {
+	this.currList = new Array();
+	UI.AddButton(win, "add", "+", function(e) {
+        e.preventDefault();
+		var i = Combat.client.npcEditor.divCount;
+		var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
+		var newData = new Object();
+		var aicon = null;
+		UI.AddSpinner(newDiv, "ability", {min: 1, spin: function(event, ui) {
+            newData.ability = ui.value;
+			if (Combat.client.abilityData[ui.value] && Combat.client.abilityData[ui.value].icon) {
+				aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[ui.value].icon], 0, 0, 32, 32);
+				aicon.attr("title", "<b>" + Combat.client.abilityData[ui.value].name + "</b><br>" + Combat.client.abilityData[ui.value].tool + "");
+			} else {
+				aicon.clearImage();
+				aicon.attr("title", "");
+			}
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
+		var aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;', "title": ""});
+		if (Combat.client.abilityData[1] && Combat.client.abilityData[1].icon) {
+			aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[1].icon], 0, 0, 32, 32);
+			aicon.attr("title", "<b>" + Combat.client.abilityData[1].name + "</b><br>" + Combat.client.abilityData[1].tool + "");
+		} else {
+			aicon.clearImage();
+			aicon.attr("title", "");
+		}
+		
+		UI.AddSpinner(newDiv, "item", {min: 1, spin: function(event, ui) {
+            newData.item = ui.value;
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
+		var iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;', "title": ""});
+		iicon.clearImage();
+		
+		UI.AddSpinner(newDiv, "count", {min: 1, spin: function(event, ui) {
+            newData.count = ui.value;
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
+		UI.AddButton(newDiv, "del", "x", function(e) {
+			$(newDiv).remove();
+			//if (!$(newDiv).closest('html').length) {
+				//Element is removed
+			//}
+		})
+		Combat.client.npcEditor.currList.push(newData);
+		Combat.client.npcEditor.divCount++;
+    }, false, {"style": 'display:block;width:40%;margin:4px 0px;'});
+	UI.AddDiv(win, "info", "Ability", false, {"style": 'display:inline-block;width:64px'});
+	UI.AddDiv(win, "info", "Item", false, {"style": 'display:inline-block;width:64px'});
+	UI.AddDiv(win, "info", "Amnt", false, {"style": 'display:inline-block;width:32px'});
+    
 }

@@ -1,9 +1,11 @@
 
-package com.dragonmmomaker.server.quadtree;
+package com.dragonmmomaker.server.player;
 
 import com.dragonmmomaker.server.ServData;
 
 import com.dragonmmomaker.server.handler.ClientHandler;
+import com.dragonmmomaker.server.quadtree.Leaf;
+import com.dragonmmomaker.server.quadtree.LinkedBag;
 import com.dragonmmomaker.server.quadtree.QuadTree.Loc;
 import java.util.Set;
 
@@ -59,6 +61,10 @@ public class Player {
     
     public void setFloor(short pFloor) {
         mFloor = pFloor;
+    }
+    
+    public void floor(short pFloor) {
+        this.setFloor(pFloor);
     }
     
     public void move(int pX, int pY) {

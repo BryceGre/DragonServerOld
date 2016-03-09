@@ -45,7 +45,7 @@ public class BinaryDB {
         } else if (o.getClass() == Boolean.class) {
             buff = ByteBuffer.allocate(1+1);
             buff.put((byte)0x01);
-            if ((Boolean)o == true) {
+            if (Boolean.TRUE.equals(o)) {
                 buff.put((byte)0x01);
             } else {
                 buff.put((byte)0x00);

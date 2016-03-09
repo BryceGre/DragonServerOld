@@ -49,8 +49,8 @@ public class ServerListener implements ServletContextListener {
             config = new ConcurrentHashMap<String, Map<String, String>>();
         }
         boolean debug = false;
-        if (config.containsKey("Game") && config.get("Game").containsKey("debug")) {
-            debug = Boolean.parseBoolean(config.get("Game").get("debug"));
+        if (config.containsKey("Common") && config.get("Common").containsKey("debug")) {
+            debug = Boolean.parseBoolean(config.get("Common").get("debug"));
         }
         final boolean DEBUG = debug;
         final Callback LogCallback = (Callback) arg0.getServletContext().getAttribute("LogCallback");

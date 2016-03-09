@@ -144,6 +144,45 @@ _UI.AddDiv = function(window, name, content, tab, attr) {
     }
     
     $(newdiv).append(content);
+    _UI.MakeTooltip(newdiv);
+    
+    return newdiv;
+}
+
+_UI.AddIcon = function(window, name, tab, attr) {
+    var id = window.attr("id");
+    attr = _UI.FixAttr(id + "-" + name, attr);
+    
+    if (tab) {
+        var newdiv = $('<canvas>', attr).appendTo("#" + id + "-tabs-" + tab);
+    } else {
+        var newdiv = $('<canvas>', attr).appendTo(window);
+    }
+    
+    _UI.MakeTooltip(newdiv);
+    newdiv[0].setImage = function(img, x, y, width, height) {
+        if (x === undefined)
+            x = 0;
+        if (y === undefined)
+            y = 0;
+        if (width === undefined)
+            width = img.width;
+        if (height === undefined)
+            height = img.height;
+        var ctx = this.getContext("2d");
+        ctx.fillRect(0, 0, this.width, this.height);
+        ctx.drawImage(img, x, y, width, height, 0, 0, this.width, this.height);
+    }
+    newdiv.setImage = function(img, x, y, width, height) {
+        this[0].setImage(img, x, y, width, height);
+    }
+    newdiv[0].clearImage = function() {
+        var ctx = this.getContext("2d");
+        ctx.fillRect(0, 0, this.width, this.height);
+    }
+    newdiv.clearImage = function() {
+        this[0].clearImage();
+    }
     
     return newdiv;
 }
@@ -160,6 +199,8 @@ _UI.AddInput = function(window, name, value, func, tab, attr) {
     
     $(newdiv).val(value);
     $(newdiv).change(func);
+    _UI.MakeTooltip(newdiv);
+    
     return newdiv;
 }
 
@@ -175,6 +216,8 @@ _UI.AddArea = function(window, name, value, func, tab, attr) {
     
     $(newdiv).val(value);
     $(newdiv).change(func);
+    _UI.MakeTooltip(newdiv);
+    
     return newdiv;
 }
 
@@ -197,6 +240,7 @@ _UI.AddSlider = function(window, name, min, max, func, tab, attr) {
     }
     
     $(newdiv).slider(slider);
+    _UI.MakeTooltip(newdiv);
 
     return newdiv;
 }
@@ -221,7 +265,16 @@ _UI.AddSpinner = function(window, name, options, tab, attr) {
         }
     }
     
-    $(newdiv).spinner(options);
+    if (options.value !== undefined) {
+        $(newdiv).spinner(options).val(options.value);
+    } else if (options.min !== undefined && options.min > 0) {
+        $(newdiv).spinner(options).val(options.min);
+    } else if (options.max !== undefined && options.max < 0) {
+        $(newdiv).spinner(options).val(options.max);
+    } else {
+        $(newdiv).spinner(options).val(0);
+    }
+    _UI.MakeTooltip(newdiv);
     
     return newdiv;
 }
@@ -238,6 +291,7 @@ _UI.AddButton = function(window, name, title, func, tab, attr) {
     
     $(newdiv).text(title);
     $(newdiv).button().click(func);
+    _UI.MakeTooltip(newdiv);
 
     return newdiv;
 }
@@ -265,6 +319,7 @@ _UI.AddRadio = function(window, name, buttons, vertical, checked, tab, attr) {
     } else {
         $(newdiv).buttonset();
     }
+    _UI.MakeTooltip(newdiv);
 
     return newdiv;
 }
@@ -286,6 +341,7 @@ _UI.AddCheckbox = function(window, name, label, checked, func, tab, attr) {
     }
     
     $(newdiv).buttonset().change(func);
+    _UI.MakeTooltip(newdiv);
     
     return newdiv;
 }
@@ -305,6 +361,7 @@ _UI.AddCombobox = function(window, name, options, members, func, tab, attr) {
     }
     
     $(newdiv).chosen(options).change(func);
+    _UI.MakeTooltip(newdiv);
 
     return newdiv;
 }
@@ -333,12 +390,7 @@ _UI.AddDrag = function(window, name, hook, args, tab, attr) {
         cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
         stop: _UI.HUD.onDragStop,
     });
-    $(newdiv).tooltip({
-        content: function () {
-            return this.getAttribute("title");
-        },
-        track: true,
-    });
+    _UI.MakeTooltip(newdiv);
 
     return newdiv;
 }
@@ -356,6 +408,18 @@ _UI.FixAttr = function(id, attr) {
         };
     }
     return attr;
+}
+
+_UI.MakeTooltip = function(newdiv) {
+    if ($(newdiv).attr('title') !== undefined) {
+        $(newdiv).tooltip({
+            content: function () {
+                return this.getAttribute("title");
+            },
+            track: true,
+        });
+    }
+    return newdiv;
 }
 
 _UI.NewPrompt = function(title, fields, func, width, height) {

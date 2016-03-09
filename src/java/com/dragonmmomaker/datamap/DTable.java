@@ -237,6 +237,26 @@ public class DTable implements Map<Object, DRow> {
         return all;
     }
     
+    public ArrayMap<Object> listAll() {
+        ArrayMap<Object> all = new ArrayMap();
+        if (mBase.isClosed()) return all;
+        String sql = "SELECT * FROM " + mName;
+        try (PreparedStatement statement = mBase.getConnection().prepareStatement(sql)) {
+            statement.setQueryTimeout(60);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    all.put(new Integer(id), new DRow(rs, this));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return all;
+    }
+    
     public ArrayMap<byte[]> listRaw(Object arg0) {
         ArrayMap<byte[]> all = new ArrayMap();
         if (arg0.toString().toLowerCase() == "id") {

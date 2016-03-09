@@ -25,6 +25,7 @@
  */
 package com.dragonmmomaker.server.quadtree;
 
+import com.dragonmmomaker.server.player.Player;
 import com.dragonmmomaker.server.ServData;
 
 /**
@@ -71,7 +72,7 @@ public class QuadTree<E> {
         mLeaves = 0;
     }
     
-    Leaf<Player> addPoint(int pX, int pY, E pObject) {
+    public Leaf<Player> addPoint(int pX, int pY, E pObject) {
         Leaf leaf = traverseRoot(pX, pY, false);
         leaf.mData.add(pObject);
         
@@ -91,11 +92,11 @@ public class QuadTree<E> {
         return leaf;
     }
     
-    boolean removePoint(int pX, int pY, Object pObject) {
+    public boolean removePoint(int pX, int pY, Object pObject) {
         return this.removePoint(pX, pY, traverseRoot(pX, pY, true), pObject);
     }
     
-    boolean removePoint(int pX, int pY, Leaf<Player> pLeaf, Object pObject) {
+    public boolean removePoint(int pX, int pY, Leaf<Player> pLeaf, Object pObject) {
         if (pLeaf == null) return false;
         if (pLeaf.mData.remove(pObject)) {
             if (pLeaf.mData.size() == 0) {
@@ -124,7 +125,7 @@ public class QuadTree<E> {
         return false;
     }
     
-    Leaf<Player> getLeaf(int pX, int pY, boolean pSoft) {
+    public Leaf<Player> getLeaf(int pX, int pY, boolean pSoft) {
         Leaf leaf = traverseRoot(pX, pY, pSoft);
         return leaf;
     }

@@ -13,8 +13,8 @@ import org.json.JSONObject;
 import com.dragonmmomaker.datamap.DRow;
 import com.dragonmmomaker.server.ServData;
 import com.dragonmmomaker.server.data.Tile;
-import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.npc.Npc;
+import com.dragonmmomaker.server.player.Player;
 
 public class GameUtils {
 
@@ -26,7 +26,7 @@ public class GameUtils {
         mSocket = new ThreadLocal() {
             @Override
             protected SocketUtils initialValue() {
-                 return new SocketUtils();
+                 return new SocketUtils(mData);
             }
         };
     }
@@ -123,12 +123,18 @@ public class GameUtils {
     }
     
     public void warpPlayer(int id, int x, int y, short floor) {
-        DRow pChar = mData.Data.get("characters").get(id);
         int pD = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
+        DRow pChar = mData.Data.get("characters").get(id);
+        Player player = mData.Players.getPlayer(id);
+        
+        x += 1000000000;
+        y += 1000000000;
 
         Map<Object, Object> charData = new HashMap();
         charData.put("x", x);
         charData.put("y", y);
+        player.floor(floor);
+        player.warp(x, y);
         charData.put("floor", (int)floor);
         pChar.putAll(charData);
         
@@ -153,18 +159,14 @@ public class GameUtils {
         newmsg.put("f", floor);
         newmsg.put("tiles", tiles);
         newmsg.put("npcs", npcs);
-        ClientHandler.sendAllWithTest("warp:" + newmsg.toString(), (charID) -> {
-            return (charID == id);
-        });
+        player.getClient().send("warp:" + newmsg.toString());
 
         newmsg = new JSONObject();
         newmsg.put("x", x);
         newmsg.put("y", y);
         newmsg.put("f", floor);
         newmsg.put("id", id);
-        ClientHandler.sendAllWithTest("warp:" + newmsg.toString(), (charID) -> {
-            return (charID != id);
-        });
+        player.getClient().sendOther(mData.Players.getAll(), "warp:" + newmsg.toString());
     }
 
     public boolean isBlocked(int dir, int x, int y, short floor) {

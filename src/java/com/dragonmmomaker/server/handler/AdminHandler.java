@@ -107,6 +107,9 @@ public class AdminHandler {
 
         ServData._CurData = mData;
         mData.Log.debug("(ADMIN): Recieved message: " + msg);
+        
+        //module args
+        Map<String, Object> args;
 
         String[] message = msg.split(":", 2);
 
@@ -145,7 +148,11 @@ public class AdminHandler {
                 }
                 newmsg.put("tiles", tiles);
                 
-                mSession.getAsyncRemote().sendText("load:" + newmsg.toString());
+                args = new HashMap<String, Object>();
+                args.put("msg", newmsg.toString());
+                mData.Module.doHook("admin_on_load", args, new SocketUtils(mSession, getRemotes(), mData));
+                
+                mSession.getAsyncRemote().sendText("load:" + args.get("msg"));
                 mSession.getUserProperties().put("loaded", true);
             }
         } else if (message[0].equals("loaded")) {
@@ -245,14 +252,14 @@ public class AdminHandler {
         }
 
         //do module hook "admin_message"
-        Map<String, Object> args = new HashMap<String, Object>();
+        args = new HashMap<String, Object>();
         args.put("head", message[0]);
         args.put("body", "");
         if (message.length > 1) {
             args.put("body", message[1]);
         }
         
-        mData.Module.doHook("admin_message", args, new SocketUtils(mSession, this.getRemotes()));
+        mData.Module.doHook("admin_message", args, new SocketUtils(mSession, this.getRemotes(), mData));
     }
 
     @OnError

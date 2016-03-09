@@ -100,7 +100,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_spawn", args, new SocketUtils());
+        mData.Module.doHook("npc_spawn", args, new SocketUtils(mData));
     }
     
     public void respawnNpc(Npc pNpc) {
@@ -128,7 +128,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_spawn", args, new SocketUtils());
+        mData.Module.doHook("npc_spawn", args, new SocketUtils(mData));
     }
     
     public void killNpc(Npc pNpc) {
@@ -151,7 +151,7 @@ public class NpcManager {
         
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
-        mData.Module.doHook("npc_die", args, new SocketUtils());
+        mData.Module.doHook("npc_die", args, new SocketUtils(mData));
     }
 
     public void respawnAll() {

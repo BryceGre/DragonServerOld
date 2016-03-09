@@ -23,26 +23,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.dragonmmomaker.server.quadtree;
+package com.dragonmmomaker.server.player;
 
-import com.dragonmmomaker.server.quadtree.HashBag;
-import com.dragonmmomaker.server.quadtree.QuadTree;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
  * @author Bryce
  */
-public class Leaf<E> {
-    public QuadTree.Node mParent;
-    public int mLoc;
-    public HashBag<E> mData;
-    public Leaf<E> mN, mS, mE, mW;
 
-    public Leaf(QuadTree.Node pParent, int pLoc) {
-        mParent = pParent;
-        mLoc = pLoc;
-        mData = new HashBag();
+//TODO: Custom Map to save memory
+public class PlayerManager {
+    private Map<Integer, Player> mPlayers;
+    
+    public PlayerManager() {
+        mPlayers = new HashMap();
     }
     
+    public Player getPlayer(int pID) {
+        return mPlayers.get(pID);
+    }
     
+    public Player putPlayer(int pID, Player pPlayer) {
+        return mPlayers.put(pID, pPlayer);
+    }
+    
+    public int countPlayers() {
+        return mPlayers.size();
+    }
+    
+    public Set<Player> getAll() {
+        return new HashSet(mPlayers.values());
+    }
 }
