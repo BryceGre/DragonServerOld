@@ -39,6 +39,7 @@ Combat.Ability = function() {
 	this.anim = 1; //animation
 	this.icon = 1; //icon
 	this.cool = 0; //cooldown
+	this.targ = "enemy";
 	this.range = 1; //range
 	this.tool = ""; //tooltip
 	this.php = 0; //player HP mod
@@ -237,7 +238,8 @@ Combat.server.onHook = function(hook, args) {
 					newUser.effects.push(ability.p);
 				}
 				//determine target
-				if (data.target === null) {
+				if (!ability.tar) ability.tar = "enemy";
+				if (ability.tar == "ally" && (data.target === null || data.target === "npc")) {
 					newUser.health += ability.thp;
 					if (newUser.health > newUser.maxhealth)
 						newUser.health = newUser.maxhealth;
@@ -268,43 +270,7 @@ Combat.server.onHook = function(hook, args) {
 					msg.pmpx = newUser.maxmana;
 					//send update message
 					Game.socket.sendRange("ability:" + JSON.stringify(msg));
-				} else if (data.target === "npc") {
-					var npc = Game.getNPC(data.tid);
-					//if npc exists
-					if (npc) {
-						//also be sure that the target is within range
-						if (Math.sqrt(Math.pow(npc.x - user.x, 2) + Math.pow(npc.y - user.y, 2)) > ability.range)  {
-							Game.socket.send("abilityfail:Out of range!");
-							return;
-						}
-						npc.health += ability.thp;
-						if (ability.t.dur > 0) {
-							if (!this.npcEffects[data.tid]) this.npcEffects[data.tid] = new Array();
-							this.npcEffects[data.tid].push(ability.t);
-						}
-							
-						//record cooldown
-						this.cooldowns[data.id] = now;
-						//record changes
-						msg.anim = ability.anim;
-						msg.tar = "npc";
-						msg.pid = args.index;
-						msg.php = newUser.health;
-						msg.phpx = newUser.maxhealth;
-						msg.pmp = newUser.mana;
-						msg.pmpx = newUser.maxmana;
-						msg.tid = data.tid;
-						msg.dam = ability.thp;
-						//send update message
-						Game.socket.sendRange("ability:" + JSON.stringify(msg));
-						//send progress update
-						if (npc.health <= 0) {
-							var newxp = npc.exp;
-							if (!newxp) newxp = 10;
-							Module.doHook("progress_gain", {index:args.index, exp:newxp});
-						}
-					}
-				} else if (data.target === "player") {
+				} else if (ability.tar == "ally" && data.target === "player") {
 					var player = Data.characters[data.tid];
 					var newPlayer = new Object();
 					//also be sure that the target is within range
@@ -361,6 +327,45 @@ Combat.server.onHook = function(hook, args) {
 					msg.tmpx = newPlayer.maxmana;
 					//send update message
 					Game.socket.sendRange("ability:" + JSON.stringify(msg));
+				} else if (ability.tar === "enemy" && data.target === "npc") {
+					var npc = Game.getNPC(data.tid);
+					//if npc exists
+					if (npc) {
+						//also be sure that the target is within range
+						if (Math.sqrt(Math.pow(npc.x - user.x, 2) + Math.pow(npc.y - user.y, 2)) > ability.range)  {
+							Game.socket.send("abilityfail:Out of range!");
+							return;
+						}
+						npc.health += ability.thp;
+						if (ability.t.dur > 0) {
+							if (!this.npcEffects[data.tid]) this.npcEffects[data.tid] = new Array();
+							this.npcEffects[data.tid].push(ability.t);
+						}
+							
+						//record cooldown
+						this.cooldowns[data.id] = now;
+						//record changes
+						msg.anim = ability.anim;
+						msg.tar = "npc";
+						msg.pid = args.index;
+						msg.php = newUser.health;
+						msg.phpx = newUser.maxhealth;
+						msg.pmp = newUser.mana;
+						msg.pmpx = newUser.maxmana;
+						msg.tid = data.tid;
+						msg.dam = ability.thp;
+						//send update message
+						Game.socket.sendRange("ability:" + JSON.stringify(msg));
+						//send progress update
+						if (npc.health <= 0) {
+							var newxp = npc.exp;
+							if (!newxp) newxp = 10;
+							Module.doHook("progress_gain", {index:args.index, exp:newxp});
+						}
+					}
+				} else {
+					Game.socket.send("abilityfail:Invalid Target!");
+					return;
 				}
 				user.putAll(newUser);
 			}
@@ -858,6 +863,7 @@ Combat.client.editor.updateFields = function() {
     Combat.client.editor.icon.setImage(sprite, 0, 0, 32, 32);
 	$("#ability-editor-tooltip").val(this.currObject.tool);
 	$("#ability-editor-effects-cooldown").val(this.currObject.cool);
+	$("#ability-editor-effects-target").val(this.currObject.targ);
 	$("#ability-editor-effects-range").val(this.currObject.range);
 	$("#ability-editor-effects-php").val(this.currObject.php);
 	$("#ability-editor-effects-pmp").val(this.currObject.pmp);
@@ -967,6 +973,15 @@ Combat.client.editor.createUI = function() {
             Combat.client.editor.currObject.cool = ui.value;
             Combat.client.editor.changed = true;
         }
+    }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
+	
+	var targets = new Object();
+	targets["enemy"] = "Enemy";
+	targets["ally"] = "Ally";
+	UI.AddDiv(this.window2, "target-label", "Target: ", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddCombobox(this.window2, "target", {width: "70%"}, targets, function() {
+        Combat.client.editor.currObject.targ = $("#ability-editor-effects-target").val();
+        Combat.client.editor.changed = true;
     }, 1, {"style": 'display:block;width:70%;margin:4px 0px;'});
 	
 	UI.AddDiv(this.window2, "range-label", "Range: (tiles)", 1, {"style": 'display:block;margin:4px auto;height:16px;'});
