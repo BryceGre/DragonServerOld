@@ -162,16 +162,23 @@ Combat.server.onHook = function(hook, args) {
 				msg.abilities = {};
 				msg.items = {};
 				var list = Data.abilities.listAll();
-				for (var key in list) {
-					msg.abilities[key] = new Object();
-					msg.abilities[key].name = list[key].name;
-					msg.abilities[key].tool = list[key].tool;
-					msg.abilities[key].icon = list[key].icon;
-					msg.items[key] = new Object();
-					msg.items[key].name = "";
-					msg.items[key].tool = "";
-					msg.items[key].icon = 1;
-					msg.items[key].count = 0;
+				var data = npc.data;
+				for (var key in data) {
+					var ability = data[key].ability;
+					var item = data[key].item;
+					if (list[ability]) {
+						msg.abilities[key] = new Object();
+						msg.abilities[key].id = ability;
+						msg.abilities[key].name = list[ability].name;
+						msg.abilities[key].tool = list[ability].tool;
+						msg.abilities[key].icon = list[ability].icon;
+						msg.items[key] = new Object();
+						msg.items[key].id = item;
+						msg.items[key].name = "";
+						msg.items[key].tool = "";
+						msg.items[key].icon = 1;
+						msg.items[key].count = data[key].count;
+					}
 				}
 				Game.socket.send("trainer:" + JSON.stringify(msg));
 				this.currTrainer[args.index] = msg;
@@ -361,25 +368,26 @@ Combat.server.onHook = function(hook, args) {
 			var key = parseInt(args.body);
 			if (this.currTrainer[args.index]) {
 				var ability = this.currTrainer[args.index].abilities[key];
-				if (ability) {
-					var item = this.currTrainer[args.index].items[key];
+				var item = this.currTrainer[args.index].items[key];
+				if (ability && item) {
 					var user = Data.characters[args.index];
 					if (!user.abilities) {
 						user.abilities = new Object();
 					}
 					var learned = user.abilities;
-					if (!learned[args.body]) {
-						learned[args.body] = true;
+					if (!learned[ability.id]) {
+						learned[ability.id] = true;
 						user.abilities = learned;
 						
 						var msg = {
 							ability: new Object(),
 							item: new Object(),
 						};
-						msg.ability.key = key;
+						msg.ability.id = ability.id;
 						msg.ability.name = ability.name;
 						msg.ability.tool = ability.tool;
 						msg.ability.icon = ability.icon;
+						msg.item.id = item.id
 						msg.item.name = item.name;
 						msg.item.tool = item.tool;
 						msg.item.icon = item.icon;
@@ -530,6 +538,7 @@ Combat.client.onInit = function() {
 	Data.npc_actions["trainer"] = {name: "Trainer"};
 	if (isAdmin) {
 		Module.addHook("npc_editor_data");
+		Module.addHook("npc_editor_save");
 	} else {
 		Module.addHook("pre_draw_fringe");
 		Module.addHook("post_draw");
@@ -549,6 +558,20 @@ Combat.client.onHook = function(hook, args) {
 		if (args.action == "trainer") {
 			Combat.client.npcEditor.currData = args.data;
 			Combat.client.npcEditor.createUI(args.window);
+		}
+	} else if (isAdmin && hook === "npc_editor_save") {
+		if (args.action == "trainer") {
+			var data = args.data;
+			
+			var count = 0;
+			for (var i = 0; i < Combat.client.npcEditor.divCount; i++) {
+				if (!Combat.client.npcEditor.currList[i].del) {
+					data[count] = Combat.client.npcEditor.currList[i];
+					count++;
+				}
+			}
+			
+			args.data = data;
 		}
 	} else if (hook == "game_load") {
 		Combat.client.abilities.createUI();
@@ -655,10 +678,11 @@ Combat.client.onHook = function(hook, args) {
 			var msg = JSON.parse(args.body);
 			for (var key in msg.abilities) {
 				var i = key;
+				var id = msg.abilities[i].id;
 				if (msg.abilities[i].icon === null || msg.items[i].icon === null) continue;
-				if (this.learned[i]) continue;
+				if (this.learned[id]) continue;
 				//msg.abilities[i], msg.items[i]
-				//.name, .tool, .icon, .count (for items)
+				//.id, .name, .tool, .icon, .count (for items)
 				var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
 				var tooltip = "<b>" + msg.abilities[i].name + "</b><br>" + msg.abilities[i].tool;
 				var aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:left;width:32px;height:32px;', "title": tooltip});
@@ -677,7 +701,7 @@ Combat.client.onHook = function(hook, args) {
 			$("#trainer").dialog("open");
 		}else if (args.head === "train") {
 			var msg = JSON.parse(args.body);
-			var i = msg.ability.key;
+			var i = msg.ability.id;
 			var tooltip = "<b>" + msg.ability.name + "</b><br>" + msg.ability.tool;
 			var canvas = UI.AddDrag(Combat.client.abilities.window, "ability"+i, "ability_cast", {id:i}, false, {"style": 'display:inline-block;width:20%;', "title": tooltip});
 			canvas.attr("width", '32px');
@@ -1105,6 +1129,7 @@ Combat.client.editor.createUI = function() {
     Game.menus["Ability Editor"] = function() {
         $("#ability-editor").dialog("open");
         Combat.client.editor.currAbility = 1;
+        Combat.client.editor.loadAbility();
     };
 }
 
@@ -1122,14 +1147,24 @@ Combat.client.trainer.createUI = function() {
 
 Combat.client.npcEditor.createUI = function(win) {
 	this.currList = new Array();
-	UI.AddButton(win, "add", "+", function(e) {
-        e.preventDefault();
+	this.divCount = 0;
+	
+	var addData = function(e, ability, item, count) {
+		if (e)
+			e.preventDefault();
+		if (!ability) ability = 1;
+		if (!item) item = 1;
+		if (!count) count = 0;
+		
 		var i = Combat.client.npcEditor.divCount;
+		Combat.client.npcEditor.currList[i] = new Object();
+		
 		var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
-		var newData = new Object();
+		
 		var aicon = null;
-		UI.AddSpinner(newDiv, "ability", {min: 1, spin: function(event, ui) {
-            newData.ability = ui.value;
+		UI.AddSpinner(newDiv, "ability", {value: ability, min: 1, spin: function(event, ui) {
+            Combat.client.npcEditor.currList[i].ability = ui.value;
+			
 			if (Combat.client.abilityData[ui.value] && Combat.client.abilityData[ui.value].icon) {
 				aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[ui.value].icon], 0, 0, 32, 32);
 				aicon.attr("title", "<b>" + Combat.client.abilityData[ui.value].name + "</b><br>" + Combat.client.abilityData[ui.value].tool + "");
@@ -1138,35 +1173,44 @@ Combat.client.npcEditor.createUI = function(win) {
 				aicon.attr("title", "");
 			}
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
-		var aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;', "title": ""});
-		if (Combat.client.abilityData[1] && Combat.client.abilityData[1].icon) {
-			aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[1].icon], 0, 0, 32, 32);
-			aicon.attr("title", "<b>" + Combat.client.abilityData[1].name + "</b><br>" + Combat.client.abilityData[1].tool + "");
+		Combat.client.npcEditor.currList[i].ability = ability;
+		
+		aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;auto 16px auto 4px;', "title": ""});
+		if (Combat.client.abilityData[ability] && Combat.client.abilityData[ability].icon) {
+			aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[ability].icon], 0, 0, 32, 32);
+			aicon.attr("title", "<b>" + Combat.client.abilityData[ability].name + "</b><br>" + Combat.client.abilityData[ability].tool + "");
 		} else {
 			aicon.clearImage();
 			aicon.attr("title", "");
 		}
 		
-		UI.AddSpinner(newDiv, "item", {min: 1, spin: function(event, ui) {
-            newData.item = ui.value;
+		var iicon = null;
+		UI.AddSpinner(newDiv, "item", {value: item, min: 1, spin: function(event, ui) {
+            Combat.client.npcEditor.currList[i].item = ui.value;
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
-		var iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;', "title": ""});
+		Combat.client.npcEditor.currList[i].item = item;
+		
+		iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;auto 16px auto 4px;', "title": ""});
 		iicon.clearImage();
 		
-		UI.AddSpinner(newDiv, "count", {min: 1, spin: function(event, ui) {
-            newData.count = ui.value;
+		UI.AddSpinner(newDiv, "count", {value: count, min: 0, spin: function(event, ui) {
+            Combat.client.npcEditor.currList[i].count = ui.value;
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
-		UI.AddButton(newDiv, "del", "x", function(e) {
+		Combat.client.npcEditor.currList[i].count = count;
+		
+		UI.AddButton(newDiv, "del", "x", function(i, e) {
 			$(newDiv).remove();
-			//if (!$(newDiv).closest('html').length) {
-				//Element is removed
-			//}
-		})
-		Combat.client.npcEditor.currList.push(newData);
+			Combat.client.npcEditor.currList[i].del = true;
+		}.bind(this, i), false, {'style': 'display:inline-block;float:right;'});
+		
 		Combat.client.npcEditor.divCount++;
-    }, false, {"style": 'display:block;width:40%;margin:4px 0px;'});
-	UI.AddDiv(win, "info", "Ability", false, {"style": 'display:inline-block;width:64px'});
-	UI.AddDiv(win, "info", "Item", false, {"style": 'display:inline-block;width:64px'});
+	};
+	UI.AddButton(win, "add", "+", addData, false, {"style": 'display:block;width:20%;margin:4px 0px;'});
+	UI.AddDiv(win, "info", "Ability", false, {"style": 'display:inline-block;width:104px'});
+	UI.AddDiv(win, "info", "Item", false, {"style": 'display:inline-block;width:104px'});
 	UI.AddDiv(win, "info", "Amnt", false, {"style": 'display:inline-block;width:32px'});
     
+	for (var key in this.currData) {
+		addData(null, this.currData[key].ability, this.currData[key].item, this.currData[key].count);
+	}
 }

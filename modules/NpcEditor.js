@@ -54,6 +54,7 @@ NpcEditor.server.onHook = function(hook, args) {
              * npc.sprite = data.sprite;
              * npc.action = data.action;
              * npc.behavior = data.behavior;
+			 * npc.data = data.data;
              */
         } else if (args.head === "loadnpc") {
             this.currNpc = parseInt(args.body);
@@ -247,7 +248,7 @@ NpcEditor.client.createUI = function() {
         JSONObject.action = NpcEditor.client.currAction;
         JSONObject.behavior = NpcEditor.client.currBehavior;
 		JSONObject.data = new Object();
-		Module.doHook("npc_editor_save", {data: JSONObject.data});
+		Module.doHook("npc_editor_save", {window: NpcEditor.client.data, action: NpcEditor.client.currAction, data: JSONObject.data});
         Game.socket.send("savenpc:" + JSON.stringify(JSONObject));
         //update npc name
         NpcEditor.client.npcNames[NpcEditor.client.currNpc] = NpcEditor.client.currName;
