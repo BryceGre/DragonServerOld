@@ -71,6 +71,7 @@ public class ModuleManager {
         mEngine.put("Data", mData.Data);
         mEngine.put("console", mData.Log);
         mEngine.put("Module", this);
+        mEngine.put("Server", true);
         
         mEngine.put("ADD", ADD);
         mEngine.put("AVG", AVG);

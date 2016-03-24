@@ -250,6 +250,7 @@ NpcEditor.client.createUI = function() {
 		JSONObject.data = new Object();
 		Module.doHook("npc_editor_save", {window: NpcEditor.client.data, action: NpcEditor.client.currAction, data: JSONObject.data});
         Game.socket.send("savenpc:" + JSON.stringify(JSONObject));
+        NpcEditor.client.changed = false;
         //update npc name
         NpcEditor.client.npcNames[NpcEditor.client.currNpc] = NpcEditor.client.currName;
         $("#npc-editor-npc").val(NpcEditor.client.currNpc, NpcEditor.client.currName);

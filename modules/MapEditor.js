@@ -497,6 +497,11 @@ MapEditor.client.createUI = function() {
             MapEditor.client.currAttrData = "" + fields["NPC-ID"];
         });
     }
+    this.attrAction[8] = function() {
+        UI.NewPrompt("Attribute Properties", {"Item-ID": {"type": "number", "min": "1", "max": "9999", "value": Game.editFloor}}, function(fields) {
+            MapEditor.client.currAttrData = "" + fields["Item-ID"];
+        });
+    }
     // attr only needs key-name pairs for Radio creation
     var attr = new Object();
     for (key in Data.map_attr) {

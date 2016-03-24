@@ -188,186 +188,42 @@ Combat.server.onHook = function(hook, args) {
     } else if (hook === "message") {
 		if (args.head === "castability") {
 			var data = JSON.parse(args.body);
-			var msg = new Object();
 			//make sure ability exists
 			if (Data.abilities.containsID(data.id)) {
-				var ability = Data.abilities[data.id];
-				//make sure ability is not on cooldown
-				var last = this.cooldowns[data.id];
-				var now = new Date();
-				if ((now.getTime() - last) / 1000 < ability.cool) {
-					Game.socket.send("abilityfail:Ability on cooldown!");
-					return;
-				}
-				var user = Data.characters[args.index];
-				var newUser = new Object();
-				newUser.health = user.health;
-				newUser.maxhealth = user.maxhealth;
-				if (!newUser.maxhealth) {
-					newUser.health = 100;
-					newUser.maxhealth = 100;
-				}
-				newUser.mana = user.mana;
-				newUser.maxmana = user.maxmana;
-				if (!newUser.maxmana) {
-					newUser.mana = 100;
-					newUser.maxmana = 100;
-				}
-				if (newUser.mana + ability.pmp < 1) {
-					Game.socket.send("abilityfail:Not enough mana!");
-					return;
-				}
-				
-				newUser.health += ability.php;
-				if (newUser.health > newUser.maxhealth)
-					newUser.health = newUser.maxhealth;
-				if (newUser.health <= 0) {
-					//die
-					Game.warpPlayer(args.index, 0, 0, 3);
-					newUser.health = newUser.maxhealth;
-					newUser.effects = new Array();
-				}
-				newUser.mana += ability.pmp;
-				if (newUser.mana > newUser.maxmana)
-					newUser.mana = newUser.maxmana;
-				if (newUser.mana <= 0)
-					newUser.mana = 1;
-				newUser.effects = user.effects;
-				if (ability.p.dur > 0) {
-					if (!newUser.effects) newUser.effects = new Array();
-					newUser.effects.push(ability.p);
-				}
-				//determine target
-				if (!ability.tar) ability.tar = "enemy";
-				if (ability.tar == "ally" && (data.target === null || data.target === "npc")) {
-					newUser.health += ability.thp;
-					if (newUser.health > newUser.maxhealth)
-						newUser.health = newUser.maxhealth;
-					if (newUser.health <= 0) {
-						//die
-						Game.warpPlayer(args.index, 0, 0, 3);
-						newUser.health = newUser.maxhealth;
-						newUser.effects = new Array();
-					}
-					newUser.mana += ability.tmp;
-					if (newUser.mana > newUser.maxmana)
-						newUser.mana = newUser.maxmana;
-					if (newUser.mana <= 0)
-						newUser.mana = 1;
-					if (ability.t.dur > 0) {
-						if (!newUser.effects) newUser.effects = new Array();
-						newUser.effects.push(ability.t);
-					}
-					//record cooldown
-					this.cooldowns[data.id] = now;
-					//record changes
-					msg.anim = ability.anim;
-					msg.tar = null;
-					msg.pid = args.index;
-					msg.php = newUser.health;
-					msg.phpx = newUser.maxhealth;
-					msg.pmp = newUser.mana;
-					msg.pmpx = newUser.maxmana;
-					//send update message
-					Game.socket.sendRange("ability:" + JSON.stringify(msg));
-				} else if (ability.tar == "ally" && data.target === "player") {
-					var player = Data.characters[data.tid];
-					var newPlayer = new Object();
-					//also be sure that the target is within range
-					if (Math.sqrt(Math.pow(player.x - user.x, 2) + Math.pow(player.y - user.y, 2)) > ability.range) {
-						Game.socket.send("abilityfail:Out of range!");
-						return;
-					}
-					newPlayer.health = player.health;
-					newPlayer.maxhealth = player.maxhealth;
-					if (!newPlayer.maxhealth) {
-						newPlayer.health = 100;
-						newPlayer.maxhealth = 100;
-					}
-					newPlayer.mana = player.mana;
-					newPlayer.maxmana = player.maxmana;
-					if (!newPlayer.maxmana) {
-						newPlayer.mana = 100;
-						newPlayer.maxmana = 100;
-					}
-					newPlayer.health += ability.thp;
-					if (newPlayer.health > player.maxhealth)
-						newPlayer.health = player.maxhealth;
-					if (newPlayer.health <= 0) {
-						//die
-						Game.warpPlayer(data.tid, 0, 0, 3);
-						newPlayer.health = newPlayer.maxhealth;
-						newPlayer.effects = new Array();
-					}
-					newPlayer.mana += ability.tmp;
-					if (newPlayer.mana > player.maxmana)
-						newPlayer.mana = player.maxmana;
-					if (newPlayer.mana <= 0)
-						newPlayer.mana = 1;
-					newPlayer.effects = player.effects;
-					if (ability.t.dur > 0) {
-						if (!newPlayer.effects) newPlayer.effects = new Array();
-						newPlayer.effects.push(ability.t);
-					}
-					player.putAll(newPlayer);
-					//record cooldown
-					this.cooldowns[data.id] = now;
-					//record changes
-					msg.anim = ability.anim;
-					msg.tar = "player";
-					msg.pid = args.index;
-					msg.php = newUser.health;
-					msg.phpx = newUser.maxhealth;
-					msg.pmp = newUser.mana;
-					msg.pmpx = newUser.maxmana;
-					msg.tid = data.tid;
-					msg.thp = newPlayer.health;
-					msg.thpx = newPlayer.maxhealth;
-					msg.tmp = newPlayer.mana;
-					msg.tmpx = newPlayer.maxmana;
-					//send update message
-					Game.socket.sendRange("ability:" + JSON.stringify(msg));
-				} else if (ability.tar === "enemy" && data.target === "npc") {
-					var npc = Game.getNPC(data.tid);
-					//if npc exists
-					if (npc) {
-						//also be sure that the target is within range
-						if (Math.sqrt(Math.pow(npc.x - user.x, 2) + Math.pow(npc.y - user.y, 2)) > ability.range)  {
-							Game.socket.send("abilityfail:Out of range!");
-							return;
-						}
-						npc.health += ability.thp;
-						if (ability.t.dur > 0) {
-							if (!this.npcEffects[data.tid]) this.npcEffects[data.tid] = new Array();
-							this.npcEffects[data.tid].push(ability.t);
-						}
-							
-						//record cooldown
-						this.cooldowns[data.id] = now;
-						//record changes
-						msg.anim = ability.anim;
-						msg.tar = "npc";
-						msg.pid = args.index;
-						msg.php = newUser.health;
-						msg.phpx = newUser.maxhealth;
-						msg.pmp = newUser.mana;
-						msg.pmpx = newUser.maxmana;
-						msg.tid = data.tid;
-						msg.dam = ability.thp;
-						//send update message
-						Game.socket.sendRange("ability:" + JSON.stringify(msg));
-						//send progress update
-						if (npc.health <= 0) {
-							var newxp = npc.exp;
-							if (!newxp) newxp = 10;
-							Module.doHook("progress_gain", {index:args.index, exp:newxp});
+				Combat.server.castAbility(args.index, data);
+			}
+		} else if (args.head === "useitem") {
+			var data = JSON.parse(args.body);
+			if (Data.items.containsID(data.id)) {
+				var item = Data.items[data.id];
+				if (item.action === "use" && item.data.ability) {
+					console.log("item using ability: " + item.data.ability);
+					data.id = item.data.ability;
+					if (Data.abilities.containsID(data.id)) {
+						if (Combat.server.castAbility(args.index, data)) {
+							var user = Data.characters[args.index];
+							var inv = user.inv;
+							if (inv) {
+								inv.splice(args.slot, 1);
+							}
+							//get inventory info and store it in the outgoing message
+							var msg = new Array();
+							var ilist = Data.items.listAll();
+							for (var i=0; i<inv.length; i++) {
+								if (inv[i] && ilist[inv[i]]) {
+									msg[i] = new Object();
+									msg[i].id = inv[i];
+									msg[i].name = ilist[inv[i]].name;
+									msg[i].tool = ilist[inv[i]].tool;
+									msg[i].icon = ilist[inv[i]].icon;
+								}
+							}
+							//be sure to assign the updated array to the database row
+							user.inv = inv;
+							Game.socket.send("inv:" + JSON.stringify(msg));
 						}
 					}
-				} else {
-					Game.socket.send("abilityfail:Invalid Target!");
-					return;
 				}
-				user.putAll(newUser);
 			}
 		} else if (args.head === "train") {
 			var key = parseInt(args.body);
@@ -497,6 +353,187 @@ Combat.server.onHook = function(hook, args) {
 }
 
 /***** helper *****/
+Combat.server.castAbility = function(index, data) {
+	var msg = new Object();
+	var ability = Data.abilities[data.id];
+	//make sure ability is not on cooldown
+	var last = this.cooldowns[data.id];
+	var now = new Date();
+	if ((now.getTime() - last) / 1000 < ability.cool) {
+		Game.socket.send("abilityfail:Ability on cooldown!");
+		return false;
+	}
+	var user = Data.characters[index];
+	var newUser = new Object();
+	newUser.health = user.health;
+	newUser.maxhealth = user.maxhealth;
+	if (!newUser.maxhealth) {
+		newUser.health = 100;
+		newUser.maxhealth = 100;
+	}
+	newUser.mana = user.mana;
+	newUser.maxmana = user.maxmana;
+	if (!newUser.maxmana) {
+		newUser.mana = 100;
+		newUser.maxmana = 100;
+	}
+	if (newUser.mana + ability.pmp < 1) {
+		Game.socket.send("abilityfail:Not enough mana!");
+		return false;
+	}
+	
+	newUser.health += ability.php;
+	if (newUser.health > newUser.maxhealth)
+		newUser.health = newUser.maxhealth;
+	if (newUser.health <= 0) {
+		//die
+		Game.warpPlayer(index, 0, 0, 3);
+		newUser.health = newUser.maxhealth;
+		newUser.effects = new Array();
+	}
+	newUser.mana += ability.pmp;
+	if (newUser.mana > newUser.maxmana)
+		newUser.mana = newUser.maxmana;
+	if (newUser.mana <= 0)
+		newUser.mana = 1;
+	newUser.effects = user.effects;
+	if (ability.p.dur > 0) {
+		if (!newUser.effects) newUser.effects = new Array();
+		newUser.effects.push(ability.p);
+	}
+	//determine target
+	if (!ability.targ) ability.targ = "enemy";
+	if (ability.targ == "ally" && (data.target === null || data.target === "npc")) {
+		newUser.health += ability.thp;
+		if (newUser.health > newUser.maxhealth)
+			newUser.health = newUser.maxhealth;
+		if (newUser.health <= 0) {
+			//die
+			Game.warpPlayer(index, 0, 0, 3);
+			newUser.health = newUser.maxhealth;
+			newUser.effects = new Array();
+		}
+		newUser.mana += ability.tmp;
+		if (newUser.mana > newUser.maxmana)
+			newUser.mana = newUser.maxmana;
+		if (newUser.mana <= 0)
+			newUser.mana = 1;
+		if (ability.t.dur > 0) {
+			if (!newUser.effects) newUser.effects = new Array();
+			newUser.effects.push(ability.t);
+		}
+		//record cooldown
+		this.cooldowns[data.id] = now;
+		//record changes
+		msg.anim = ability.anim;
+		msg.tar = null;
+		msg.pid = index;
+		msg.php = newUser.health;
+		msg.phpx = newUser.maxhealth;
+		msg.pmp = newUser.mana;
+		msg.pmpx = newUser.maxmana;
+		//send update message
+		Game.socket.sendRange("ability:" + JSON.stringify(msg));
+	} else if (ability.targ == "ally" && data.target === "player") {
+		var player = Data.characters[data.tid];
+		var newPlayer = new Object();
+		//also be sure that the target is within range
+		if (Math.sqrt(Math.pow(player.x - user.x, 2) + Math.pow(player.y - user.y, 2)) > ability.range) {
+			Game.socket.send("abilityfail:Out of range!");
+			return false;
+		}
+		newPlayer.health = player.health;
+		newPlayer.maxhealth = player.maxhealth;
+		if (!newPlayer.maxhealth) {
+			newPlayer.health = 100;
+			newPlayer.maxhealth = 100;
+		}
+		newPlayer.mana = player.mana;
+		newPlayer.maxmana = player.maxmana;
+		if (!newPlayer.maxmana) {
+			newPlayer.mana = 100;
+			newPlayer.maxmana = 100;
+		}
+		newPlayer.health += ability.thp;
+		if (newPlayer.health > player.maxhealth)
+			newPlayer.health = player.maxhealth;
+		if (newPlayer.health <= 0) {
+			//die
+			Game.warpPlayer(data.tid, 0, 0, 3);
+			newPlayer.health = newPlayer.maxhealth;
+			newPlayer.effects = new Array();
+		}
+		newPlayer.mana += ability.tmp;
+		if (newPlayer.mana > player.maxmana)
+			newPlayer.mana = player.maxmana;
+		if (newPlayer.mana <= 0)
+			newPlayer.mana = 1;
+		newPlayer.effects = player.effects;
+		if (ability.t.dur > 0) {
+			if (!newPlayer.effects) newPlayer.effects = new Array();
+			newPlayer.effects.push(ability.t);
+		}
+		player.putAll(newPlayer);
+		//record cooldown
+		this.cooldowns[data.id] = now;
+		//record changes
+		msg.anim = ability.anim;
+		msg.tar = "player";
+		msg.pid = index;
+		msg.php = newUser.health;
+		msg.phpx = newUser.maxhealth;
+		msg.pmp = newUser.mana;
+		msg.pmpx = newUser.maxmana;
+		msg.tid = data.tid;
+		msg.thp = newPlayer.health;
+		msg.thpx = newPlayer.maxhealth;
+		msg.tmp = newPlayer.mana;
+		msg.tmpx = newPlayer.maxmana;
+		//send update message
+		Game.socket.sendRange("ability:" + JSON.stringify(msg));
+	} else if (ability.targ === "enemy" && data.target === "npc") {
+		var npc = Game.getNPC(data.tid);
+		//if npc exists
+		if (npc) {
+			//also be sure that the target is within range
+			if (Math.sqrt(Math.pow(npc.x - user.x, 2) + Math.pow(npc.y - user.y, 2)) > ability.range)  {
+				Game.socket.send("abilityfail:Out of range!");
+				return false;
+			}
+			npc.health += ability.thp;
+			if (ability.t.dur > 0) {
+				if (!this.npcEffects[data.tid]) this.npcEffects[data.tid] = new Array();
+				this.npcEffects[data.tid].push(ability.t);
+			}
+				
+			//record cooldown
+			this.cooldowns[data.id] = now;
+			//record changes
+			msg.anim = ability.anim;
+			msg.tar = "npc";
+			msg.pid = index;
+			msg.php = newUser.health;
+			msg.phpx = newUser.maxhealth;
+			msg.pmp = newUser.mana;
+			msg.pmpx = newUser.maxmana;
+			msg.tid = data.tid;
+			msg.dam = ability.thp;
+			//send update message
+			Game.socket.sendRange("ability:" + JSON.stringify(msg));
+			//send progress update
+			if (npc.health <= 0) {
+				var newxp = npc.exp;
+				if (!newxp) newxp = 10;
+				Module.doHook("progress_gain", {index:index, exp:newxp});
+			}
+		}
+	} else {
+		Game.socket.send("abilityfail:Invalid Target!");
+		return false;
+	}
+	user.putAll(newUser);
+	return true;
+}
 
 /***********************************************/
 /***** Client **********************************/
@@ -527,6 +564,10 @@ Combat.client = {
 		currList: new Array(),
 		divCount: 0,
 	},
+	itemEditor : {
+		window: null,
+		currData: 1,
+	},
 	learned : new Object(),
 	animation : null,
 	health : 100,
@@ -541,9 +582,12 @@ Combat.client = {
 Combat.client.onInit = function() {
 	Data.npc_actions["attack"] = {name: "Attack"};
 	Data.npc_actions["trainer"] = {name: "Trainer"};
+	Data.item_actions["use"] = {name: "Use"};
 	if (isAdmin) {
 		Module.addHook("npc_editor_data");
 		Module.addHook("npc_editor_save");
+		Module.addHook("item_editor_data");
+		Module.addHook("item_editor_save");
 	} else {
 		Module.addHook("pre_draw_fringe");
 		Module.addHook("post_draw");
@@ -577,6 +621,15 @@ Combat.client.onHook = function(hook, args) {
 			}
 			
 			args.data = data;
+		}
+	} else if (isAdmin && hook === "item_editor_data") {
+		if (args.action == "use") {
+			Combat.client.itemEditor.currData = args.data;
+			Combat.client.itemEditor.createUI(args.window);
+		}
+	} else if (isAdmin && hook === "item_editor_save") {
+		if (args.action == "use") {
+			$.extend(true, args.data, Combat.client.itemEditor.currData);
 		}
 	} else if (hook == "game_load") {
 		Combat.client.abilities.createUI();
@@ -688,15 +741,15 @@ Combat.client.onHook = function(hook, args) {
 				if (this.learned[id]) continue;
 				//msg.abilities[i], msg.items[i]
 				//.id, .name, .tool, .icon, .count (for items)
-				var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
+				var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;height:32px;margin:4px auto;'});
 				var tooltip = "<b>" + msg.abilities[i].name + "</b><br>" + msg.abilities[i].tool;
 				var aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:left;width:32px;height:32px;', "title": tooltip});
 				aicon.setImage(Game.gfx.Icons[msg.abilities[i].icon], 0, 0, 32, 32);
 				UI.AddDiv(newDiv, "text", msg.abilities[i].name, false, {"style": 'display:inline-block;float:left;height:16px;margin:8px;', "title": tooltip});
 				UI.AddButton(newDiv, "buy", "Buy", function(i, div, e) {
 					Game.socket.send("train:" + i);
-					$(div).remove()
-				}.bind(this, i, newDiv), false, {"style": 'display:inline-block;float:right;height:16px;'});
+					$(div).remove();
+				}.bind(this, i, newDiv), false, {"style": 'display:inline-block;float:right;height:32px;'});
 				var tooltip2 = "<b>" + msg.items[i].name + "</b><br>" + msg.items[i].tool;
 				UI.AddDiv(newDiv, "count", "x" +  msg.items[i].count, false, {"style": 'display:inline-block;float:right;height:16px;margin:8px auto;', "title": tooltip2});
 				var iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '32px', "height": '32px', "style": 'display:inline-block;float:right;width:32px;height:32px;', "title": tooltip2});
@@ -704,7 +757,7 @@ Combat.client.onHook = function(hook, args) {
 				UI.AddDiv(newDiv, "desc", "Cost:", false, {"style": 'display:inline-block;float:right;height:16px;margin:8px;'});
 			}
 			$("#trainer").dialog("open");
-		}else if (args.head === "train") {
+		} else if (args.head === "train") {
 			var msg = JSON.parse(args.body);
 			var i = msg.ability.id;
 			var tooltip = "<b>" + msg.ability.name + "</b><br>" + msg.ability.tool;
@@ -864,6 +917,7 @@ Combat.client.editor.updateFields = function() {
 	$("#ability-editor-tooltip").val(this.currObject.tool);
 	$("#ability-editor-effects-cooldown").val(this.currObject.cool);
 	$("#ability-editor-effects-target").val(this.currObject.targ);
+	$("#ability-editor-effects-target").trigger("chosen:updated");
 	$("#ability-editor-effects-range").val(this.currObject.range);
 	$("#ability-editor-effects-php").val(this.currObject.php);
 	$("#ability-editor-effects-pmp").val(this.currObject.pmp);
@@ -1228,4 +1282,26 @@ Combat.client.npcEditor.createUI = function(win) {
 	for (var key in this.currData) {
 		addData(null, this.currData[key].ability, this.currData[key].item, this.currData[key].count);
 	}
+}
+
+
+Combat.client.itemEditor.createUI = function(win) {
+	var val = 1;
+	if (Combat.client.itemEditor.currData.ability) {
+		val = Combat.client.itemEditor.currData.ability;
+	}
+	
+	UI.AddDiv(win, "ability-label", "Abiltiy ID to cast: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
+    UI.AddSpinner(win, "ability", {min: 1, value:val, spin:function(event, ui) {
+            Combat.client.itemEditor.currData.ability = ui.value;
+        }
+    }, false, {"style": 'display:block;margin:4px 0px;'});
+	
+    UI.AddCheckbox(win, "consume", "Consume on Use", Combat.client.itemEditor.currData.consume, function(e) {
+        if ($("#item-editor-data-consume-check").prop('checked')) {
+            Combat.client.itemEditor.currData.consume = true;
+        } else {
+            Combat.client.itemEditor.currData.consume = false;
+        }
+    }, false, {'style': 'display:block;margin:0px auto;'});
 }
