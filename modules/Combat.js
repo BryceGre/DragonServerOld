@@ -204,23 +204,29 @@ Combat.server.onHook = function(hook, args) {
 							var user = Data.characters[args.index];
 							var inv = user.inv;
 							if (inv) {
-								inv.splice(args.slot, 1);
-							}
-							//get inventory info and store it in the outgoing message
-							var msg = new Array();
-							var ilist = Data.items.listAll();
-							for (var i=0; i<inv.length; i++) {
-								if (inv[i] && ilist[inv[i]]) {
-									msg[i] = new Object();
-									msg[i].id = inv[i];
-									msg[i].name = ilist[inv[i]].name;
-									msg[i].tool = ilist[inv[i]].tool;
-									msg[i].icon = ilist[inv[i]].icon;
+								//remove the item from the player's inventory
+								if (item.stack) {
+									inv[args.slot].count -= 1;
+									if (inv[args.slot].count == 0)
+										inv.splice(args.slot, 1);
+								} else 
+									inv.splice(args.slot, 1);
+								//get inventory info and store it in the outgoing message
+								var msg = new Array();
+								var ilist = Data.items.listAll();
+								for (var i=0; i<inv.length; i++) {
+									if (inv[i] && ilist[inv[i]]) {
+										msg[i] = new Object();
+										msg[i].id = inv[i];
+										msg[i].name = ilist[inv[i]].name;
+										msg[i].tool = ilist[inv[i]].tool;
+										msg[i].icon = ilist[inv[i]].icon;
+									}
 								}
+								//be sure to assign the updated array to the database row
+								user.inv = inv;
+								Game.socket.send("inv:" + JSON.stringify(msg));
 							}
-							//be sure to assign the updated array to the database row
-							user.inv = inv;
-							Game.socket.send("inv:" + JSON.stringify(msg));
 						}
 					}
 				}

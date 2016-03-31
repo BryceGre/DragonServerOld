@@ -33,6 +33,7 @@ Items.Item = function() {
 	this.name = ""; //name
 	this.icon = 1; //icon
 	this.tool = ""; //tooltip
+	this.stack = false; //stackable
 	this.action = "none";
 	
 	this.data = {};
@@ -92,12 +93,21 @@ Items.server.onHook = function(hook, args) {
 		msg.inv = [];
 		var inv = user.inv;
 		for (var i=0; i<inv.length; i++) {
-			if (inv[i] && ilist[inv[i]] && ilist[inv[i]].name) {
-				msg.inv[i] = new Object();
-				msg.inv[i].id = inv[i];
-				msg.inv[i].name = ilist[inv[i]].name;
-				msg.inv[i].tool = ilist[inv[i]].tool;
-				msg.inv[i].icon = ilist[inv[i]].icon;
+			if (inv[i]) {
+				var id = inv[i];
+				if (typeof inv[i] === 'object') {
+					id = inv[i].id;
+				}
+				if (ilist[id] && ilist[id].name) {
+					msg.inv[i] = new Object();
+					msg.inv[i].id = id;
+					msg.inv[i].name = ilist[id].name;
+					msg.inv[i].tool = ilist[id].tool;
+					msg.inv[i].icon = ilist[id].icon;
+					if (typeof inv[i] === 'object') {
+						msg.inv[i].count = inv[i].count;
+					}
+				}
 			}
 		}
 		//get equipment info and store it in the outgoing message
@@ -132,11 +142,15 @@ Items.server.onHook = function(hook, args) {
 			var data = npc.data;
 			for (var key in data) {
 				var item = data[key].item;
-				var chance = data[key].chance;
-				var count = data[key].count;
-				if (Math.random() < chance)
-					//drop.push({item: item, count: count});
-					drop.push(item);
+				if (Math.random() < data[key].chance) {
+					if (Data.items[item].stack) {
+						drop.push({id: item, count: data[key].count});
+					} else {
+						for (var i=0; i<data[key].count; i++) {
+							drop.push(item);
+						}
+					}
+				}
 			}
 			this.drops[this.key(args.npc)] = drop;
 		}
@@ -204,16 +218,49 @@ Items.server.onHook = function(hook, args) {
 		//if tile has item attribute
 		if (id) {
 			//add item to player's inventory
-			inv.push(id);
-			changed = true;
+			if (Data.items[id].stack) {
+				for (var i=0; i<inv.length; i++) {
+					if (typeof inv[i] === 'object') {
+						if (inv[i].id == id) {
+							inv[i].count += 1;
+							changed = true;
+						}
+					}
+				}
+				if (changed === false) {
+					inv.push({id: id, count: 1});
+					changed = true;
+				}
+			} else {
+				inv.push(id);
+				changed = true;
+			}
 		}
 		//if an npc died here
 		var drop = this.drops[this.key(args.tile)];
 		if (drop) {
 			//for each item the npc has dropped
-			for (var i=0; i<drop.length; i++) {
+			for (var n=0; n<drop.length; n++) {
+				changed = false;
 				//add item to player's inventory
-				inv.push(drop[i]);
+				if (typeof drop[n] === 'object') {
+					for (var i=0; i<inv.length; i++) {
+						if (typeof inv[i] === 'object') {
+							if (inv[i].id == drop[n].id) {
+								inv[i].count += drop[n].count;
+								changed = true;
+								break;
+							}
+						}
+					}
+					if (changed === false) {
+						inv.push({id: drop[n].id, count: drop[n].count});
+						changed = true;
+					}
+				} else {
+					inv.push(drop[n]);
+					changed = true;
+				}
 			}
 			delete this.drops[this.key(args.tile)];
 			changed = true;
@@ -225,13 +272,21 @@ Items.server.onHook = function(hook, args) {
 			var ilist = Data.items.listAll();
 			for (var i=0; i<inv.length; i++) {
 				//make sure the item exists
-				if (inv[i] && ilist[inv[i]] && ilist[inv[i]].name) {
-					//store it in the outgoing message
-					msg[i] = new Object();
-					msg[i].id = inv[i];
-					msg[i].name = ilist[inv[i]].name;
-					msg[i].tool = ilist[inv[i]].tool;
-					msg[i].icon = ilist[inv[i]].icon;
+				if (inv[i]) {
+					var id = inv[i];
+					if (typeof inv[i] === 'object') {
+						id = inv[i].id;
+					}
+					if (ilist[id] && ilist[id].name) {
+						msg[i] = new Object();
+						msg[i].id = id;
+						msg[i].name = ilist[id].name;
+						msg[i].tool = ilist[id].tool;
+						msg[i].icon = ilist[id].icon;
+						if (typeof inv[i] === 'object') {
+							msg[i].count = inv[i].count;
+						}
+					}
 				}
 			}
 			//be sure to assign the updated array to the database row
@@ -339,6 +394,10 @@ Items.client.onHook = function(hook, args) {
 						var ctx = canvas[0].getContext("2d");
 						ctx.clearRect(0, 0, 32, 32);
 						ctx.drawImage(Game.gfx.Items[msg.inv[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+						if (msg.inv[i].count) {
+							ctx.fillStyle = "red";
+							ctx.fillText(msg.inv[i].count, 0, 10);
+						}
 					}
 				}
 				if (msg.equip) {
@@ -356,6 +415,10 @@ Items.client.onHook = function(hook, args) {
 				var ctx = canvas[0].getContext("2d");
 				ctx.clearRect(0, 0, 32, 32);
 				ctx.drawImage(Game.gfx.Items[inv[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+				if (inv[i].count) {
+					ctx.fillStyle = "red";
+					ctx.fillText(inv[i].count, 0, 10);
+				}
 			}
 		}
 		if (args.admin === true && args.head === "loaditem") {
@@ -439,6 +502,7 @@ Items.client.editor.updateFields = function() {
 	else
 		$("#item-editor-item").val(this.currItem);
     $("#item-editor-name").val(this.currObject.name);
+    $("#item-editor-stack-check").prop("checked", this.currObject.stack);
 	$("#item-editor-icon").val(this.currObject.icon);
     sprite = Game.gfx.Items[this.currObject.icon];
     Items.client.editor.icon.setImage(sprite, 0, 0, 32, 32);
@@ -486,6 +550,14 @@ Items.client.editor.createUI = function() {
         Items.client.editor.currObject.name = $("#item-editor-name").val();
         Items.client.editor.changed = true;
     }, false, {"style": 'display:block;width:48%;margin:4px 0px;'});
+	
+	UI.AddCheckbox(this.window, "stack", "Stackable", false, function(e) {
+        if ($("#item-editor-stack-check").prop('checked')) {
+            Items.client.editor.currObject.stack = true;
+        } else {
+            Items.client.editor.currObject.stack = false;
+        }
+    }, false, {'style': 'display:block;margin:0px auto;'});
 	
 	UI.AddDiv(this.window, "icon-label", "Icon: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
     UI.AddSpinner(this.window, "icon", {min: 1, max: GFX.Items, spin: function(event, ui) {
