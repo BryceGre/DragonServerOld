@@ -725,6 +725,7 @@ _Game.keyDown = function(e) {
     } else if (key == 32) {
         //interact
         _Game.socket.send("act:" + _Game.world.user.facing);
+        Module.doHook("act", {dir: _Game.world.user.facing});
     }
 
     // if (e.which == 16) {
@@ -995,9 +996,12 @@ _Game.onMessage = function(data) {
         case "npc-die":
             var id = parseInt(message[1]);
             if (_Game.world.npcs[id]) {
+                var npc = _Game.world.npcs[id];
                 delete _Game.world.npcTile[Tile.key(_Game.world.npcs[id].x, _Game.world.npcs[id].y, _Game.world.npcs[id].floor)];
                 delete _Game.world.npcs[id];
+                Module.doHook("npc_die", {npc: npc});
             }
+            
             break;
         case "npc-res":
             var npc = message[1].split(",");

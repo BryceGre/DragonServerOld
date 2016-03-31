@@ -107,6 +107,10 @@ _Game.loadImage = function(file) {
     newImage.src = file;
     // newimage.onreadystatechange = include_loaded;
     newImage.onload = _Game.include_loaded;
+    newImage.onerror = function() {
+        console.log("error loading " + file);
+        _Game.include_loaded();
+    };
 
     _Data.includes_requested++;
     $("#load-bar").progressbar("option", "max", _Data.includes_requested);

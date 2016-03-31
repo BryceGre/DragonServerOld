@@ -52,6 +52,10 @@ Items.server = {
 	editor : {
 		currItem: 1,
 	},
+	drops : new Object(),
+	key : function(object) {
+		return object.x + "." + object.y + "." + object.floor;
+	},
 };
 
 /***** functions *****/
@@ -59,6 +63,7 @@ Items.server = {
 Items.server.onInit = function() {
 	Module.addHook("admin_on_load"); //admin loaded
     Module.addHook("on_load"); //player loaded
+	Module.addHook("npc_die"); //npc die
     Module.addHook("combat-add"); //bonus damage
 	Module.addHook("tile_act"); //pickup item
 	Module.addHook("message");
@@ -87,7 +92,7 @@ Items.server.onHook = function(hook, args) {
 		msg.inv = [];
 		var inv = user.inv;
 		for (var i=0; i<inv.length; i++) {
-			if (inv[i] && ilist[inv[i]]) {
+			if (inv[i] && ilist[inv[i]] && ilist[inv[i]].name) {
 				msg.inv[i] = new Object();
 				msg.inv[i].id = inv[i];
 				msg.inv[i].name = ilist[inv[i]].name;
@@ -99,7 +104,7 @@ Items.server.onHook = function(hook, args) {
 		msg.equip = {};
 		var equip = user.equip;
 		for (var key in equip) {
-			if (equip[key] && ilist[equip[key]]) {
+			if (equip[key] && ilist[equip[key]] && ilist[equip[key]].name) {
 				msg.equip[key] = new Object();
 				msg.equip[key].id = equip[key];
 				msg.equip[key].name = ilist[equip[key]].name;
@@ -120,6 +125,21 @@ Items.server.onHook = function(hook, args) {
 			msg.items[key].icon = list[key].icon;
 		}
 		args.msg = JSON.stringify(msg);
+	} else if (hook == "npc_die") {
+        var npc = Data.npcs[args.npc.id];
+        if (npc) {
+			var drop = new Array();
+			var data = npc.data;
+			for (var key in data) {
+				var item = data[key].item;
+				var chance = data[key].chance;
+				var count = data[key].count;
+				if (Math.random() < chance)
+					//drop.push({item: item, count: count});
+					drop.push(item);
+			}
+			this.drops[this.key(args.npc)] = drop;
+		}
 	} else if (hook == "message") {
 		if (args.head === "useitem") {
 			var data = JSON.parse(args.body);
@@ -148,54 +168,75 @@ Items.server.onHook = function(hook, args) {
             Game.socket.send("loaditem:" + JSON.stringify(item));
         }
 	} else if (hook == "combat-add") {
-		if (user.equip) {
-			var equip = user.equip;
-			var ilist = Data.items.listAll();
-			
-			for (var key in equip) {
-				if (equip[key] && ilist[equip[key]]) {
-					var item = ilist[equip[key]];
-					//todo: equipment stats
+        //query the 'characters' table for this player (ID = args.index)
+        var user = Data.characters[args.index];
+		if (user) {
+			if (user.equip) {
+				var equip = user.equip;
+				var ilist = Data.items.listAll();
+				
+				for (var key in equip) {
+					if (equip[key] && ilist[equip[key]]) {
+						var item = ilist[equip[key]];
+						//todo: equipment stats
+					}
 				}
 			}
 		}
     } else if (hook == "tile_act") {
+		//query the 'characters' table for this player (ID = args.index)
+		var user = Data.characters[args.index];
+		var inv = user.inv;
+		//if character does't include 'inv' column data
+		if (!inv) {
+			//put empty inventory into database
+			inv = new Array();
+		}
+		//keep track of whether or not the inventory has changed
+		var changed = false;
+		//check for "item" attribute on tile
 		var id = false;
 		if (args.tile.attr1 == 8) {
 			id = parseInt(args.tile.a1data);
 		} else if (args.tile.attr2 == 8) {
 			id = parseInt(args.tile.a2data);
 		}
+		//if tile has item attribute
 		if (id) {
-			//make sure the item exists
-			var item = Data.items[id];
-			if (item && item.name) {
-				//query the 'characters' table for this player (ID = args.index)
-				var user = Data.characters[args.index];
-				var inv = user.inv;
-				//if character does't include 'inv' column data
-				if (!inv) {
-					//put empty inventory into database
-					inv = new Array();
-				}
+			//add item to player's inventory
+			inv.push(id);
+			changed = true;
+		}
+		//if an npc died here
+		var drop = this.drops[this.key(args.tile)];
+		if (drop) {
+			//for each item the npc has dropped
+			for (var i=0; i<drop.length; i++) {
 				//add item to player's inventory
-				inv.push(id);
-				//get inventory info and store it in the outgoing message
-				var msg = new Array();
-				var ilist = Data.items.listAll();
-				for (var i=0; i<inv.length; i++) {
-					if (inv[i] && ilist[inv[i]]) {
-						msg[i] = new Object();
-						msg[i].id = inv[i];
-						msg[i].name = ilist[inv[i]].name;
-						msg[i].tool = ilist[inv[i]].tool;
-						msg[i].icon = ilist[inv[i]].icon;
-					}
-				}
-				//be sure to assign the updated array to the database row
-				user.inv = inv;
-				Game.socket.send("inv:" + JSON.stringify(msg));
+				inv.push(drop[i]);
 			}
+			delete this.drops[this.key(args.tile)];
+			changed = true;
+		}
+		//if the user's inventory has been updated
+		if (changed) {
+			//get inventory info
+			var msg = new Array();
+			var ilist = Data.items.listAll();
+			for (var i=0; i<inv.length; i++) {
+				//make sure the item exists
+				if (inv[i] && ilist[inv[i]] && ilist[inv[i]].name) {
+					//store it in the outgoing message
+					msg[i] = new Object();
+					msg[i].id = inv[i];
+					msg[i].name = ilist[inv[i]].name;
+					msg[i].tool = ilist[inv[i]].tool;
+					msg[i].icon = ilist[inv[i]].icon;
+				}
+			}
+			//be sure to assign the updated array to the database row
+			user.inv = inv;
+			Game.socket.send("inv:" + JSON.stringify(msg));
 		}
 	}
 }
@@ -220,6 +261,17 @@ Items.client = {
 		icon: null,
 		changed: false,
 	},
+	npcEditor : {
+		window: null,
+		currData: new Object(),
+		currList: new Array(),
+		divCount: 0,
+	},
+	dropImg : null,
+	drops : new Object(),
+	key : function(object) {
+		return object.x + "." + object.y + "." + object.floor;
+	},
 };
 
 /***** functions *****/
@@ -230,11 +282,16 @@ Items.client.onInit = function() {
 		display: "I",
 		color: "yellow",
 	}
+	this.dropImg = new Image();
+	this.dropImg.src = "GFX/Drop.png";
 	if (isAdmin) {
-		//none yet
+		Module.addHook("npc_editor_data");
+		Module.addHook("npc_editor_save");
 	} else {
 		Module.addHook("post_draw_mask");
 		Module.addHook("item_use");
+		Module.addHook("npc_die");
+		Module.addHook("act");
 	}
     Module.addHook("game_load");
 	Module.addHook("message");
@@ -244,6 +301,25 @@ Items.client.onInit = function() {
 Items.client.onHook = function(hook, args) {
     if (isAdmin && hook == "game_load") {
         Items.client.editor.createUI();
+	} else if (isAdmin && hook === "npc_editor_data") {
+		if (args.action == "attack") {
+			Items.client.npcEditor.currData = args.data;
+			Items.client.npcEditor.createUI(args.window);
+		}
+	} else if (isAdmin && hook === "npc_editor_save") {
+		if (args.action == "attack") {
+			var data = args.data;
+			
+			var count = 0;
+			for (var i = 0; i < Items.client.npcEditor.divCount; i++) {
+				if (!Items.client.npcEditor.currList[i].del) {
+					data[count] = Items.client.npcEditor.currList[i];
+					count++;
+				}
+			}
+			
+			args.data = data;
+		}
     } else if (hook == "game_load") {
 		Items.client.inventory.createUI();
 	} else if (hook == "message") {
@@ -262,7 +338,7 @@ Items.client.onHook = function(hook, args) {
 						canvas.attr("height", '32px');
 						var ctx = canvas[0].getContext("2d");
 						ctx.clearRect(0, 0, 32, 32);
-						ctx.drawImage(Game.gfx.Items[msg.inv[key].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+						ctx.drawImage(Game.gfx.Items[msg.inv[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
 					}
 				}
 				if (msg.equip) {
@@ -303,8 +379,44 @@ Items.client.onHook = function(hook, args) {
 			data.tid = Game.world.user.target.id;
 		}
 		Game.socket.send("useitem:" + JSON.stringify(data));
+	} else if (hook == "npc_die") {
+		this.drops[this.key(args.npc)] = {
+			x : args.npc.x,
+			y : args.npc.y,
+			floor : args.npc.floor,
+		}
+	} else if (hook == "act") {
+		var x = World.user.x;
+		var y = World.user.y;
+		var floor = World.user.floor;
+		//find the tile that the user is facing
+		if (args.dir == 37) //left
+			x -= 1;
+		else if (args.dir == 38) //up
+			y -= 1;
+		else if (args.dir == 39) //right
+			x += 1;
+		else if (args.dir == 40) //down
+			y += 1;
+		//record tile location
+		var obj = {
+			x : x,
+			y : y,
+			floor : floor,
+		};
+		console.log(this.key(obj));
+		//check if there is a drop there
+		if (this.drops[this.key(obj)])
+			//delete the drop if it's there
+			delete this.drops[this.key(obj)];
 	} else if (hook == "post_draw_mask") {
-		//TODO:dynamic item display
+		for (var key in this.drops) {
+			var sp = this.dropImg;
+			var tx = Game.getCanvasX(this.drops[key].x);
+			var ty = Game.getCanvasY(this.drops[key].y);
+			if (World.user.floor == this.drops[key].floor)
+				Game.context.drawImage(sp, tx, ty, TILE_SIZE, TILE_SIZE);
+		}
 	}
 }
 
@@ -431,4 +543,70 @@ Items.client.editor.createUI = function() {
         Items.client.editor.currItem = 1;
         Items.client.editor.loadItem();
     };
+}
+
+Items.client.npcEditor.createUI = function(win) {
+	this.currList = new Array();
+	this.divCount = 0;
+	
+	var addData = function(e, item, chance, count) {
+		if (e)
+			e.preventDefault();
+		if (!item) item = 1;
+		if (!chance) chance = 0;
+		if (!count) count = 0;
+		
+		var i = Items.client.npcEditor.divCount;
+		Items.client.npcEditor.currList[i] = new Object();
+		
+		var newDiv = UI.AddDiv(win, ""+i, "", false, {"style": 'display:block;margin:4px auto;'});
+		
+		var iicon = null;
+		UI.AddSpinner(newDiv, "item", {value: item, min: 1, spin: function(event, ui) {
+            Items.client.npcEditor.currList[i].item = ui.value;
+			
+			if (Items.client.itemData[ui.value] && Items.client.itemData[ui.value].icon) {
+				iicon.setImage(Game.gfx.Items[Items.client.itemData[ui.value].icon], 0, 0, 32, 32);
+				iicon.attr("title", "<b>" + Items.client.itemData[ui.value].name + "</b><br>" + Items.client.itemData[ui.value].tool + "");
+			} else {
+				iicon.clearImage();
+				iicon.attr("title", "");
+			}
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
+		Items.client.npcEditor.currList[i].item = item;
+		
+		iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 16px auto 4px;', "title": ""});
+		if (Items.client.itemData[item] && Items.client.itemData[item].icon) {
+			iicon.setImage(Game.gfx.Items[Items.client.itemData[item].icon], 0, 0, 32, 32);
+			iicon.attr("title", "<b>" + Items.client.itemData[item].name + "</b><br>" + Items.client.itemData[item].tool + "");
+		} else {
+			iicon.clearImage();
+			iicon.attr("title", "");
+		}
+		
+		UI.AddSpinner(newDiv, "chance", {value: (chance * 100), min: 0, max: 100, spin: function(event, ui) {
+            Items.client.npcEditor.currList[i].chance = (ui.value / 100);
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;margin-left:8px;width:32px;'});
+        Items.client.npcEditor.currList[i].chance = chance;
+		
+		UI.AddSpinner(newDiv, "count", {value: count, min: 0, spin: function(event, ui) {
+            Items.client.npcEditor.currList[i].count = ui.value;
+        }}, false, {"style": 'display:inline-block;margin-bottom:8px;margin-left:8px;width:32px;'});
+		Items.client.npcEditor.currList[i].count = count;
+		
+		UI.AddButton(newDiv, "del", "x", function(i, e) {
+			$(newDiv).remove();
+			Items.client.npcEditor.currList[i].del = true;
+		}.bind(this, i), false, {'style': 'display:inline-block;float:right;'});
+		
+		Items.client.npcEditor.divCount++;
+	};
+	UI.AddButton(win, "add", "+", addData, false, {"style": 'display:block;width:20%;margin:4px 0px;'});
+	UI.AddDiv(win, "info", "Item", false, {"style": 'display:inline-block;width:104px'});
+	UI.AddDiv(win, "info", "Chance", false, {"style": 'display:inline-block;width:64px'});
+	UI.AddDiv(win, "info", "Amnt", false, {"style": 'display:inline-block;width:32px'});
+    
+	for (var key in this.currData) {
+		addData(null, this.currData[key].item, this.currData[key].chance, this.currData[key].count);
+	}
 }
