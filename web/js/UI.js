@@ -30,6 +30,7 @@ _UI.NewWindow = function(id, title, width, height) {
         dialogClass:'opaque-'+opaque,
         width: width,
         height: height,
+        appendTo: "#ui",
         create: function() {
             //create transparency slider
             var slider = $('<div>', { 'style': 'display:inline-block;float:right;width:25%;right:16px;' });
@@ -46,6 +47,9 @@ _UI.NewWindow = function(id, title, width, height) {
                     window.localStorage.setItem("ui-"+id+"-o", ui.value);
                 }                
             });
+        },
+        dragStart: function() {
+            $(this).dialog("moveToTop");
         },
         dragStop: function() {
             var offset = $(this).parents("div.ui-dialog").offset();
@@ -389,6 +393,25 @@ _UI.AddDrag = function(window, name, hook, args, tab, attr) {
         },
         cursorAt: { left: (TILE_SIZE/2), top: (TILE_SIZE/2) },
         stop: _UI.HUD.onDragStop,
+        zIndex: 9999,
+    });
+    _UI.MakeTooltip(newdiv);
+
+    return newdiv;
+}
+
+_UI.AddDrop = function(window, name, func, tab, attr) {
+    var id = window.attr("id");
+    attr = _UI.FixAttr(id + "-" + name, attr);
+    
+    if (tab) {
+        var newdiv = $('<canvas>', attr).appendTo("#" + id + "-tabs-" + tab);
+    } else {
+        var newdiv = $('<canvas>', attr).appendTo(window);
+    }
+    
+    $(newdiv).droppable({
+        drop: func,
     });
     _UI.MakeTooltip(newdiv);
 

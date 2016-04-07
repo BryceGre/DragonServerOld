@@ -938,13 +938,15 @@ Combat.client.editor.updateFields = function() {
 	$("#ability-editor-effects-p-mps").val(this.currObject.p.mps);
 	$("#ability-editor-effects-p-dd").val(this.currObject.p.dd);
 	$("#ability-editor-effects-p-dt").val(this.currObject.p.dt);
-	$("#ability-editor-effects-p-stun").prop("checked", this.currObject.p.stun);
+	$("#ability-editor-effects-p-stun-check").prop("checked", this.currObject.p.stun);
+	$("#ability-editor-effects-p-stun").buttonset("refresh");
 	$("#ability-editor-effects-t-duration").val(this.currObject.t.dur);
 	$("#ability-editor-effects-t-hps").val(this.currObject.t.hps);
 	$("#ability-editor-effects-t-mps").val(this.currObject.t.mps);
 	$("#ability-editor-effects-t-dd").val(this.currObject.t.dd);
 	$("#ability-editor-effects-t-dt").val(this.currObject.t.dt);
-	$("#ability-editor-effects-t-stun").prop("checked", this.currObject.t.stun);
+	$("#ability-editor-effects-t-stun-check").prop("checked", this.currObject.t.stun);
+	$("#ability-editor-effects-t-stun").buttonset("refresh");
 }
 
 Combat.client.editor.createUI = function() {
@@ -1254,7 +1256,7 @@ Combat.client.npcEditor.createUI = function(win) {
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
 		Combat.client.npcEditor.currList[i].ability = ability;
 		
-		aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 16px auto 4px;', "title": ""});
+		aicon = UI.AddIcon(newDiv, "aicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 4px;', "title": ""});
 		if (Combat.client.abilityData[ability] && Combat.client.abilityData[ability].icon) {
 			aicon.setImage(Game.gfx.Icons[Combat.client.abilityData[ability].icon], 0, 0, 32, 32);
 			aicon.attr("title", "<b>" + Combat.client.abilityData[ability].name + "</b><br>" + Combat.client.abilityData[ability].tool + "");
@@ -1277,10 +1279,10 @@ Combat.client.npcEditor.createUI = function(win) {
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
 		Combat.client.npcEditor.currList[i].item = item;
 		
-		iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 16px auto 4px;', "title": ""});
+		iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 4px;', "title": ""});
 		if (Combat.client.itemData[item] && Combat.client.itemData[item].icon) {
-			iicon.setImage(Game.gfx.Icons[Combat.client.item[item].icon], 0, 0, 32, 32);
-			aicon.attr("title", "<b>" + Combat.client.item[item].name + "</b><br>" + Combat.client.item[item].tool + "");
+			iicon.setImage(Game.gfx.Icons[Combat.client.itemData[item].icon], 0, 0, 32, 32);
+			aicon.attr("title", "<b>" + Combat.client.itemData[item].name + "</b><br>" + Combat.client.itemData[item].tool + "");
 		} else {
 			aicon.clearImage();
 			aicon.attr("title", "");

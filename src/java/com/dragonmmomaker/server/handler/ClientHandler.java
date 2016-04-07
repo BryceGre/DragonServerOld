@@ -728,11 +728,7 @@ public class ClientHandler {
     }
     
     public void send(String pMessage) {
-        try {
-            this.mSession.getBasicRemote().sendText(pMessage);
-        } catch (IOException e) {
-            mData.Log.log("Unable to send message: " + pMessage);
-        }
+        this.mSession.getAsyncRemote().sendText(pMessage);
     }
     
     public void sendOther(Set<Player> pPlayers, String pMessage) {

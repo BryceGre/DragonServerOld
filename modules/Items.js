@@ -14,12 +14,30 @@ var Items = {
     desc: "Items, Inventory, and Eqipment.", //description
     auth: "Darek", //author
     ver: "0.9.1", //version
-    req: {
-        //required dependencies
-    },
-    opt: {
-        Combat:true
-    }
+    prefs : {
+		slots : {
+			head : {
+				name: "Head",
+				file: "EquipHead.png",
+			},
+			body : {
+				name: "Upper Body",
+				file: "EquipBody.png",
+			},
+			legs : {
+				name: "Lower Body",
+				file: "EquipLegs.png",
+			},
+			main : {
+				name: "Main Hand",
+				file: "EquipMain.png",
+			},
+			off : {
+				name: "Off Hand",
+				file: "EquipOff.png",
+			},
+		}
+	}
 };
 
 if (typeof Server === "undefined" || Server !== true) {
@@ -120,6 +138,7 @@ Items.server.onHook = function(hook, args) {
 				msg.equip[key].name = ilist[equip[key]].name;
 				msg.equip[key].tool = ilist[equip[key]].tool;
 				msg.equip[key].icon = ilist[equip[key]].icon;
+				msg.equip[key].sprite = ilist[equip[key]].data.sprite;
 			}
 		}
         //put the outgoing load message
@@ -162,6 +181,105 @@ Items.server.onHook = function(hook, args) {
 			if (Data.items.containsID(data.id)) {
 				var item = Data.items[data.id];
 				//TODO: use item
+			}
+		} else if (args.head === "equip") {
+			var data = JSON.parse(args.body);
+			var user = Data.characters[args.index];
+			var list = Data.items.listAll();
+			var msg = new Object();
+			
+			var inv = user.inv;
+			if (!inv) inv = new Array();
+			var equip = user.equip
+			if (!equip) equip = new Object();
+			
+			var id = inv[data.slot];
+			if (typeof inv[data.slot] === 'object') {
+				id = inv[data.slot].id;
+			}
+			var item = list[id];
+			if (item.action === "equip" && item.data.slot == data.to) {
+				var temp = equip[data.to];
+				equip[data.to] = inv.splice(data.slot, 1)[0];
+				if (temp) inv.push(temp);
+				//send an updated inventory and equip message to the client
+				msg.inv = [];
+				for (var i=0; i<inv.length; i++) {
+					if (inv[i]) {
+						var id = inv[i];
+						if (typeof inv[i] === 'object') {
+							id = inv[i].id;
+						}
+						if (list[id] && list[id].name) {
+							msg.inv[i] = new Object();
+							msg.inv[i].id = id;
+							msg.inv[i].name = list[id].name;
+							msg.inv[i].tool = list[id].tool;
+							msg.inv[i].icon = list[id].icon;
+							if (typeof inv[i] === 'object') {
+								msg.inv[i].count = inv[i].count;
+							}
+						}
+					}
+				}
+				msg.equip = {};
+				var id = equip[data.to];
+				if (typeof equip[data.to] === 'object') {
+					id = equip[data.to].id;
+				}
+				msg.equip[data.to] = new Object();
+				msg.equip[data.to].id = id;
+				msg.equip[data.to].name = list[id].name;
+				msg.equip[data.to].tool = list[id].tool;
+				msg.equip[data.to].icon = list[id].icon;
+				msg.equip[data.to].sprite = list[id].data.sprite;
+				if (typeof equip[data.to] === 'object') {
+					msg.equip[data.to].count = equip[data.to].count;
+				}
+				Game.socket.send("equip:" + JSON.stringify(msg));
+			}
+			user.inv = inv;
+			user.equip = equip;
+		} else if (args.head === "unequip") {
+			var slot = args.body;
+			var user = Data.characters[args.index];
+			var list = Data.items.listAll();
+			var msg = new Object();
+			
+			var inv = user.inv;
+			if (!inv) inv = new Array();
+			var equip = user.equip
+			if (!equip) equip = new Object();
+			
+			if (equip[slot]) {
+				inv.push(equip[slot]);
+				equip[slot] = null;
+				//send an updated inventory and equip message to the client
+				msg.inv = [];
+				for (var i=0; i<inv.length; i++) {
+					if (inv[i]) {
+						var id = inv[i];
+						if (typeof inv[i] === 'object') {
+							id = inv[i].id;
+						}
+						if (list[id] && list[id].name) {
+							msg.inv[i] = new Object();
+							msg.inv[i].id = id;
+							msg.inv[i].name = list[id].name;
+							msg.inv[i].tool = list[id].tool;
+							msg.inv[i].icon = list[id].icon;
+							if (typeof inv[i] === 'object') {
+								msg.inv[i].count = inv[i].count;
+							}
+						}
+					}
+				}
+				msg.equip = {};
+				msg.equip[slot] = null;
+				Game.socket.send("equip:" + JSON.stringify(msg));
+				
+				user.inv = inv;
+				user.equip = equip;
 			}
 		}
 	} else if (hook == "admin_message") {
@@ -308,6 +426,10 @@ Items.client = {
 	inventory: {
 		window: null,
 	},
+	equipment: {
+		window: null,
+	},
+	equipped : new Object(),
 	editor : {
 		window: null,
 		data: null,
@@ -315,6 +437,14 @@ Items.client = {
 		currObject: new Items.Item(),
 		icon: null,
 		changed: false,
+	},
+	itemEditor : {
+		window: null,
+		currData: {
+			slot: Object.keys(Items.prefs.slots)[0],
+			sprite: 1,
+		},
+		ctx: null,
 	},
 	npcEditor : {
 		window: null,
@@ -342,8 +472,11 @@ Items.client.onInit = function() {
 	if (isAdmin) {
 		Module.addHook("npc_editor_data");
 		Module.addHook("npc_editor_save");
+		Module.addHook("item_editor_data");
+		Module.addHook("item_editor_save");
 	} else {
 		Module.addHook("post_draw_mask");
+		Module.addHook("pre_draw_fringe");
 		Module.addHook("item_use");
 		Module.addHook("npc_die");
 		Module.addHook("act");
@@ -375,8 +508,18 @@ Items.client.onHook = function(hook, args) {
 			
 			args.data = data;
 		}
+	} else if (isAdmin && hook === "item_editor_data") {
+		if (args.action == "equip") {
+			Items.client.itemEditor.currData = args.data;
+			Items.client.itemEditor.createUI(args.window);
+		}
+	} else if (isAdmin && hook === "item_editor_save") {
+		if (args.action == "equip") {
+			$.extend(true, args.data, Items.client.itemEditor.currData);
+		}
     } else if (hook == "game_load") {
 		Items.client.inventory.createUI();
+		Items.client.equipment.createUI();
 	} else if (hook == "message") {
 		if (args.head === "load") {
 			var msg = JSON.parse(args.body);
@@ -392,7 +535,7 @@ Items.client.onHook = function(hook, args) {
 						canvas.attr("width", '32px');
 						canvas.attr("height", '32px');
 						var ctx = canvas[0].getContext("2d");
-						ctx.clearRect(0, 0, 32, 32);
+						ctx.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
 						ctx.drawImage(Game.gfx.Items[msg.inv[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
 						if (msg.inv[i].count) {
 							ctx.fillStyle = "red";
@@ -401,7 +544,24 @@ Items.client.onHook = function(hook, args) {
 					}
 				}
 				if (msg.equip) {
-					//TODO: Eqipment
+					var slots = Items.prefs.slots;
+					for (var key in slots) {
+						var i = key;
+						var img = new Image();
+						img.onload = function(i, img) {
+							$("#equip-" + i)[0].getContext("2d").drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
+							if (msg.equip[i]) {
+								this.equipped[key] = msg.equip[i];
+								var tooltip = "<b>" + msg.equip[i].name + "</b><br>" + msg.equip[i].tool;
+								var canvas = $("#equip-" + i);
+								canvas.attr("title", tooltip);
+								UI.MakeTooltip(canvas);
+								var ctx = canvas[0].getContext("2d");
+								ctx.drawImage(Game.gfx.Items[msg.equip[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+							}
+						}.bind(this, i, img);
+						img.src = "GFX/UI/"+slots[i].file;
+					}
 				}
 			}
 		} else if (args.head === "inv") {
@@ -418,6 +578,44 @@ Items.client.onHook = function(hook, args) {
 				if (inv[i].count) {
 					ctx.fillStyle = "red";
 					ctx.fillText(inv[i].count, 0, 10);
+				}
+			}
+		} else if (args.head === "equip") {
+			var msg = JSON.parse(args.body);
+			if (msg.inv) {
+				$(Items.client.inventory.window).empty();
+				for (var i=0; i<msg.inv.length; i++) {
+					var tooltip = "<b>" + msg.inv[i].name + "</b><br>" + msg.inv[i].tool;
+					var canvas = UI.AddDrag(Items.client.inventory.window, "item"+i, "item_use", {slot:i, id:msg.inv[i].id}, false, {"style": 'display:inline-block;width:20%;', "title": tooltip});
+					canvas.attr("width", '32px');
+					canvas.attr("height", '32px');
+					var ctx = canvas[0].getContext("2d");
+					ctx.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
+					ctx.drawImage(Game.gfx.Items[msg.inv[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+					if (msg.inv[i].count) {
+						ctx.fillStyle = "red";
+						ctx.fillText(msg.inv[i].count, 0, 10);
+					}
+				}
+			}
+			if (msg.equip) {
+				for (var key in msg.equip) {
+					var i = key;
+					var img = new Image();
+					img.onload = function(i, img) {
+						this.equipped[key] = msg.equip[i];
+						var canvas = $("#equip-" + i);
+						canvas[0].getContext("2d").clearRect(0, 0, TILE_SIZE, TILE_SIZE);
+						canvas[0].getContext("2d").drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
+						if (msg.equip[i]) {
+							var tooltip = "<b>" + msg.equip[i].name + "</b><br>" + msg.equip[i].tool;
+							canvas.attr("title", tooltip);
+							UI.MakeTooltip(canvas);
+							var ctx = canvas[0].getContext("2d");
+							ctx.drawImage(Game.gfx.Items[msg.equip[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+						}
+					}.bind(this, i, img);
+					img.src = "GFX/UI/"+Items.prefs.slots[i].file;
 				}
 			}
 		}
@@ -473,12 +671,29 @@ Items.client.onHook = function(hook, args) {
 			//delete the drop if it's there
 			delete this.drops[this.key(obj)];
 	} else if (hook == "post_draw_mask") {
+		//draw drops
 		for (var key in this.drops) {
 			var sp = this.dropImg;
 			var tx = Game.getCanvasX(this.drops[key].x);
 			var ty = Game.getCanvasY(this.drops[key].y);
 			if (World.user.floor == this.drops[key].floor)
 				Game.context.drawImage(sp, tx, ty, TILE_SIZE, TILE_SIZE);
+		}
+	} else if (hook == "pre_draw_fringe") {
+		//draw paperdoll
+		for (var key in this.equipped) {
+			if (this.equipped[key]) {
+				var ps = Game.gfx.Paperdoll[this.equipped[key].sprite];
+				var of = World.user.getSpriteOffset();
+				var sw = Math.floor(ps.width  / 4);
+				var sh = Math.floor(ps.height / 4);
+				var us = Game.gfx.Sprites[World.user.sprite];
+				var tw = Math.floor(us.width  / 4);
+				var th = Math.floor(us.height / 4);
+				var tx = Game.getCanvasX(World.user.x) - _Game.getMovedX(World.user) - ((tw/2) - (TILE_SIZE/2));
+				var ty = Game.getCanvasY(World.user.y) - _Game.getMovedY(World.user) - (th - TILE_SIZE);
+				Game.context.drawImage(ps, of.x, of.y, sw, sh, tx, ty, tw, th);
+			}
 		}
 	}
 }
@@ -489,6 +704,27 @@ Items.client.inventory.createUI = function() {
 	
     Game.menus["Backpack"] = function() {
         $("#items").dialog("open");
+    };
+}
+
+Items.client.equipment.createUI = function() {
+    this.window = UI.NewWindow("equip", "Equipment", "336px");
+	
+	var slots = Items.prefs.slots;
+	for (var key in slots) {
+		var i = key;
+		var canvas = UI.AddDrop(this.window, key, function(i, e, ui) {
+			Game.socket.send("equip:" + JSON.stringify({to:i, slot:ui.helper.data("args").slot}));
+		}.bind(this, i), false, {"style": 'display:inline-block;width:20%;'});
+		canvas.attr("width", '32px');
+		canvas.attr("height", '32px');
+		canvas.on("contextmenu", function(i, e) {
+			Game.socket.send("unequip:" + i);
+		}.bind(this, i));
+	}
+	
+    Game.menus["Equipment"] = function() {
+        $("#equip").dialog("open");
     };
 }
 
@@ -503,6 +739,7 @@ Items.client.editor.updateFields = function() {
 		$("#item-editor-item").val(this.currItem);
     $("#item-editor-name").val(this.currObject.name);
     $("#item-editor-stack-check").prop("checked", this.currObject.stack);
+    $("#item-editor-stack").buttonset("refresh");
 	$("#item-editor-icon").val(this.currObject.icon);
     sprite = Game.gfx.Items[this.currObject.icon];
     Items.client.editor.icon.setImage(sprite, 0, 0, 32, 32);
@@ -615,6 +852,48 @@ Items.client.editor.createUI = function() {
         Items.client.editor.currItem = 1;
         Items.client.editor.loadItem();
     };
+}
+
+Items.client.itemEditor.createUI = function(win) {
+    var slots = new Object();
+	if (!this.currData.sprite)
+		this.currData.sprite = 1;
+	
+    UI.AddRaw(win, "<canvas id='item-editor-data-preview' width='96px' height='96px' style='display:inline-block;float:right;width:45%;'></canvas>");
+    this.ctx = $("#item-editor-data-preview")[0].getContext("2d");
+	this.ctx.fillRect(0, 0, 96, 96);
+	var sprite = Game.gfx.Sprites[1];
+	var w = Math.floor(sprite.width / 4);
+	var h = Math.floor(sprite.height / 4);
+	this.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
+	var sprite2 = Game.gfx.Paperdoll[Items.client.itemEditor.currData.sprite];
+	var w2 = Math.floor(sprite2.width / 4);
+	var h2 = Math.floor(sprite2.height / 4);
+	this.ctx.drawImage(sprite2, 0, 0, w2, h2, 0, 0, w, h);
+	
+	for (var key in Items.prefs.slots) {
+		slots[key] = Items.prefs.slots[key].name;
+	}
+    UI.AddDiv(win, "slot-label", "Slot: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
+    var slot = UI.AddCombobox(win, "slot", {width: "45%"}, slots, function() {
+        Items.client.itemEditor.currData.slot = $("#item-editor-data-slot").val();
+    }, false, {"style": 'display:block;margin:4px 0px;'});
+	slot.val(Items.client.itemEditor.currData.slot);
+	slot.trigger("chosen:updated");
+	
+    UI.AddDiv(win, "sprite-label", "Paperdoll: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
+	UI.AddSpinner(win, "sprite", {value: this.currData.sprite, min: 1, max: GFX.Paperdoll, spin: function(event, ui) {
+		Items.client.itemEditor.currData.sprite = ui.value;
+		Items.client.itemEditor.ctx.fillRect(0, 0, 96, 96);
+		var sprite = Game.gfx.Sprites[1];
+		var w = Math.floor(sprite.width / 4);
+		var h = Math.floor(sprite.height / 4);
+		Items.client.itemEditor.ctx.drawImage(sprite, 0, 0, w, h, 0, 0, w, h);
+		var sprite2 = Game.gfx.Paperdoll[Items.client.itemEditor.currData.sprite];
+		var w2 = Math.floor(sprite2.width / 4);
+		var h2 = Math.floor(sprite2.height / 4);
+		Items.client.itemEditor.ctx.drawImage(sprite2, 0, 0, w2, h2, 0, 0, w, h);
+    }}, false, {"style": 'display:block;width:45%;margin:4px 0px;'});
 }
 
 Items.client.npcEditor.createUI = function(win) {

@@ -194,7 +194,7 @@ NpcEditor.client.createUI = function() {
 
     UI.AddRaw(this.window, "<canvas id='npc-editor-preview' width='96px' height='96px' style='display:inline-block;float:right;width:45%;'></canvas>");
     this.ctx = $("#npc-editor-preview")[0].getContext("2d");
-    this.ctx.fillRect(0, 0, 128, 128);
+    this.ctx.fillRect(0, 0, 96, 96);
 
     UI.AddDiv(this.window, "name-label", "Name: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
     UI.AddInput(this.window, "name", "", function() {
