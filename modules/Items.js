@@ -613,6 +613,9 @@ Items.client.onHook = function(hook, args) {
 							UI.MakeTooltip(canvas);
 							var ctx = canvas[0].getContext("2d");
 							ctx.drawImage(Game.gfx.Items[msg.equip[i].icon], 0, 0, TILE_SIZE, TILE_SIZE, 0, 0, TILE_SIZE, TILE_SIZE);
+						} else {
+							canvas.attr("title", Items.prefs.slots[i].name);
+							UI.MakeTooltip(canvas);
 						}
 					}.bind(this, i, img);
 					img.src = "GFX/UI/"+Items.prefs.slots[i].file;
@@ -720,6 +723,7 @@ Items.client.equipment.createUI = function() {
 		canvas.attr("height", '32px');
 		canvas.on("contextmenu", function(i, e) {
 			Game.socket.send("unequip:" + i);
+			return false;
 		}.bind(this, i));
 	}
 	
