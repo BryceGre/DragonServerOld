@@ -40,13 +40,18 @@ var Items = {
 	}
 };
 
+//if we are on the client
 if (typeof Server === "undefined" || Server !== true) {
+	//setup item action datastructure
+	//note, we're not adding to the data structure, we're creating it
+	//so in order to ensure it is created before onInit, we must create it out here
 	Data.item_actions = {
 		none: {name: "None"},
 		equip: {name: "Equip"},
 	};
 };
 
+//item data strcture
 Items.Item = function() {
 	this.name = ""; //name
 	this.icon = 1; //icon
@@ -57,12 +62,6 @@ Items.Item = function() {
 	this.data = {};
 };
 
-Items.EquipData = function() {
-	this.hp = 0; //player HP mod
-	this.mp = 0; //player MP mod
-	this.stats = {} //stat mods
-}
-
 /***********************************************/
 /***** Server **********************************/
 /***********************************************/
@@ -72,6 +71,7 @@ Items.server = {
 		currItem: 1,
 	},
 	drops : new Object(),
+	//tile key function
 	key : function(object) {
 		return object.x + "." + object.y + "." + object.floor;
 	},
@@ -143,8 +143,11 @@ Items.server.onHook = function(hook, args) {
 		}
         //put the outgoing load message
         args.msg = JSON.stringify(msg);
+	//called when the admin interface is loaded
     } else if (hook === "admin_on_load") {
+		//get the outgoing load message
 		var msg = JSON.parse(args.msg);
+		//fill it with item data
 		msg.items = {};
 		var list = Data.items.listAll();
 		for (var key in list) {
@@ -153,56 +156,64 @@ Items.server.onHook = function(hook, args) {
 			msg.items[key].tool = list[key].tool;
 			msg.items[key].icon = list[key].icon;
 		}
+		//put the outgoing load message
 		args.msg = JSON.stringify(msg);
+	//when an NPC dies
 	} else if (hook == "npc_die") {
+		//get information about the NPC
         var npc = Data.npcs[args.npc.id];
         if (npc) {
+			//create an array of drops
 			var drop = new Array();
 			var data = npc.data;
+			//for each possible drop
 			for (var key in data) {
 				var item = data[key].item;
+				//if the item is dropped
 				if (Math.random() < data[key].chance) {
+					//add the item to the array of drops
 					if (Data.items[item].stack) {
+						//stackable drop
 						drop.push({id: item, count: data[key].count});
 					} else {
+						//not stackable drop
 						for (var i=0; i<data[key].count; i++) {
 							drop.push(item);
 						}
 					}
 				}
 			}
+			//record the drops for this tile
 			this.drops[this.key(args.npc)] = drop;
 		}
 	} else if (hook == "message") {
-		if (args.head === "useitem") {
-			var data = JSON.parse(args.body);
-			var msg = new Object();
-			//make sure item exists
-			if (Data.items.containsID(data.id)) {
-				var item = Data.items[data.id];
-				//TODO: use item
-			}
-		} else if (args.head === "equip") {
+		if (args.head === "equip") {
+			//equip an item to a slot
 			var data = JSON.parse(args.body);
 			var user = Data.characters[args.index];
 			var list = Data.items.listAll();
 			var msg = new Object();
 			
+			//make sure the user has inventory and equipment data
 			var inv = user.inv;
 			if (!inv) inv = new Array();
 			var equip = user.equip
 			if (!equip) equip = new Object();
 			
+			//get the id of the item to be equipped based on the inventory slot
 			var id = inv[data.slot];
 			if (typeof inv[data.slot] === 'object') {
 				id = inv[data.slot].id;
 			}
+			//get the item
 			var item = list[id];
+			//make sure that the item can be equipped to this slot
 			if (item.action === "equip" && item.data.slot == data.to) {
+				//equip this item and un-equip any item that was equipped in that slot
 				var temp = equip[data.to];
 				equip[data.to] = inv.splice(data.slot, 1)[0];
 				if (temp) inv.push(temp);
-				//send an updated inventory and equip message to the client
+				//send an updated inventory message to the client
 				msg.inv = [];
 				for (var i=0; i<inv.length; i++) {
 					if (inv[i]) {
@@ -222,6 +233,7 @@ Items.server.onHook = function(hook, args) {
 						}
 					}
 				}
+				//send an updated equipment message to the client
 				msg.equip = {};
 				var id = equip[data.to];
 				if (typeof equip[data.to] === 'object') {
@@ -238,20 +250,25 @@ Items.server.onHook = function(hook, args) {
 				}
 				Game.socket.send("equip:" + JSON.stringify(msg));
 			}
+			//update the database
 			user.inv = inv;
 			user.equip = equip;
 		} else if (args.head === "unequip") {
+			//unequip whatever item is in a slot
 			var slot = args.body;
 			var user = Data.characters[args.index];
 			var list = Data.items.listAll();
 			var msg = new Object();
 			
+			//make sure the user has inventory and equipment data
 			var inv = user.inv;
 			if (!inv) inv = new Array();
 			var equip = user.equip
 			if (!equip) equip = new Object();
 			
+			//if the slot is equipped
 			if (equip[slot]) {
+				//move the item to the player's inventory
 				inv.push(equip[slot]);
 				equip[slot] = null;
 				//send an updated inventory and equip message to the client
@@ -278,18 +295,21 @@ Items.server.onHook = function(hook, args) {
 				msg.equip[slot] = null;
 				Game.socket.send("equip:" + JSON.stringify(msg));
 				
+				//update the database
 				user.inv = inv;
 				user.equip = equip;
 			}
 		}
 	} else if (hook == "admin_message") {
         if (args.head === "saveitem") {
+			//save an item to the database
             var data = JSON.parse(args.body);
 			
             var item = Data.items[Items.server.editor.currItem];
             //note: we use putAll to reduce the number of database calls
             item.putAll(data);
         } else if (args.head === "loaditem") {
+			//load an item from the database
             Items.server.editor.currItem = parseInt(args.body);
 			
             var item = Data.items[Items.server.editor.currItem];
@@ -299,11 +319,13 @@ Items.server.onHook = function(hook, args) {
 			
             Game.socket.send("loaditem:" + JSON.stringify(item));
         }
+	//called when the player attacks
 	} else if (hook == "combat-add") {
         //query the 'characters' table for this player (ID = args.index)
         var user = Data.characters[args.index];
 		if (user) {
 			if (user.equip) {
+				//add the stats from each item to the combat data
 				var equip = user.equip;
 				var ilist = Data.items.listAll();
 				
@@ -315,10 +337,12 @@ Items.server.onHook = function(hook, args) {
 				}
 			}
 		}
+	//called when the player acts on a tile
     } else if (hook == "tile_act") {
 		//query the 'characters' table for this player (ID = args.index)
 		var user = Data.characters[args.index];
 		var inv = user.inv;
+		
 		//if character does't include 'inv' column data
 		if (!inv) {
 			//put empty inventory into database
@@ -326,6 +350,7 @@ Items.server.onHook = function(hook, args) {
 		}
 		//keep track of whether or not the inventory has changed
 		var changed = false;
+		
 		//check for "item" attribute on tile
 		var id = false;
 		if (args.tile.attr1 == 8) {
@@ -333,6 +358,7 @@ Items.server.onHook = function(hook, args) {
 		} else if (args.tile.attr2 == 8) {
 			id = parseInt(args.tile.a2data);
 		}
+		
 		//if tile has item attribute
 		if (id) {
 			//add item to player's inventory
@@ -462,39 +488,45 @@ Items.client = {
 /***** functions *****/
 //onInit: Called when the client page loads, as this module is loaded
 Items.client.onInit = function() {
+	//add an item spawn attribute to the map
 	Data.map_attr["8"] = {
 		name: "Item Spawn",
 		display: "I",
 		color: "yellow",
 	}
+	//create an image object for drops
 	this.dropImg = new Image();
 	this.dropImg.src = "GFX/Drop.png";
+	//add hooks
 	if (isAdmin) {
-		Module.addHook("npc_editor_data");
-		Module.addHook("npc_editor_save");
-		Module.addHook("item_editor_data");
-		Module.addHook("item_editor_save");
+		Module.addHook("npc_editor_data"); //Loading NPC in NPCEditor
+		Module.addHook("npc_editor_save"); //Saving NPC in NPCEditor
+		Module.addHook("item_editor_data"); //Loading item in ItemEditor
+		Module.addHook("item_editor_save"); //Saving item in ItemEditor
 	} else {
-		Module.addHook("post_draw_mask");
-		Module.addHook("pre_draw_fringe");
-		Module.addHook("item_use");
-		Module.addHook("npc_die");
-		Module.addHook("act");
+		Module.addHook("post_draw_mask"); //After the Mask layer is drawn
+		Module.addHook("pre_draw_fringe"); //Before the fringe layer is drawn
+		Module.addHook("item_use"); //when an item is used (from the actionbar)
+		Module.addHook("npc_die"); //when an NPC dies
+		Module.addHook("act"); //when the user presses the act key
 	}
-    Module.addHook("game_load");
-	Module.addHook("message");
+    Module.addHook("game_load"); //when the game loads
+	Module.addHook("message"); //when a message is recieved
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
 Items.client.onHook = function(hook, args) {
     if (isAdmin && hook == "game_load") {
+		//create ItemEditor UI
         Items.client.editor.createUI();
 	} else if (isAdmin && hook === "npc_editor_data") {
+		//create NPCEditor data for "attack" action
 		if (args.action == "attack") {
 			Items.client.npcEditor.currData = args.data;
 			Items.client.npcEditor.createUI(args.window);
 		}
 	} else if (isAdmin && hook === "npc_editor_save") {
+		//save NPCEditor data for "attack" action
 		if (args.action == "attack") {
 			var data = args.data;
 			
@@ -509,15 +541,18 @@ Items.client.onHook = function(hook, args) {
 			args.data = data;
 		}
 	} else if (isAdmin && hook === "item_editor_data") {
+		//create ItemEditor data for "equip" action
 		if (args.action == "equip") {
 			Items.client.itemEditor.currData = args.data;
 			Items.client.itemEditor.createUI(args.window);
 		}
 	} else if (isAdmin && hook === "item_editor_save") {
+		//save ItemEditor data for "equip" action
 		if (args.action == "equip") {
 			$.extend(true, args.data, Items.client.itemEditor.currData);
 		}
     } else if (hook == "game_load") {
+		//create the inventory and equipment UIs
 		Items.client.inventory.createUI();
 		Items.client.equipment.createUI();
 	} else if (hook == "message") {

@@ -1270,11 +1270,11 @@ Combat.client.npcEditor.createUI = function(win) {
             Combat.client.npcEditor.currList[i].item = ui.value;
 			
 			if (Combat.client.itemData[ui.value] && Combat.client.itemData[ui.value].icon) {
-				aicon.setImage(Game.gfx.Icons[Combat.client.itemData[ui.value].icon], 0, 0, 32, 32);
-				aicon.attr("title", "<b>" + Combat.client.itemData[ui.value].name + "</b><br>" + Combat.client.itemData[ui.value].tool + "");
+				iicon.setImage(Game.gfx.Icons[Combat.client.itemData[ui.value].icon], 0, 0, 32, 32);
+				iicon.attr("title", "<b>" + Combat.client.itemData[ui.value].name + "</b><br>" + Combat.client.itemData[ui.value].tool + "");
 			} else {
-				aicon.clearImage();
-				aicon.attr("title", "");
+				iicon.clearImage();
+				iicon.attr("title", "");
 			}
         }}, false, {"style": 'display:inline-block;margin-bottom:8px;width:32px;'});
 		Combat.client.npcEditor.currList[i].item = item;
@@ -1282,10 +1282,10 @@ Combat.client.npcEditor.createUI = function(win) {
 		iicon = UI.AddIcon(newDiv, "iicon", false, {"width": '16px', "height": '16px', "style": 'display:inline-block;width:20px;height:20px;margin:auto 4px;', "title": ""});
 		if (Combat.client.itemData[item] && Combat.client.itemData[item].icon) {
 			iicon.setImage(Game.gfx.Icons[Combat.client.itemData[item].icon], 0, 0, 32, 32);
-			aicon.attr("title", "<b>" + Combat.client.itemData[item].name + "</b><br>" + Combat.client.itemData[item].tool + "");
+			iicon.attr("title", "<b>" + Combat.client.itemData[item].name + "</b><br>" + Combat.client.itemData[item].tool + "");
 		} else {
-			aicon.clearImage();
-			aicon.attr("title", "");
+			iicon.clearImage();
+			iicon.attr("title", "");
 		}
 		
 		UI.AddSpinner(newDiv, "count", {value: count, min: 0, spin: function(event, ui) {
