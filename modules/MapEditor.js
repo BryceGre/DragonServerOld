@@ -339,6 +339,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.grs = destSet;
             tile.grx = destTileX;
             tile.gry = destTileY;
+			tile.gre = (tile.grs != 0 || tile.grx != 0 || tile.gry != 0);
             break;
         case "m1":
             if (tile.m1s > 9)
@@ -346,6 +347,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.m1s = destSet;
             tile.m1x = destTileX;
             tile.m1y = destTileY;
+			tile.m1e = (tile.m1s != 0 || tile.m1x != 0 || tile.m1y != 0);
             break;
         case "m2":
             if (tile.m2s > 9)
@@ -353,6 +355,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.m2s = destSet;
             tile.m2x = destTileX;
             tile.m2y = destTileY;
+			tile.m2e = (tile.m2s != 0 || tile.m2x != 0 || tile.m2y != 0);
             break;
         case "ma":
             if (tile.mas > 9)
@@ -360,6 +363,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.mas = destSet;
             tile.max = destTileX;
             tile.may = destTileY;
+			tile.mae = (tile.mas != 0 || tile.max != 0 || tile.may != 0);
             break;
         case "f1":
             if (tile.f1s > 9)
@@ -367,6 +371,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.f1s = destSet;
             tile.f1x = destTileX;
             tile.f1y = destTileY;
+			tile.f1e = (tile.f1s != 0 || tile.f1x != 0 || tile.f1y != 0);
             break;
         case "f2":
             if (tile.f2s > 9)
@@ -374,6 +379,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.f2s = destSet;
             tile.f2x = destTileX;
             tile.f2y = destTileY;
+			tile.f2e = (tile.f2s != 0 || tile.f2x != 0 || tile.f2y != 0);
             break;
         case "fa":
             if (tile.fas > 9)
@@ -381,6 +387,7 @@ MapEditor.client.updateTile = function(x, y, floor, destSet, destTileX, destTile
             tile.fas = destSet;
             tile.fax = destTileX;
             tile.fay = destTileY;
+			tile.fae = (tile.fas != 0 || tile.fax != 0 || tile.fay != 0);
             break;
         case "li":
             tile.lis = destSet;

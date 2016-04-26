@@ -27,9 +27,10 @@ import com.dragonmmomaker.server.util.SocketUtils;
 public class ModuleManager {
     
     public final static int ADD = 0;
-    public final static int AVG = 1;
-    public final static int MAX = 2;
-    public final static int MIN = 3;
+    public final static int MUL = 1;
+    public final static int AVG = 2;
+    public final static int MAX = 3;
+    public final static int MIN = 4;
 
     private final ServData mData;
     private Map<String, Module> mModules;
@@ -74,6 +75,7 @@ public class ModuleManager {
         mEngine.put("Server", true);
         
         mEngine.put("ADD", ADD);
+        mEngine.put("MUL", MUL);
         mEngine.put("AVG", AVG);
         mEngine.put("MAX", MAX);
         mEngine.put("MIN", MIN);
@@ -169,6 +171,8 @@ public class ModuleManager {
 
     public Double doHook(String pHook, Map<String, Object> pArgs, int pRet) {
         double sum = 0;
+        if (pRet == ADD) sum = 0;
+        if (pRet == MUL) sum = 1;
         if (pRet == MIN) sum = Double.MAX_VALUE;
         if (pRet == MAX) sum = Double.MIN_VALUE;
         int num = 0;
@@ -185,6 +189,8 @@ public class ModuleManager {
                         if (number.doubleValue() > sum) sum = number.doubleValue();
                     } else if (pRet == MIN) {
                         if (number.doubleValue() < sum) sum = number.doubleValue();
+                    } else if (pRet == MUL) {
+                        sum *= number.doubleValue();
                     } else {
                         sum += number.doubleValue();
                     }

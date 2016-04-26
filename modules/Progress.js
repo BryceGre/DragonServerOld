@@ -51,6 +51,9 @@ Progress.server.onInit = function() {
     Module.addHook("message");
 	Module.addHook("on_load");
 	Module.addHook("progress_gain");
+	Module.addHook("combat-player-spd");
+	Module.addHook("combat-player-mod");
+	Module.addHook("combat-npc-mod");
 }
 
 //onHook: Called when an event (that this module is hooked into) is triggered
@@ -106,6 +109,24 @@ Progress.server.onHook = function(hook, args) {
 			console.log("user exp: " + exp);
 			return exp;
 		}
+	}
+	
+	if (hook == "combat-player-spd") {
+		var user = Data.characters[args.index];
+		var stats = user.stats;
+		return (1 + (stats.evade / 100));
+		
+	}
+	if (hook == "combat-player-mod") {
+		var user = Data.characters[args.index];
+		var stats = user.stats;
+		return (1 + (stats.damage / 100));
+		
+	}
+	if (hook == "combat-npc-mod") {
+		var user = Data.characters[args.index];
+		var stats = user.stats;
+		return 1 / (1 + (stats.armour / 100));
 	}
 }
 

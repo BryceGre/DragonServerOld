@@ -68,6 +68,7 @@ Combat.server = {
 		currAbility: 1,
 	},
 	cooldowns : new Object(),
+	lastAttack : new Object(),
 	npcEffects : new Object(),
 	currTrainer : new Object(),
 };
@@ -139,24 +140,62 @@ Combat.server.onHook = function(hook, args) {
         var npc = Data.npcs[args.npc.id];
         if (npc) {
             if (npc.action == "attack") {
-                var base = 21;
-                var mod = Module.doHook("combat-mod", {base:base}, AVG);
-                var add = Module.doHook("combat-add", {base:base}, ADD);
+				var spd = 500 * (1 / Module.doHook("combat-player-spd", {index:args.index}, MUL));
+                var mod = 1.0 * Module.doHook("combat-player-mod", {index:args.index}, MUL);
+                var add = 0.0 + Module.doHook("combat-player-add", {index:args.index}, ADD);
+				if (!this.lastAttack[args.index]) this.lastAttack[args.index] = 0;
+				var now = new Date().getTime();
+				if (now < this.lastAttack[args.index] + spd)
+					return;
+				else
+					this.lastAttack = now;
+				//calculate npc damage
+                var base = 20;
                 base = base + add;
                 if (mod > 0) base = base * mod;
-                var damage = base - Math.floor(base/20) + Math.floor(Math.random()*((base/10)+1));
+                var damage = Math.floor(base) - Math.floor(base/20) + Math.floor(Math.random()*((base/10)+1));
+				//deal damage
                 args.npc.health -= damage;
-                Module.doHook("combat-damage", {base:base, mod:mod, add:add, damage:damage, npc:args.npc});
+				
+				//have the NPC attack back
+                mod = 1.0 * Module.doHook("combat-npc-mod", {index:args.index}, MUL);
+                add = 0.0 + Module.doHook("combat-npc-add", {index:args.index}, ADD);
+				var user = Data.characters[args.index];
+				var health = user.health;
+				var maxhealth = user.maxhealth;
+				if (!maxhealth) {
+					maxhealth = 100;
+					health = 100;
+				}
+				//calculate player damage
+                base = 5;
+				base = base + add;
+				if (mod > 0) base = base * mod;
+                var damage2 = Math.floor(base) - Math.floor(base/5) + Math.floor(Math.random()*((base/2)+1));
+				//deal damage
+				health -= damage2;
+				if (health <= 0) {
+					//die
+					Game.warpPlayer(args.index, 0, 0, 3);
+					health = maxhealth;
+					user.effects = new Array();
+				}
+				//update DB
+				user.health = health;
+				
                 //death is taken care of by the npc manager.
                 var msg = new Object();
                 msg.npc = args.npc.iid; //instanceID
                 msg.dam = damage;
+				msg.usr = args.index;
+				msg.nhp = health;
 				//but we should send a progress update
 				if (args.npc.health <= 0) {
 					var newxp = npc.exp;
 					if (!newxp) newxp = 10;
 					Module.doHook("progress_gain", {index:args.index, exp:newxp});
 				}
+				//and send the result to players in range.
                 Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
             } else if (npc.action == "trainer") {
 				var msg = new Object();
@@ -668,10 +707,10 @@ Combat.client.onHook = function(hook, args) {
 				}
 			} else {
 				if (msg.combat) {
-					this.health = msg.hp;
-					this.healthMax = msg.hpx;
-					this.mana = msg.mp;
-					this.manaMax = msg.mpx;
+					this.health = msg.combat.hp;
+					this.healthMax = msg.combat.hpx;
+					this.mana = msg.combat.mp;
+					this.manaMax = msg.combat.mpx;
 				}
 				if (msg.abilities) {
 					for (var key in msg.abilities) {
@@ -699,6 +738,24 @@ Combat.client.onHook = function(hook, args) {
                     y: 0
                 });
             }
+			var facing = 38;
+			if (Game.userID == n.usr) {
+				this.health = n.nhp;
+				facing = Game.world.user.facing;
+				this.updateHUD();
+			} else if (Game.world.players[n.usr]) {
+				facing = Game.world.players[n.usr];
+			}
+			//make NPC face player
+			if (facing == 37) { //left
+				npc.facing = 39;
+			} else if (facing == 38) { //up
+				npc.facing = 40;
+			} else if (facing == 39) { //right
+				npc.facing = 37;
+			} else if (facing == 40) { //down
+				npc.facing = 38;
+			}
         } else if (args.head === "ability") {
 			var msg = JSON.parse(args.body);
 			if (msg.tar === null) {
