@@ -855,9 +855,9 @@ _Game.onMessage = function(data) {
             //load players
             var players = n.players;
             for (var i = 0; i < players.length; i++) {
-                var n = players[i];
-                _Game.world.players[n.id] = new Player(n.id, n.n, n.x, n.y, n.f, n.s);
-                _Game.reDrawDoor(_Game.world.players[n.id]);
+                var p = players[i];
+                _Game.world.players[p.id] = new Player(p.id, p.n, p.x, p.y, p.f, p.s);
+                _Game.reDrawDoor(_Game.world.players[p.id]);
             }
             //load npcs
             for (var i = 0; i < n.npcs.length; i++) {

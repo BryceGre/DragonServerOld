@@ -298,7 +298,13 @@ public class ClientHandler {
                 newmsg.put("y", pY);
                 newmsg.put("f", pFloor);
                 newmsg.put("s", pSprite);
-                this.sendOther(player.getPlayers(), "enter:" + newmsg.toString());
+                
+                args = new HashMap<String, Object>();
+                args.put("index", pID);
+                args.put("msg", newmsg.toString());
+                mData.Module.doHook("on_enter", args, new SocketUtils(mSession, getRemotes(), mData));
+                
+                this.sendOther(player.getPlayers(), "enter:" + args.get("msg"));
                 
                 mSession.getUserProperties().put("lastMove", new Date());
                 mSession.getUserProperties().put("lastAct", new Date());
@@ -466,7 +472,13 @@ public class ClientHandler {
                     newmsg.put("tiles", tiles);
                     newmsg.put("npcs", npcs);
                     newmsg.put("players", chars);
-                    this.send("more:" + newmsg.toString());
+                    
+                    args = new HashMap<String, Object>();
+                    args.put("index", pID);
+                    args.put("msg", newmsg.toString());
+                    mData.Module.doHook("on_more", args, new SocketUtils(mSession, getRemotes(), mData));
+                    
+                    this.send("more:" + args.get("msg"));
                 }
             }
         } else if (message[0].equals("face")) {

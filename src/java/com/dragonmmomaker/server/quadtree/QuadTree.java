@@ -78,16 +78,16 @@ public class QuadTree<E> {
         
         if (leaf.mN == null && !isOutOfBounds(pX, pY - getLeafHeight())) leaf.mN = traverseRoot(pX, pY - getLeafHeight(), true);
         if (leaf.mN != null) leaf.mN.mS = leaf;
-        System.out.println("North: " + getLeafHeight() + "," + (leaf.mN == null));
+        //System.out.println("North: " + getLeafHeight() + "," + (leaf.mN == null));
         if (leaf.mS == null && !isOutOfBounds(pX, pY + getLeafHeight())) leaf.mS = traverseRoot(pX, pY + getLeafHeight(), true);
         if (leaf.mS != null) leaf.mS.mN = leaf;
-        System.out.println("South: " + getLeafHeight() + "," + (leaf.mS == null));
+        //System.out.println("South: " + getLeafHeight() + "," + (leaf.mS == null));
         if (leaf.mE == null && !isOutOfBounds(pX + getLeafWidth(), pY)) leaf.mE = traverseRoot(pX + getLeafWidth(), pY, true);
         if (leaf.mE != null) leaf.mE.mW = leaf;
-        System.out.println("East: " + getLeafWidth() + "," + (leaf.mE == null));
+        //System.out.println("East: " + getLeafWidth() + "," + (leaf.mE == null));
         if (leaf.mW == null && !isOutOfBounds(pX - getLeafWidth(), pY)) leaf.mW = traverseRoot(pX - getLeafWidth(), pY, true);
         if (leaf.mW != null) leaf.mW.mE = leaf;
-        System.out.println("West: " + getLeafWidth() + "," + (leaf.mW == null));
+        //System.out.println("West: " + getLeafWidth() + "," + (leaf.mW == null));
         
         return leaf;
     }

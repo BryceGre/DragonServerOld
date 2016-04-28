@@ -82,6 +82,8 @@ Items.server = {
 Items.server.onInit = function() {
 	Module.addHook("admin_on_load"); //admin loaded
     Module.addHook("on_load"); //player loaded
+    Module.addHook("on_more"); //more loaded
+	Module.addHook("on_enter"); //player enter
 	Module.addHook("npc_die"); //npc die
     Module.addHook("combat-add"); //bonus damage
 	Module.addHook("tile_act"); //pickup item
@@ -94,7 +96,10 @@ Items.server.onHook = function(hook, args) {
     //called when a player loads the world
     if (hook == "on_load") {
         //query the 'characters' table for this player (ID = args.index)
-        var user = Data.characters[args.index];
+		var chars = Data.characters.listAll();
+        var user = chars[args.index];
+		//get a list of all the items
+		var ilist = Data.items.listAll();
         //if character does't include 'inv' column data
         if (!user.inv) {
             //put empty inventory into database
@@ -106,7 +111,6 @@ Items.server.onHook = function(hook, args) {
         
         //get the outgoing load message
         var msg = JSON.parse(args.msg);
-		var ilist = Data.items.listAll();
 		//get inventory info and store it in the outgoing message
 		msg.inv = [];
 		var inv = user.inv;
@@ -139,6 +143,58 @@ Items.server.onHook = function(hook, args) {
 				msg.equip[key].tool = ilist[equip[key]].tool;
 				msg.equip[key].icon = ilist[equip[key]].icon;
 				msg.equip[key].sprite = ilist[equip[key]].data.sprite;
+			}
+		}
+		//get equipment of nearby players and store it in the outgoing message
+		var players = msg.players;
+		for (var i=0; i<players.length; i++) {
+			players[i].equip = new Array();
+			var player = chars[players[i].id];
+			if (player.equip) {
+				for (var key in player.equip) {
+					if (ilist[player.equip[key]])
+						players[i].equip.push(ilist[player.equip[key]].data.sprite);
+				}
+			}
+		}
+        //put the outgoing load message
+        args.msg = JSON.stringify(msg);
+	//called when a player loads more of the world
+    } else if (hook == "on_more") {
+        //query the 'characters' table for this player (ID = args.index)
+		var chars = Data.characters.listAll();
+		//get a list of all the items
+		var ilist = Data.items.listAll();
+        //get the outgoing load message
+        var msg = JSON.parse(args.msg);
+		//get equipment of new players and store it in the outgoing message
+		var players = msg.players;
+		for (var i=0; i<players.length; i++) {
+			players[i].equip = new Array();
+			var player = chars[players[i].id];
+			if (player.equip) {
+				for (var key in player.equip) {
+					if (ilist[player.equip[key]])
+						players[i].equip.push(ilist[player.equip[key]].data.sprite);
+				}
+			}
+		}
+        //put the outgoing load message
+        args.msg = JSON.stringify(msg);
+	//called when another player enters nearby (log-in or warp)
+	} else if (hook === "on_enter") {
+        //query the 'characters' table for this player (ID = args.index)
+		var user = Data.characters[args.index];
+		//get a list of all the items
+		var ilist = Data.items.listAll();
+        //get the outgoing load message
+        var msg = JSON.parse(args.msg);
+		//get equipment of the entering player and store it in the outgoing message
+		msg.equip = new Array();
+		if (user.equip) {
+			for (var key in user.equip) {
+				if (ilist[user.equip[key]])
+					msg.equip.push(ilist[user.equip[key]].data.sprite);
 			}
 		}
         //put the outgoing load message
@@ -249,6 +305,15 @@ Items.server.onHook = function(hook, args) {
 					msg.equip[data.to].count = equip[data.to].count;
 				}
 				Game.socket.send("equip:" + JSON.stringify(msg));
+				
+				var omsg = new Object();
+				omsg.id = args.index;
+				omsg.equip = new Array();
+				for (var key in equip) {
+					if (list[equip[key]])
+						omsg.equip.push(list[equip[key]].data.sprite);
+				}
+				Game.socket.sendRangeOther("oequip:" + JSON.stringify(omsg))
 			}
 			//update the database
 			user.inv = inv;
@@ -294,6 +359,15 @@ Items.server.onHook = function(hook, args) {
 				msg.equip = {};
 				msg.equip[slot] = null;
 				Game.socket.send("equip:" + JSON.stringify(msg));
+				
+				var omsg = new Object();
+				omsg.id = args.index;
+				omsg.equip = new Array();
+				for (var key in equip) {
+					if (list[equip[key]])
+						omsg.equip.push(list[equip[key]].data.sprite);
+				}
+				Game.socket.sendRangeOther("oequip:" + JSON.stringify(omsg))
 				
 				//update the database
 				user.inv = inv;
@@ -598,7 +672,20 @@ Items.client.onHook = function(hook, args) {
 						img.src = "GFX/UI/"+slots[i].file;
 					}
 				}
+				for (var i=0; i<msg.players.length; i++) {
+					Game.world.players[msg.players[i].id].equip = msg.players[i].equip;
+				}
 			}
+		} else if (args.head === "more") {
+			if (!isAdmin) {
+				var msg = JSON.parse(args.body);
+				for (var i=0; i<msg.players.length; i++) {
+					Game.world.players[msg.players[i].id].equip = msg.players[i].equip;
+				}
+			}
+		} else if (args.head === "enter") {
+			var msg = JSON.parse(args.body);
+			Game.world.players[msg.id].equip = msg.equip;
 		} else if (args.head === "inv") {
 			$(Items.client.inventory.window).empty();
 			var inv = JSON.parse(args.body);
@@ -656,6 +743,9 @@ Items.client.onHook = function(hook, args) {
 					img.src = "GFX/UI/"+Items.prefs.slots[i].file;
 				}
 			}
+		} else if (args.head === "oequip") {
+			var msg = JSON.parse(args.body);
+			Game.world.players[msg.id].equip = msg.equip;
 		}
 		if (args.admin === true && args.head === "loaditem") {
 			var item = JSON.parse(args.body);
@@ -718,11 +808,11 @@ Items.client.onHook = function(hook, args) {
 				Game.context.drawImage(sp, tx, ty, TILE_SIZE, TILE_SIZE);
 		}
 	} else if (hook == "pre_draw_fringe") {
-		//draw paperdoll
+		//draw paperdoll on user
 		for (var key in this.equipped) {
 			if (this.equipped[key]) {
 				var ps = Game.gfx.Paperdoll[this.equipped[key].sprite];
-				var of = World.user.getSpriteOffset();
+				var os = World.user.getSpriteOffset();
 				var sw = Math.floor(ps.width  / 4);
 				var sh = Math.floor(ps.height / 4);
 				var us = Game.gfx.Sprites[World.user.sprite];
@@ -730,7 +820,27 @@ Items.client.onHook = function(hook, args) {
 				var th = Math.floor(us.height / 4);
 				var tx = Game.getCanvasX(World.user.x) - _Game.getMovedX(World.user) - ((tw/2) - (TILE_SIZE/2));
 				var ty = Game.getCanvasY(World.user.y) - _Game.getMovedY(World.user) - (th - TILE_SIZE);
-				Game.context.drawImage(ps, of.x, of.y, sw, sh, tx, ty, tw, th);
+				Game.context.drawImage(ps, os.x, os.y, sw, sh, tx, ty, tw, th);
+			}
+		}
+		//draw paperdoll on other players
+		for (var id in Game.world.players) {
+			var player = Game.world.players[id];
+			if (player.equip) {
+				for (var i=0; i<player.equip.length; i++) {
+					if (player.equip[i]) {
+						var ps = Game.gfx.Paperdoll[player.equip[i]];
+						var os = player.getSpriteOffset();
+						var sw = Math.floor(ps.width  / 4);
+						var sh = Math.floor(ps.height / 4);
+						var us = Game.gfx.Sprites[player.sprite];
+						var tw = Math.floor(us.width  / 4);
+						var th = Math.floor(us.height / 4);
+						var tx = Game.getCanvasX(player.x) - _Game.getMovedX(player) - ((tw/2) - (TILE_SIZE/2));
+						var ty = Game.getCanvasY(player.y) - _Game.getMovedY(player) - (th - TILE_SIZE);
+						Game.context.drawImage(ps, os.x, os.y, sw, sh, tx, ty, tw, th);
+					}
+				}
 			}
 		}
 	}

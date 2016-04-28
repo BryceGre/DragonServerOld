@@ -124,12 +124,12 @@ public class Player {
             } else mInRange++;
         }
         
-        System.out.println("mCurr Size: " + mLeaf.mData.size());
+        //System.out.println("mCurr Size: " + mLeaf.mData.size());
         Leaf last = null;
         
         switch (mData.Tree.getDirection(mX, mY)) {
             case Loc.SE:
-                System.out.println("SE");
+                //System.out.println("SE");
                 if (mLeaf.mS != null) {
                     addAllWithCheck(bag, mLeaf.mS.mData, dist);
                     if (last == null) last = mLeaf.mS.mE;
@@ -142,7 +142,7 @@ public class Player {
                     last = mData.Tree.getLeaf(mX + mData.Tree.getLeafWidth(), mY + mData.Tree.getLeafHeight(), true);
                 break;
             case Loc.NE:
-                System.out.println("NE");
+                //System.out.println("NE");
                 if (mLeaf.mN != null) {
                     addAllWithCheck(bag, mLeaf.mN.mData, dist);
                     if (last == null) last = mLeaf.mN.mE;
@@ -155,7 +155,7 @@ public class Player {
                     last = mData.Tree.getLeaf(mX + mData.Tree.getLeafWidth(), mY - mData.Tree.getLeafHeight(), true);
                 break;
             case Loc.SW:
-                System.out.println("Sw");
+                //System.out.println("SW");
                 if (mLeaf.mS != null) {
                     addAllWithCheck(bag, mLeaf.mS.mData, dist);
                     if (last == null) last = mLeaf.mS.mW;
@@ -168,7 +168,7 @@ public class Player {
                     last = mData.Tree.getLeaf(mX - mData.Tree.getLeafWidth(), mY + mData.Tree.getLeafHeight(), true);
                 break;
             case Loc.NW:
-                System.out.println("NW");
+                //System.out.println("NW");
                 if (mLeaf.mN != null) {
                     addAllWithCheck(bag, mLeaf.mN.mData, dist);
                     if (last == null) last = mLeaf.mN.mW;

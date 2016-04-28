@@ -143,60 +143,59 @@ Combat.server.onHook = function(hook, args) {
 				var spd = 500 * (1 / Module.doHook("combat-player-spd", {index:args.index}, MUL));
                 var mod = 1.0 * Module.doHook("combat-player-mod", {index:args.index}, MUL);
                 var add = 0.0 + Module.doHook("combat-player-add", {index:args.index}, ADD);
-				if (!this.lastAttack[args.index]) this.lastAttack[args.index] = 0;
-				var now = new Date().getTime();
-				if (now < this.lastAttack[args.index] + spd)
-					return;
-				else
-					this.lastAttack = now;
-				//calculate npc damage
-                var base = 20;
-                base = base + add;
-                if (mod > 0) base = base * mod;
-                var damage = Math.floor(base) - Math.floor(base/20) + Math.floor(Math.random()*((base/10)+1));
-				//deal damage
-                args.npc.health -= damage;
-				
-				//have the NPC attack back
-                mod = 1.0 * Module.doHook("combat-npc-mod", {index:args.index}, MUL);
-                add = 0.0 + Module.doHook("combat-npc-add", {index:args.index}, ADD);
-				var user = Data.characters[args.index];
-				var health = user.health;
-				var maxhealth = user.maxhealth;
-				if (!maxhealth) {
-					maxhealth = 100;
-					health = 100;
+				var last = this.lastAttack[args.index];
+				var now = new Date();
+				if ((now.getTime() - last) >= spd) {
+					//calculate npc damage
+					var base = 20;
+					base = base + add;
+					if (mod > 0) base = base * mod;
+					var damage = Math.floor(base) - Math.floor(base/20) + Math.floor(Math.random()*((base/10)+1));
+					//deal damage
+					args.npc.health -= damage;
+					
+					//have the NPC attack back
+					mod = 1.0 * Module.doHook("combat-npc-mod", {index:args.index}, MUL);
+					add = 0.0 + Module.doHook("combat-npc-add", {index:args.index}, ADD);
+					var user = Data.characters[args.index];
+					var health = user.health;
+					var maxhealth = user.maxhealth;
+					if (!maxhealth) {
+						maxhealth = 100;
+						health = 100;
+					}
+					//calculate player damage
+					base = 5;
+					base = base + add;
+					if (mod > 0) base = base * mod;
+					var damage2 = Math.floor(base) - Math.floor(base/5) + Math.floor(Math.random()*((base/2)+1));
+					//deal damage
+					health -= damage2;
+					if (health <= 0) {
+						//die
+						Game.warpPlayer(args.index, 0, 0, 3);
+						health = maxhealth;
+						user.effects = new Array();
+					}
+					//update DB
+					user.health = health;
+					
+					//death is taken care of by the npc manager.
+					var msg = new Object();
+					msg.npc = args.npc.iid; //instanceID
+					msg.dam = damage;
+					msg.usr = args.index;
+					msg.nhp = health;
+					//but we should send a progress update
+					if (args.npc.health <= 0) {
+						var newxp = npc.exp;
+						if (!newxp) newxp = 10;
+						Module.doHook("progress_gain", {index:args.index, exp:newxp});
+					}
+					//and send the result to players in range.
+					Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
+					this.lastAttack[args.index] = now;
 				}
-				//calculate player damage
-                base = 5;
-				base = base + add;
-				if (mod > 0) base = base * mod;
-                var damage2 = Math.floor(base) - Math.floor(base/5) + Math.floor(Math.random()*((base/2)+1));
-				//deal damage
-				health -= damage2;
-				if (health <= 0) {
-					//die
-					Game.warpPlayer(args.index, 0, 0, 3);
-					health = maxhealth;
-					user.effects = new Array();
-				}
-				//update DB
-				user.health = health;
-				
-                //death is taken care of by the npc manager.
-                var msg = new Object();
-                msg.npc = args.npc.iid; //instanceID
-                msg.dam = damage;
-				msg.usr = args.index;
-				msg.nhp = health;
-				//but we should send a progress update
-				if (args.npc.health <= 0) {
-					var newxp = npc.exp;
-					if (!newxp) newxp = 10;
-					Module.doHook("progress_gain", {index:args.index, exp:newxp});
-				}
-				//and send the result to players in range.
-                Game.socket.sendRange("npc-damage:" + JSON.stringify(msg));
             } else if (npc.action == "trainer") {
 				var msg = new Object();
 				msg.abilities = {};
@@ -402,7 +401,8 @@ Combat.server.castAbility = function(index, data) {
 	var msg = new Object();
 	var ability = Data.abilities[data.id];
 	//make sure ability is not on cooldown
-	var last = this.cooldowns[data.id];
+	if (!this.cooldowns[index]) this.cooldowns[index] = new Object();
+	var last = this.cooldowns[index][data.id];
 	var now = new Date();
 	if ((now.getTime() - last) / 1000 < ability.cool) {
 		Game.socket.send("abilityfail:Ability on cooldown!");
@@ -468,7 +468,7 @@ Combat.server.castAbility = function(index, data) {
 			newUser.effects.push(ability.t);
 		}
 		//record cooldown
-		this.cooldowns[data.id] = now;
+		this.cooldowns[index][data.id] = now;
 		//record changes
 		msg.anim = ability.anim;
 		msg.tar = null;
@@ -520,7 +520,7 @@ Combat.server.castAbility = function(index, data) {
 		}
 		player.putAll(newPlayer);
 		//record cooldown
-		this.cooldowns[data.id] = now;
+		this.cooldowns[index][data.id] = now;
 		//record changes
 		msg.anim = ability.anim;
 		msg.tar = "player";
@@ -552,7 +552,7 @@ Combat.server.castAbility = function(index, data) {
 			}
 				
 			//record cooldown
-			this.cooldowns[data.id] = now;
+			this.cooldowns[index][data.id] = now;
 			//record changes
 			msg.anim = ability.anim;
 			msg.tar = "npc";
