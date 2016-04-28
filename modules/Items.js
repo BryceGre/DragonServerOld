@@ -660,7 +660,7 @@ Items.client.onHook = function(hook, args) {
 						img.onload = function(i, img) {
 							$("#equip-" + i)[0].getContext("2d").drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
 							if (msg.equip[i]) {
-								this.equipped[key] = msg.equip[i];
+								this.equipped[i] = msg.equip[i];
 								var tooltip = "<b>" + msg.equip[i].name + "</b><br>" + msg.equip[i].tool;
 								var canvas = $("#equip-" + i);
 								canvas.attr("title", tooltip);
@@ -725,7 +725,7 @@ Items.client.onHook = function(hook, args) {
 					var i = key;
 					var img = new Image();
 					img.onload = function(i, img) {
-						this.equipped[key] = msg.equip[i];
+						this.equipped[i] = msg.equip[i];
 						var canvas = $("#equip-" + i);
 						canvas[0].getContext("2d").clearRect(0, 0, TILE_SIZE, TILE_SIZE);
 						canvas[0].getContext("2d").drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
