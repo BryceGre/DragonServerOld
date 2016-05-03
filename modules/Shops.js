@@ -36,7 +36,6 @@ Shops.server.onInit = function() {
 	Module.addHook("message");
 }
 
-
 //onHook: Called when an event (that this module is hooked into) is triggered
 Shops.server.onHook = function(hook, args) {
     if (hook === "npc_act") {

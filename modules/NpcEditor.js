@@ -188,7 +188,7 @@ NpcEditor.client.createUI = function() {
             NpcEditor.client.currNpc = $("#npc-editor-npc").val();
             NpcEditor.client.loadNpc();
         }
-    }, false, {"style": 'display:inline-block;float:right;margin:0px auto;'});
+    }, false, {"style": 'display:inline-block;float:right;width:64px;margin:0px auto;'});
 
     UI.AddRaw(this.window, "<div style='display:block;'><hr></div>");
 

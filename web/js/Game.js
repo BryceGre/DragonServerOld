@@ -87,6 +87,7 @@ _Game.setupMenu = function() {
 
     $("#menubutton").button({icons: {primary: "ui-icon-gear", secondary: "ui-icon-triangle-1-n"}}).click(function() {
         $("#menu").toggle("slide", {direction: "down"}, 500);
+        $("#menubutton").blur();
         return false;
     });
     $("#menu").menu({select: selected}).hide();

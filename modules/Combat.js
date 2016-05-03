@@ -185,7 +185,8 @@ Combat.server.onHook = function(hook, args) {
 					msg.npc = args.npc.iid; //instanceID
 					msg.dam = damage;
 					msg.usr = args.index;
-					msg.nhp = health;
+					msg.uhp = health;
+					msg.uda = damage2;
 					//but we should send a progress update
 					if (args.npc.health <= 0) {
 						var newxp = npc.exp;
@@ -740,11 +741,23 @@ Combat.client.onHook = function(hook, args) {
             }
 			var facing = 38;
 			if (Game.userID == n.usr) {
-				this.health = n.nhp;
+				this.health = n.uhp;
 				facing = Game.world.user.facing;
 				this.updateHUD();
+                Combat.client.sct.push({
+                    npc: Game.world.user,
+                    num: n.uda,
+                    col: "red",
+                    y: 0
+                });
 			} else if (Game.world.players[n.usr]) {
-				facing = Game.world.players[n.usr];
+				facing = Game.world.players[n.usr].facing;
+                Combat.client.sct.push({
+                    npc: Game.world.players[n.usr],
+                    num: n.uda,
+                    col: "red",
+                    y: 0
+                });
 			}
 			//make NPC face player
 			if (facing == 37) { //left

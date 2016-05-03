@@ -26,7 +26,7 @@ public class SocketUtils {
     
     public SocketUtils(ServData pData) {
         mSession = null;
-        mClients = null;
+        mClients = ClientHandler.getRemotes();
         mData = pData;
     }
 
@@ -91,6 +91,15 @@ public class SocketUtils {
         //TODO: range
         for (Player p : player.getPlayers()) {
             p.getClient().send(pMessage);
+        }
+    }
+    
+    public void sendTo(int pIndex, String pMessage) {
+        for (Session a : mClients) {
+            if (a.getUserProperties().containsKey("char")) {
+                if (a.getUserProperties().get("char").equals(pIndex))
+                    a.getAsyncRemote().sendText(pMessage);
+            }
         }
     }
 }

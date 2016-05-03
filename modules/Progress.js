@@ -83,7 +83,9 @@ Progress.server.onHook = function(hook, args) {
 					evade:10,
 					mana:10,
 				}
+				user.stats = stats;
 			}
+			
 			
 			//append to message
 			var msg = JSON.parse(args.msg);

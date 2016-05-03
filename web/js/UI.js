@@ -62,6 +62,9 @@ _UI.NewWindow = function(id, title, width, height) {
             if (x && y) {
                 $(this).parents("div.ui-dialog").css({left : x+"px", top : y+"px"});
             }
+        },
+        close: function( event, ui ) {
+            $("#menubutton").blur();
         }
     });
 
