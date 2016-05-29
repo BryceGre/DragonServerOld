@@ -245,11 +245,11 @@ Combat.server.onHook = function(hook, args) {
 							if (inv) {
 								//remove the item from the player's inventory
 								if (item.stack) {
-									inv[args.slot].count -= 1;
-									if (inv[args.slot].count == 0)
-										inv.splice(args.slot, 1);
+									inv[data.slot].count -= 1;
+									if (inv[data.slot].count == 0)
+										inv.splice(data.slot, 1);
 								} else 
-									inv.splice(args.slot, 1);
+									inv.splice(data.slot, 1);
 								//get inventory info and store it in the outgoing message
 								var msg = new Array();
 								var ilist = Data.items.listAll();
