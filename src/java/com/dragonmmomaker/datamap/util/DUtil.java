@@ -20,10 +20,15 @@ import jdk.nashorn.internal.objects.Global;
 import jdk.nashorn.internal.runtime.ScriptObject;
 
 /**
- *
+ * A simple utility to conert a Map to a ScriptObject for Nashorn
  * @author Bryce
  */
 public class DUtil {
+    /**
+     * Converts a Map of key-value pairs into a Nashorn ScriptObject
+     * @param pMap the Map to convert
+     * @return the Nashorn Object representing the map
+     */
     public static ScriptObject toJS(Map<?,?> pMap) {
         ScriptObject sobj = Global.newEmptyInstance();
         sobj.putAll(pMap, false);

@@ -19,22 +19,22 @@ import java.io.Serializable;
 import com.dragonmmomaker.server.data.Tile;
 
 /**
- *
+ * Class representing a single NPC (non-player character)
  * @author Bryce
  */
 public class Npc implements Serializable {
     private int mID; //NPC ID (template to draw stats/scripts from)
     private final int mIID; //Instance ID (id of this specific npc spawn)
-    private int mX;
-    private int mY;
-    private short mFloor;
+    private int mX; //NPC's current X location
+    private int mY; //NPC's current Y location
+    private short mFloor; //NPC's current floor
     
-    private int mSprite;
-    private String mName;
-    private int mHealth;
-    private long mLastMove;
-    private Tile mSpawn;
-    private int mRespawn;
+    private int mSprite; //sprite ID
+    private String mName; //name
+    private int mHealth; //health
+    private long mLastMove; //time of last movement
+    private Tile mSpawn; //tile to spawn on
+    private int mRespawn; //should respawn
     
     public Npc(int pIID) {
         mIID = pIID;

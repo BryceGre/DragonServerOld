@@ -19,27 +19,28 @@ import java.sql.SQLException;
 
 import com.dragonmmomaker.server.ServData;
 
+/**
+ * A class representing a Tile on the map
+ * @author Bryce
+ */
 public class Tile {
     
+    //each tile's data is stored as an encoded string. This is a blank tile
     public static final String DEFAULT_TILE = "0000.......";
 
-    private final ServData mServData;
+    private final ServData mServData; //server data
 
-    private int mID;
-    private int mX;
-    private int mY;
-    private short mFloor;
-    private String mData;
-    private String mAttr1;
-    private String mAttr2;
+    private int mID; //tile unique ID
+    private int mX; //tile X
+    private int mY; //tile Y
+    private short mFloor; //tile floor
+    private String mData; //tile data
+    private String mAttr1; //tile attribute 1 data
+    private String mAttr2; //tile attribute 2 data
 
     /**
      * *******************************
-     */
-    /**
      * ******** Constructors *********
-     */
-    /**
      * *******************************
      */
     @Deprecated
@@ -110,11 +111,7 @@ public class Tile {
 
     /**
      * ******************************
-     */
-    /**
      * ****** Getters/Setters *******
-     */
-    /**
      * ******************************
      */
     /**
@@ -485,6 +482,10 @@ public class Tile {
         return this.mX + "," + this.mY + "," + this.mFloor + "," + this.mData + "," + this.mAttr1 + "," + this.mAttr2;
     }
     
+    /**
+     * Check if this tile is a dummy tile (that it doesn't exist)
+     * @return true if the tile doesn't exist, false otherwise
+     */
     public boolean checkDummy() {
         if (mID == 0) {
             String sql = "INSERT INTO tiles (x,y,floor,data,attr1,attr2)";
@@ -507,12 +508,14 @@ public class Tile {
 
     /**
      * *******************************
-     */
-    /**
      * ******* Static Methods ********
-     */
-    /**
      * *******************************
+     */
+    
+    /**
+     * Get a String representing the structure of the "tiles" table in the database.
+     * This is to create the table if it does not exist.
+     * @return 
      */
     public static String getStructure() {
         String structure = "";
@@ -527,14 +530,32 @@ public class Tile {
         return structure;
     }
 
+    /**
+     * Get a unique string key for a tile
+     * @param pTile the tile to get a key for
+     * @return the key from the tile
+     */
     public static String key(Tile pTile) {
         return key(pTile.mX, pTile.mY, pTile.mFloor);
     }
     
+    /**
+     * Get a unique string key for a tile
+     * @param pX the x position of the tile
+     * @param pY the y position of the tile
+     * @param pFloor the floor of the tile
+     * @return the key from the tile
+     */
     public static String key(int pX, int pY, int pFloor) {
         return pX + "." + pY + "." + pFloor;
     }
     
+    /**
+     * Helper function for concatination of strings
+     * @param strings a list of strings to concatinate
+     * @param cement a delimiter to place between each string
+     * @return 
+     */
     private static String concat(String[] strings, String cement) {
         StringBuilder sb = new StringBuilder();
         for (String str : strings) {
@@ -545,6 +566,12 @@ public class Tile {
         return sb.toString();
     }
     
+    /**
+     * Helper function to pad a string with zeroes
+     * @param num the string representing a numbr
+     * @param size the length the resulting string should be
+     * @return a string of length size reprsenting num precedded by zeros.
+     */
     private static String zeroPad(String num, int size) {
         String s = "000000000" + num;
         return s.substring(s.length()-size);

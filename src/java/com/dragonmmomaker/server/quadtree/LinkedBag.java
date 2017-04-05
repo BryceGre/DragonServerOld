@@ -19,27 +19,48 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- *
+ * A LinkedBag (LinkedMultiSet) class.
+ * A "bag" is simply a set that can have multiple elements.
+ * 
+ * A LinkedBag differs from a LinkedSet in that it can contain duplicates
+ * A LinkedBag differs from a LinkedList in that order does not matter
+ * 
  * @author Bryce
  */
 public class LinkedBag<E> implements Set<E> {
     private Node mHead;
     private int mSize;
     
+    /**
+     * Constructor
+     */
     public LinkedBag() {
         mSize = 0;
     }
     
+    /**
+     * Get the size of the bag
+     * @return the size
+     */
     @Override
     public int size() {
         return mSize;
     }
 
+    /**
+     * Check if the bag is empty
+     * @return true if the bag is empty, false otherwise
+     */
     @Override
     public boolean isEmpty() {
         return (mSize==0);
     }
 
+    /**
+     * Check if the bag contains an element
+     * @param o the object to check for
+     * @return true if the bag contains o, false otherwise
+     */
     @Override
     public boolean contains(Object o) {
         Node node = mHead;
@@ -51,11 +72,19 @@ public class LinkedBag<E> implements Set<E> {
         return false;
     }
 
+    /**
+     * Get the iterator for this bag.
+     * @return the iterator
+     */
     @Override
     public Iterator<E> iterator() {
         return new MyIterator();
     }
 
+    /**
+     * Convert this bag to an array
+     * @return an array containing all elements in this bag
+     */
     @Override
     public Object[] toArray() {
         Object[] a = new Object[mSize];
@@ -69,11 +98,19 @@ public class LinkedBag<E> implements Set<E> {
         return a;
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public <T> T[] toArray(T[] a) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * Add an element to the bag
+     * @param e the object to add
+     * @return true if successful (always true)
+     */
     @Override
     public boolean add(E e) {
         Node node = new Node();
@@ -86,6 +123,11 @@ public class LinkedBag<E> implements Set<E> {
         return true;
     }
 
+    /**
+     * Remove an element from the bag
+     * @param o the object to remove
+     * @return true if something was removed, false otherwise
+     */
     @Override
     public boolean remove(Object o) {
         Node node = mHead;
@@ -108,6 +150,11 @@ public class LinkedBag<E> implements Set<E> {
         return false;
     }
 
+    /**
+     * Check if this bag contains all all elements on a collection
+     * @param c the collection to check against this bag
+     * @return true if this bag contains all elements in c, false otherwise
+     */
     @Override
     public boolean containsAll(Collection<?> c) {
         java.util.Iterator<?> itr = c.iterator();
@@ -117,6 +164,11 @@ public class LinkedBag<E> implements Set<E> {
         return true;
     }
 
+    /**
+     * Add all elements in a collection to this bag
+     * @param c the collection of lements to add
+     * @return true if successful (always true)
+     */
     @Override
     public boolean addAll(Collection<? extends E> c) {
         if (c == null) return false;
@@ -126,6 +178,11 @@ public class LinkedBag<E> implements Set<E> {
         return true;
     }
 
+    /**
+     * Retain all elements in a collection
+     * @param c the collection of elements
+     * @return true if this bag was changed, false otherwise
+     */
     @Override
     public boolean retainAll(Collection<?> c) {
         Iterator<E> itr = this.iterator();
@@ -140,6 +197,11 @@ public class LinkedBag<E> implements Set<E> {
         return changed;
     }
 
+    /**
+     * Remove all elements in a collection from this bag
+     * @param c the collection of elements to remove
+     * @return true if anything was removed, false otherwise
+     */
     @Override
     public boolean removeAll(Collection<?> c) {
         java.util.Iterator<?> itr = c.iterator();
@@ -149,12 +211,18 @@ public class LinkedBag<E> implements Set<E> {
         return changed;
     }
 
+    /**
+     * remove all elements from this bag
+     */
     @Override
     public void clear() {
         mHead = null;
         mSize = 0;
     }
     
+    /**
+     * A class representing a Node in this list
+     */
     private class Node {
         private Node mNext;
         private E mData;

@@ -14,6 +14,10 @@ limitations under the License.*/
 
 package com.dragonmmomaker.server.util;
 
+/**
+ * Enum containing possible database drivers
+ * @author Bryce
+ */
 public enum DBDriver {
 	DERBY,
 	MYSQL

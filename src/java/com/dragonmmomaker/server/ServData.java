@@ -27,25 +27,35 @@ import com.dragonmmomaker.server.util.GameUtils;
 import com.dragonmmomaker.server.util.LogCallback;
 import java.util.HashMap;
 
+/**
+ * A class to store server data that can be shared between multiple classes
+ * @author Bryce
+ */
 public class ServData {
     public static ServData _CurData; //use carefully, preferably only with modules
-    public final String DataDir;
-    public final Database DB;
-    public final DBase Data;
-    public final Map<String, Map<String, String>> Config;
-    public final QuadTree<Player> Tree;
-    public final PlayerManager Players;
-    public final GameUtils Utils;
-    public final ModuleManager Module;
-    public final NpcManager Npcs;
-    public final Date Time;
-    
+    public final String DataDir; //data directory for config, graphics, sounds, etc.
+    public final Database DB; //database object
+    public final DBase Data; //DBase database map object
+    public final Map<String, Map<String, String>> Config; //server configuration
+    public final QuadTree<Player> Tree; //scene-graph management dynamic QuadTree
+    public final PlayerManager Players; //player (user) manager
+    public final GameUtils Utils; //utilities for game functions
+    public final ModuleManager Module; //module manager
+    public final NpcManager Npcs; //npc manager
+    public final Date Time; //server/game time
+    //log callback, default to nothing
     public LogCallback Log = new LogCallback() {
         @Override
         public void log(int pId, String pMessage) {
         }
     };
 
+    /**
+     * Constructor
+     * @param pConfig server configuration map
+     * @param pDataDir data directory
+     * @param pLog log object
+     */
     public ServData(Map<String, Map<String, String>> pConfig, String pDataDir, LogCallback pLog) {
         Log = pLog;
         Config = pConfig;

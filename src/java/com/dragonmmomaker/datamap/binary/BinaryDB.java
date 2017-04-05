@@ -32,10 +32,19 @@ import jdk.nashorn.internal.runtime.ScriptObject;
 
 
 /**
- *
+ * A class for serializing Nashorn objects for storage.
+ * Will accept: null, Byte, Boolean, Character, Short, Integer, Long,
+ * Float, Double, Date, CharSequence (including String), ScriptObject,
+ * and Serializable.
+ * 
  * @author Bryce
  */
 public class BinaryDB {
+    /**
+     * Convert a supported object to a byte array
+     * @param o the object to convert
+     * @return a byte array ready for storage
+     */
     public static byte[] prepareObject(Object o) {
         ByteBuffer buff;
         //first, try to unwrap any ScriptObjectMirror into a ScriptObject
@@ -127,6 +136,11 @@ public class BinaryDB {
         return buff.array();
     }
     
+    /**
+     * Converty a byte array created with prepareObject to an Object
+     * @param b the byte array to convert
+     * @return the object ready for use
+     */
     public static Object retrieveObject(byte[] b) {
         if (b.length == 0) {
             return null;

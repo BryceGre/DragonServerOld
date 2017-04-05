@@ -19,24 +19,35 @@ import java.sql.SQLException;
 
 import com.dragonmmomaker.server.ServData;
 
+/**
+ * A class representing a player account
+ * @author Bryce
+ */
 public class Account {
 
-    private final ServData mServData;
+    private final ServData mServData; //server data
 
-    private final int mID;
-    private String mUsername;
-    private String mPassword;
-    private String mEmail;
-    private int mAccess;
-    private int mChar1ID;
-    private int mChar2ID;
-    private int mChar3ID;
+    private final int mID; //account ID
+    private String mUsername; //username
+    private String mPassword; //password (SHA256 hashed)
+    private String mEmail; //email address (unused currently)
+    private int mAccess; //access level (0 is regular user, higher is admins)
+    private int mChar1ID; //first character ID
+    private int mChar2ID; //second character ID (unused currently)
+    private int mChar3ID; //third character ID (unused currently)
 
+    /**
+     * Constrcutor
+     * @param pServData server data
+     * @param pID account ID
+     */
     public Account(final ServData pServData, int pID) {
         mServData = pServData;
         
+        //query the account information from the database via the account ID
         try (ResultSet rs = mServData.DB.Query("SELECT * FROM accounts WHERE id=" + pID)) {
             if (rs.next()) {
+                //store all the data
                 mUsername = rs.getString("username");
                 mPassword = rs.getString("password");
                 mEmail = rs.getString("email");
@@ -45,22 +56,33 @@ public class Account {
                 mChar2ID = rs.getInt("char2");
                 mChar3ID = rs.getInt("char3");
             } else {
+                //no matching account
                 pID = -1;
             }
         } catch (SQLException e) {
+            //no matching account
             pID = -1;
         }
+        //store ID
         mID = pID;
     }
     
+    /**
+     * Constructor
+     * @param pServData server data
+     * @param pUsername account username
+     */
     public Account(ServData pServData, String pUsername) {
         mServData = pServData;
         
+        //stor the username
         mUsername = pUsername;
         int pID = -1;
         
+        //query the account information from the database via the account username
         try (ResultSet rs = mServData.DB.Query("SELECT * FROM accounts WHERE username='" + mUsername + "'")) {
             if (rs.next()) {
+                //store all the data
                 pID = rs.getInt("id");
                 mPassword = rs.getString("password");
                 mEmail = rs.getString("email");
@@ -70,17 +92,28 @@ public class Account {
                 mChar3ID = rs.getInt("char3");
             }
         } catch (SQLException e) {
+            //no matching account
             pID = -1;
         }
+        //store ID
         mID = pID;
     }
-
+    
+    /**
+     * Fast function for inserting an account into the database
+     * @param pServData the server data for the current server
+     * @param pUsername the new account's username
+     * @param pPassword the new account's password
+     * @param pEmail the new account's user
+     * @return the new account ID, or -1 if the account could not be created
+     */
     public static int insert(ServData pServData, String pUsername, String pPassword, String pEmail) {
         String sql = "INSERT INTO accounts (username,password,email,access,char1,char2,char3)";
         sql += " VALUES ('" + pUsername + "','" + pPassword + "','" + pEmail + "',0,0,0,0)";
-
+        //insert the new account into the database
         try (ResultSet rs = pServData.DB.Insert(sql)) {
             if (rs.next()) {
+                //get the ID of the new account
                 int id = rs.getInt("id");
                 while (rs.next()); //close the connection
                 
@@ -144,6 +177,10 @@ public class Account {
         mServData.DB.Update("UPDATE accounts SET char1=" + getChar3ID() + " WHERE id=" + getID());
     }
 
+    /**
+     * Get a String representing the structure of the "accounts" table in the database.
+     * This is to create the table if it does not exist.
+     */
     public static String getStructure() {
         String structure = "";
         structure += "id SERIAL PRIMARY KEY, ";

@@ -31,15 +31,39 @@ import java.util.Set;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
+/**
+ * A Map class representing a database.
+ * Keys are table names and values are Map objects represnting tables.
+ * 
+ * The purpose of this class is to allow easy access to the database from Nashorn
+ * Each row has a primary key "ID" (integer) and unique "Key" (String)
+ * 
+ * Usage is as follows:
+ * Data.table[int id].column to look up row by ID
+ * Data.table[String key].column to look up a row by Key
+ * (Data is the DBase object)
+ * (table is the name of the table to access)
+ * (column is the name of the column to read or write to)
+ * 
+ * @author Bryce
+ */
 public class DBase implements Map<String, DTable> {
 
     private final Connection mConnection;
     private final HashSet<String> mBlacklist;
 
+    /**
+     * Get the DB connection object.
+     * @return the DB connection object
+     */
     public Connection getConnection() {
         return mConnection;
     }
     
+    /**
+     * Check if the connection is closed.
+     * @return true if the connection is closed, false otherwise
+     */
     public boolean isClosed() {
         try {
             if (this.getConnection().isClosed()) return true;
@@ -49,17 +73,30 @@ public class DBase implements Map<String, DTable> {
         return false;
     }
 
+    /**
+     * Create a new instance of DB Map, and connect to the database.
+     * @param pClass class of the database driver
+     * @param pDriver database driver string
+     * @param pBlacklist a list of table names that should be excluded from the DB map
+     * @throws ClassNotFoundException if the class of the DB driver is not found
+     * @throws SQLException if there was an issue connecting to the database
+     */
     public DBase(String pClass, String pDriver, String... pBlacklist) throws ClassNotFoundException, SQLException {
-        Class.forName(pClass);
-        mConnection = DriverManager.getConnection(pDriver);
-        mBlacklist = new HashSet();
+        Class.forName(pClass); //load the driver
+        mConnection = DriverManager.getConnection(pDriver); //connect to the database
+        mBlacklist = new HashSet(); //create the table blacklist
         for (int i = 0; i < pBlacklist.length; i++) {
+            //add blacklisted tables
             mBlacklist.add(pBlacklist[i].toLowerCase());
         }
     }
     
-    //fixes issues with Nashorn and DatabaseMap
+    /**
+     * Fix issues with Nashorn and DatabaseMap
+     * @param pEngine the Nashorn script engine
+     */
     public void fixEngine(ScriptEngine pEngine) {
+        //add Util class
         String headers = "var Util = com.dragonmmomaker.datamap.util.DUtil;\n";
         
         //wrap JSON.stingify to take a Map as an argument.
@@ -86,6 +123,7 @@ public class DBase implements Map<String, DTable> {
         json.append("    }\n");
         json.append("}");
         
+        //evaluate headers
         try {
             pEngine.eval(headers);
             pEngine.eval(json.toString());
@@ -94,45 +132,65 @@ public class DBase implements Map<String, DTable> {
         }
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public void clear() {
         // unsupported
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Check if the database contains a table.
+     * @param arg0 the name of the table
+     * @return true if the table is in the database, false otherise
+     */
     @Override
     public boolean containsKey(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
-            return false;
+            return false; //don't check for blacklisted tables
         }
         try {
-            if (this.isClosed()) return false;
+            if (this.isClosed()) return false; //no connection
+            //get tables from the metadata with the given name
             DatabaseMetaData dbmeta = mConnection.getMetaData();
             try (ResultSet rs = dbmeta.getTables(null, null, arg0.toString().toLowerCase(), null)) {
-                return rs.next();
+                return rs.next(); //if a table with the name exists, this will be true. false otherwise
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        return false; //there was a SQLException, return false
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public boolean containsValue(Object arg0) {
         // unsupported
         throw new UnsupportedOperationException();
     }
     
+    /**
+     * Generate a Set containing each table in the database.
+     * Does not include blacklisted tables.
+     * @return a Set of Map.Entry objects representing tables in the database
+     */
     @Override
     public Set<Map.Entry<String, DTable>> entrySet() {
         Set<Map.Entry<String, DTable>> entrySet = new LinkedHashSet();
         try {
-            if (this.isClosed()) return entrySet;
+            if (this.isClosed()) return entrySet; //connection closed, return empty set
+            //get list of tables from the metadata.
             DatabaseMetaData dbmeta = mConnection.getMetaData();
             try (ResultSet rs = dbmeta.getTables(null, null, "%", null)) {
                 while (rs.next()) {
+                    //get the name
                     String name = rs.getString(3);
                     if (!mBlacklist.contains(name)) {
+                        //add a new entry representing the table
                         entrySet.add(new DBase.Entry(name, new DTable(name, this)));
                     }
                 }
@@ -143,12 +201,20 @@ public class DBase implements Map<String, DTable> {
         return entrySet;
     }
 
+    /**
+     * Get a Map representing a table from the database.
+     * If the table does not exist, create it.
+     * @param arg0 the name of the table
+     * @return the Map object representing the table
+     */
     @Override
     public DTable get(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
+            //don't check tables with blacklisted names
             return null;
         }
-        if (this.isClosed()) return null;
+        if (this.isClosed()) return null; //no connection
+        //create the table if it doesn't exist
         String sql = "CREATE TABLE IF NOT EXISTS " + arg0.toString().toLowerCase() + " (id SERIAL PRIMARY KEY, key VARCHAR(255) UNIQUE)";
         try (PreparedStatement statement = mConnection.prepareStatement(sql)) {
             statement.setQueryTimeout(30);
@@ -159,16 +225,23 @@ public class DBase implements Map<String, DTable> {
             e.printStackTrace();
             return null;
         }
+        //return the table
         return new DTable(arg0.toString(), this);
     }
 
+    /**
+     * Check if the database is empty.
+     * @return true if there are no tables in the database, false otherwise
+     */
     @Override
     public boolean isEmpty() {
         try {
-            if (this.isClosed()) return true;
+            if (this.isClosed()) return true; //no connection
+            //get all table names from the metadata
             DatabaseMetaData dbmeta = mConnection.getMetaData();
             try (ResultSet rs = dbmeta.getTables(null, null, "%", null)) {
                 while (rs.next()) {
+                    //if the table is not blacklisted, then we have found something
                     if (!mBlacklist.contains(rs.getString(3))) {
                         return false;
                     }
@@ -177,19 +250,26 @@ public class DBase implements Map<String, DTable> {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return true;
+        return true; //nothing was found
     }
 
+    /**
+     * Generate a Set of table names in the database.
+     * @return a Set of Strings representing table names in the database
+     */
     @Override
     public Set<String> keySet() {
         Set<String> keySet = new LinkedHashSet<String>();
         try {
-            if (this.isClosed()) return keySet;
+            if (this.isClosed()) return keySet; //no connection
             DatabaseMetaData dbmeta = mConnection.getMetaData();
+            //get all table names from the metadata
             try (ResultSet rs = dbmeta.getTables(null, null, "%", null)) {
                 while (rs.next()) {
+                    //get the name of the table
                     String name = rs.getString(3);
                     if (!mBlacklist.contains(name)) {
+                        //add the name
                         keySet.add(name);
                     }
                 }
@@ -200,24 +280,36 @@ public class DBase implements Map<String, DTable> {
         return keySet;
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public DTable put(String arg0, DTable arg1) {
         // unsupported
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public void putAll(Map<? extends String, ? extends DTable> arg0) {
         // unsupported
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Remove a table from the database.
+     * @param arg0 the name of the table to remove
+     * @return null in all cases
+     */
     @Override
     public DTable remove(Object arg0) {
         if (mBlacklist.contains(arg0.toString().toLowerCase())) {
             return null;
         }
-        if (this.isClosed()) return null;
+        if (this.isClosed()) return null; //no connection
+        //try to drop the table
         String sql = "DROP TABLE IF EXISTS " + arg0.toString().toLowerCase();
         try (PreparedStatement statement = mConnection.prepareStatement(sql)) {
             statement.setQueryTimeout(30);
@@ -227,14 +319,22 @@ public class DBase implements Map<String, DTable> {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return null; //return null
     }
 
+    /**
+     * Get the number of tables in the database.
+     * @return the table count
+     */
     @Override
     public int size() {
         return this.keySet().size();
     }
 
+    /**
+     * Get a collection of tables from the database.
+     * @return a collection of the database's tables
+     */
     @Override
     public Collection<DTable> values() {
         Collection<DTable> values = new AbstractCollection<DTable>() {
@@ -270,6 +370,10 @@ public class DBase implements Map<String, DTable> {
         return values;
     }
 
+    /**
+     * Class representing an entry in the map.
+     * In this case, a table in the database.
+     */
     public class Entry implements Map.Entry<String, DTable> {
 
         private String mKey;

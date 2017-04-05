@@ -17,7 +17,7 @@ package com.dragonmmomaker.server.data;
 import com.dragonmmomaker.server.ServData;
 
 /**
- *
+ * A class representing a non-existing Tile
  * @author Bryce
  */
 public class DummyTile extends Tile {

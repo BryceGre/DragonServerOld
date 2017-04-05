@@ -19,12 +19,22 @@ import jdk.nashorn.internal.runtime.ScriptRuntime;
 
 import com.dragonmmomaker.server.ServData;
 
+/**
+ * Class representing a single module
+ * @author Bryce
+ */
 public class Module {
 
-    private final String mName;
-    private final ModuleManager mManager;
-    private ScriptObjectMirror mMod;
+    private final String mName; //unique module name
+    private final ModuleManager mManager; //module manager
+    private ScriptObjectMirror mMod; //ScriptObject  representing this module
 
+    /**
+     * Constructor
+     * @param pName module name
+     * @param pManager ModuleManager object
+     * @param pMod ScriptObject for this module
+     */
     public Module(String pName, ModuleManager pManager, ScriptObjectMirror pMod) {
         mName = pName;
         mManager = pManager;
@@ -32,12 +42,21 @@ public class Module {
         pMod.removeMember("client"); //free up memory
     }
 
+    /**
+     * Call a method in this module via Nashorn
+     * @param pServData server data
+     * @param pMethod the name of the method to call
+     * @param pArgs a list of arguments to pass to the method
+     * @return whatever object the method returned
+     */
     public Object call(ServData pServData, String pMethod, Object... pArgs) {
         ServData._CurData = pServData; //force set of current server data
-        String prevMov = mManager.lastMod.get();
-        mManager.lastMod.set(mName);
+        String prevMov = mManager.lastMod.get(); //save lastmod for nested calls
+        mManager.lastMod.set(mName); //set lastmod to this mod
         try {
+            //get the module's "server" object
             ScriptObjectMirror modScript = (ScriptObjectMirror) mMod.getMember("server");
+            //call the method
             return modScript.callMember(pMethod, pArgs);
         } catch (Throwable e) {
             e.printStackTrace();
@@ -45,10 +64,15 @@ public class Module {
             //mManager.log(e.toString());
             return null;
         } finally {
-            mManager.lastMod.set(prevMov);
+            mManager.lastMod.set(prevMov); //restore lastmod for nested calls
         }
     }
     
+    /**
+     * Get a string containing the information about this module
+     * @param key the key to access
+     * @return the data contained in the key
+     */
     public String getInfo(String key) {
         if (key != "server" && key != "client") {
             if (mMod.getMember(key) != ScriptRuntime.UNDEFINED) {

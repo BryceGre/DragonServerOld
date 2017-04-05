@@ -14,12 +14,31 @@ limitations under the License.*/
 
 package com.dragonmmomaker.server.util;
 
+/**
+ * A class for logging data
+ * @author Bryce
+ */
 public abstract class LogCallback {
-	public abstract void log(int pId, String pMessage);
-	public void log(String pMessage) {
-		this.log(0, pMessage);
-	}
-	public void debug(String pMessage) {
-		//do nothing by default
-	}
+    /**
+     * Add an entry to the log
+     * @param pId the ID of the entry
+     * @param pMessage the message of the entry
+     */
+    public abstract void log(int pId, String pMessage);
+    
+    /**
+     * Add an entry to the log
+     * @param pMessage the message of the entry
+     */
+    public void log(String pMessage) {
+        this.log(0, pMessage);
+    }
+    
+    /**
+     * Add an entry to the debug log, if enabled
+     * @param pMessage the message of the entry
+     */
+    public void debug(String pMessage) {
+        //do nothing by default
+    }
 }

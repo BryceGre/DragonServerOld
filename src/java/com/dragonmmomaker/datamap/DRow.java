@@ -31,12 +31,22 @@ import jdk.nashorn.internal.runtime.ScriptObject;
 
 import com.dragonmmomaker.datamap.binary.BinaryDB;
 
+/**
+ * A Map class representing a row.
+ * Keys are column names and values are objects representing a row's value.
+ * @author Bryce
+ */
 public class DRow extends HashMap<Object, Object> {
     
-    private final int mID;
-    private String mKey;
-    protected final DTable mTable;
+    private final int mID; //row ID
+    private String mKey; //row Key
+    protected final DTable mTable; //parent DTable object
     
+    /**
+     * Create and populate the row object
+     * @param pID the ID of the row
+     * @param pTable the parent table
+     */
     public DRow(final int pID, final DTable pTable) {
         super();
         
@@ -44,16 +54,17 @@ public class DRow extends HashMap<Object, Object> {
         
         //make sure database is open
         if (!pTable.mBase.isClosed()) {
-            //load Row into Map
+            //select this row from the database
             String sql = "SELECT * FROM " + pTable.getName() + " WHERE id=?";
             try (PreparedStatement statement = pTable.mBase.getConnection().prepareStatement(sql)) {
                 statement.setInt(1, pID);
                 statement.setQueryTimeout(30);
-
+                
+                //load the row into the map
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
-                        pKey = rs.getString("key");
-                        load(rs);
+                        pKey = rs.getString("key"); //key
+                        load(rs); //all other values
                     }
                 }
             } catch (SQLException e) {
@@ -66,6 +77,11 @@ public class DRow extends HashMap<Object, Object> {
         mTable = pTable;
     }
     
+    /**
+     * Create and populate the row object
+     * @param pKey the Key of the row
+     * @param pTable the parent table
+     */
     public DRow(final String pKey, final DTable pTable) {
         super();
         
@@ -73,16 +89,17 @@ public class DRow extends HashMap<Object, Object> {
         
         //make sure database is open
         if (!pTable.mBase.isClosed()) {
-            //load Row into Map
+            //select this row from the database
             String sql = "SELECT * FROM " + pTable.getName() + " WHERE key=?";
             try (PreparedStatement statement = pTable.mBase.getConnection().prepareStatement(sql)) {
                 statement.setString(1, pKey);
                 statement.setQueryTimeout(30);
 
+                //load the row into the map
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
-                        pID = rs.getInt("id");
-                        load(rs);
+                        pID = rs.getInt("id"); //key
+                        load(rs); //all other values
                     }
                 }
             } catch (SQLException e) {
@@ -95,105 +112,183 @@ public class DRow extends HashMap<Object, Object> {
         mTable = pTable;
     }
     
+    /**
+     * Create and populate the row object
+     * @param pRS the ResultSet contaning the row
+     * @param pTable the parent table
+     * @throws SQLException if the ResultSet cannot be read
+     */
     public DRow(final ResultSet pRS, final DTable pTable) throws SQLException {
         super();
         
-        mID = pRS.getInt("id");
-        mKey = pRS.getString("key");
+        mID = pRS.getInt("id"); //get ID from the ResultSet
+        mKey = pRS.getString("key"); //get Key from the ResultSet
         mTable = pTable;
         
-        load(pRS);
+        load(pRS);  //get all other values from the ResultSet
     }
     
+    /**
+     * Loads values from a ResultSet into this Map object
+     * Note that the row's values are cached for easy reading
+     * @param pRS the ResultSet containing the row
+     * @throws SQLException if the ResultSet cannot be read
+     */
     private void load(ResultSet pRS) throws SQLException {
+        //get the metadata from the ResultSet
         ResultSetMetaData rsmd = pRS.getMetaData();
+        //for each column in the ResultSet
         for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+            //store the key column as a String
             if (rsmd.getColumnName(i).toLowerCase().equals("key")) {
                 super.put("key", pRS.getString(i));
+            //store the ID column as an Int
             } else if (rsmd.getColumnName(i).toLowerCase().equals("id")) {
                 super.put("id", pRS.getInt(i));
+            //store all other columns as the Objects they were saved as
             } else {
+                //get the bytes from the database
                 byte[] raw = pRS.getBytes(i);
                 Object value = null;
+                //retrieve the Object from the bytes
                 if (raw != null) {
                     value = BinaryDB.retrieveObject(raw);
                 }
+                //add the object to the Map
                 super.put(rsmd.getColumnName(i).toLowerCase(), value);
             }
         }
     }
     
+    /**
+     * Check if the row exists
+     * This will not result in a query
+     * @return true if this row is in the table, false otherwise
+     */
     public boolean exists() {
-        return super.containsKey("id");
+        return super.containsKey("id"); //the row must have an ID if it exists
     }
     
+    /**
+     * Return a ScriptObject representing this row for use with Nashorn
+     * @return a JavaScript object for use with Nashorn
+     */
     public ScriptObject toJS() {
+        //create empty object
         ScriptObject sobj = Global.newEmptyInstance();
+        //add everything in the row
         sobj.putAll(this, false);
+        //return the object
         return sobj;
     }
     
+    /**
+     * Save all values from a ScriptObject into this row in the database
+     * Note: this will result in a query
+     * @param arg0 a JavaScript object from Nashorn containing key-value pairs
+     */
     public void putAll(ScriptObject arg0) {
+        //map for use with regular putAll
         Map<Object,Object> newMap = new LinkedHashMap();
+        //for each key-value pair in the ScriptObject
         for (Map.Entry<Object, Object> entry : arg0.entrySet()) {
             //make sure this object is storable in the database
             if (entry.getValue() instanceof Serializable) {
                 newMap.put(entry.getKey().toString(), (Serializable)entry.getValue());
+            //ScriptObjects are serializable via the BinaryDB class
             } else if (entry.getValue() instanceof ScriptObject) {
                 newMap.put(entry.getKey().toString(), (ScriptObject)entry.getValue());
             }
         }
+        //add all the entries to this map
         this.putAll(newMap);
     }
     
+    /**
+     * Check if this row contains a value for a column
+     * This will not result in a query
+     * @param arg0 the name of the column
+     * @return true if this column has a value in this row, false otherwise
+     */
     @Override
     public boolean containsKey(Object arg0) {
         return super.containsKey(arg0.toString().toLowerCase());
     }
     
+    /**
+     * Get a value from a column in this row
+     * This will not rsult in a query
+     * @param arg0 the name of the column
+     * @return the value of the column
+     */
     @Override
     public Object get(Object arg0) {
         return super.get(arg0.toString().toLowerCase());
     }
     
+    /**
+     * Get a value from a column in this row
+     * This will not rsult in a query
+     * @param arg0 the name of the column
+     * @param defaultValue the value to use if arg0 doesn't exist
+     * @return the value of the column
+     */
     @Override
     public Object getOrDefault(Object arg0, Object defaultValue) {
         return super.getOrDefault(arg0.toString().toLowerCase(), defaultValue);
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public void clear() {
         // unsupported
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Update a column's value in the row
+     * Note: this will result in a query
+     * @param arg0 the column to modify
+     * @param arg1 the value to put in the column
+     * @return the old value (if it exists) or null
+     */
     @Override
     public Object put(Object arg0, Object arg1) {
-        if (mTable.mBase.isClosed()) return null;
+        if (mTable.mBase.isClosed()) return null; //no connection
         Object old = super.get(arg0.toString().toLowerCase());
-        
+        //column to modify is ID
         if (arg0.toString().toLowerCase().equals("id")) {
+            //cannot change ID
             throw new IllegalArgumentException("id cannot be changed!");
         }
+        //column to modify is Key
         if (arg0.toString().toLowerCase().equals("key")) {
+            //update the key column for this row
             String sql = "UPDATE " + mTable.getName() + " SET key=? WHERE id=?";
             try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql)) {
                 statement.setString(1, arg1.toString());
                 
-                statement.setInt(2, mID);
+                statement.setInt(2, mID); //this row's ID
                 statement.setQueryTimeout(30);
 
                 statement.executeUpdate();
                 
+                //get the new Key
                 mKey = arg1.toString();
             } catch (SQLException e) {
                 e.printStackTrace();
                 return null;
             }
+            //also update the key in the cache
             super.put("key", arg1.toString());
+            //and return the old key
             return old;
         }
+        //column to modify is something else
         if (!super.containsKey(arg0.toString().toLowerCase())) {
+            //Table doesn't contain this column, alter the table to do so
             String sql = "ALTER TABLE " + mTable.getName() + " ADD " + arg0.toString().toLowerCase() + " BYTEA";
             try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql)) {
                 statement.setQueryTimeout(60);
@@ -204,8 +299,10 @@ public class DRow extends HashMap<Object, Object> {
                 return null;
             }
         }
+        //update the cache
         super.put(arg0.toString().toLowerCase(), arg1);
-        if (mTable.mBase.isClosed()) return null;
+        if (mTable.mBase.isClosed()) return null; //no connection
+        //update the row in the database
         String sql = "UPDATE " + mTable.getName() + " SET " + arg0.toString().toLowerCase() + "=? WHERE id=?";
         try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql)) {
             statement.setBytes(1, BinaryDB.prepareObject(arg1));
@@ -218,23 +315,40 @@ public class DRow extends HashMap<Object, Object> {
             e.printStackTrace();
             return null;
         }
-
+        //and return the old key
         return old;
     }
     
+    /**
+     * Update a column's value in the cache, but do not update the row in the database
+     * This will not result in a query
+     * @param arg0 the column to modify
+     * @param arg1 the value to put in the column
+     * @return the old value (if it exists) or null
+     */
     Object unmanagedPut(Object arg0, Object arg1) {
         return super.put(arg0.toString().toLowerCase(), arg1);
     }
     
+    /**
+     * Update multiple columns' values in the row in one query
+     * Note: this will result in a query
+     * @param arg0 a Map containing the key-value pairs to update
+     */
     @Override
     public void putAll(Map<? extends Object, ? extends Object> arg0) {
+        //get the column names to update from arg0
         Iterator<? extends Object> itr = arg0.keySet().iterator();
+        //data array to keep valus in for future use
         Object[] data = new Object[arg0.size()];
+        //temporary variables
         String sql1 = "UPDATE " + mTable.getName() + " SET ";
         String sql2 = " WHERE id=" + mID;
         int count = 0;
         int key = -1;
-        if (mTable.mBase.isClosed()) return;
+        
+        if (mTable.mBase.isClosed()) return; //no connection
+        //for each column to update
         while (itr.hasNext()) {
             //get the key
             Object col = itr.next();
@@ -263,8 +377,10 @@ public class DRow extends HashMap<Object, Object> {
                 key = count;
             count++;
         }
-        if (mTable.mBase.isClosed()) return;
+        //perform the SQL query to update the row
+        if (mTable.mBase.isClosed()) return; //no connection
         try (PreparedStatement statement = mTable.mBase.getConnection().prepareStatement(sql1 + sql2)) {
+            //populate the SQL with the new data
             for (int i=0; i<count; i++) {
                 if (i == key)
                     if (data[i] == null)
@@ -282,11 +398,17 @@ public class DRow extends HashMap<Object, Object> {
         }
     }
     
+    /**
+     * Unsupportd
+     */
     @Override
     public Object putIfAbsent(Object arg0, Object arg1) {
         return super.putIfAbsent(arg0.toString().toLowerCase(), arg1);
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public Object remove(Object arg0) {
         // unsupported (TODO)
@@ -294,6 +416,9 @@ public class DRow extends HashMap<Object, Object> {
         throw new UnsupportedOperationException();
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public boolean remove(Object arg0, Object arg1) {
         // unsupported (TODO)
@@ -301,27 +426,42 @@ public class DRow extends HashMap<Object, Object> {
         throw new UnsupportedOperationException();
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public Object replace(Object arg0, Object arg1) {
         return super.replace(arg0.toString().toLowerCase(), arg1);
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public boolean replace(Object arg0, Object arg1, Object arg2) {
         return super.replace(arg0.toString().toLowerCase(), arg1, arg2);
         //this.com
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public Object compute(Object arg0, BiFunction<? super Object, ? super Object, ? extends Object> arg1) {
         return super.compute(arg0.toString().toLowerCase(), arg1);
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public Object computeIfAbsent(Object arg0, Function<? super Object, ? extends Object> arg1) {
         return super.computeIfAbsent(arg0.toString().toLowerCase(), arg1);
     }
     
+    /**
+     * Unsupported
+     */
     @Override
     public Object computeIfPresent(Object arg0, BiFunction<? super Object, ? super Object, ? extends Object> arg1) {
         return super.computeIfPresent(arg0.toString().toLowerCase(), arg1);
@@ -329,6 +469,7 @@ public class DRow extends HashMap<Object, Object> {
     
     @Override
     public int hashCode() {
+        //hashcode based on the row's ID and table name (unique)
         final int prime = 31;
         int result = 1;
         result = prime * result + mID;
@@ -338,6 +479,7 @@ public class DRow extends HashMap<Object, Object> {
 
     @Override
     public boolean equals(Object obj) {
+        //equals based on the row's ID table's name (unique)
         if (this == obj) {
             return true;
         }
@@ -361,6 +503,10 @@ public class DRow extends HashMap<Object, Object> {
         return true;
     }
 
+    /**
+     * Class representing an entry in the map
+     * In this case, a column value in the row
+     */
     public class Entry implements Map.Entry<Object, Object> {
 
         private final Object mKey;

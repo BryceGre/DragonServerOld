@@ -24,36 +24,58 @@ import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.player.Player;
 
 /**
- *
+ * Class containing utilities for sending and recieving game messages.
  * @author Bryce
  */
 public class SocketUtils {
-    private Session mSession;
-    private Set<Session> mClients;
-    private ServData mData;
+    private Session mSession; //current client's session
+    private Set<Session> mClients; //list of connected clients
+    private ServData mData; //current server data
     
+    /**
+     * Constructor
+     * @param pData current server data
+     */
     public SocketUtils(ServData pData) {
         mSession = null;
         mClients = ClientHandler.getRemotes();
         mData = pData;
     }
 
+    /**
+     * Constructor
+     * @param pSession current client's session
+     * @param pClients list of connected clients
+     * @param pData current server data
+     */
     public SocketUtils(Session pSession, Set<Session> pClients, ServData pData) {
         mSession = pSession;
         mClients = pClients;
         mData = pData;
     }
     
+    /**
+     * Get an ID for this connected client
+     * @return this client's ID
+     */
     public int getIndex() {
+        //if the session exists
         if (mSession != null) {
+            //if the user is logged in, return his/her character id
             if (mSession.getUserProperties().containsKey("char"))
                 return (Integer) mSession.getUserProperties().get("char");
+            //else, return his/her account id
             if (mSession.getUserProperties().containsKey("acc"))
                 return (Integer) mSession.getUserProperties().get("acc");
         }
+        //return no id
         return -1;
     }
     
+    /**
+     * Send a message to the current game client
+     * @param pMessage the message to send
+     */
     public void send(String pMessage) {
         if (mSession != null) {
             mSession.getAsyncRemote().sendText(pMessage);
@@ -62,25 +84,40 @@ public class SocketUtils {
         }
     }
     
+    /**
+     * Send a message to all game clints
+     * @param pMessage the message to send
+     */
     public void sendAll(String pMessage) {
         if (mClients != null) {
+            //for each client
             for (Session a : mClients) {
+                //if the client has loaded in-game
                 if (a.getUserProperties().containsKey("loaded")) {
+                    //send the message
                     a.getAsyncRemote().sendText(pMessage);
                 }
             }
         } else {
-            //hook not specific to any user
+            //hook not specific to any user, use generic sendAll
             ClientHandler.sendAll(pMessage);
             AdminHandler.sendAll(pMessage);
         }
     }
     
+    /**
+     * Send a message to all game clients except the current game client
+     * @param pMessage 
+     */
     public void sendAllOther(String pMessage) {
         if (mSession != null && mClients != null) {
+            //for each client
             for (Session a : mClients) {
+                //if the client has loaded in-game
                 if (a.getUserProperties().containsKey("loaded")) {
+                    //and is not the current client
                     if (!a.getId().equals(mSession.getId())) {
+                        //send the message
                         a.getAsyncRemote().sendText(pMessage);
                     }
                 }
@@ -88,24 +125,45 @@ public class SocketUtils {
         }
     }
     
+    /**
+     * Send a message to all game clients within range of the current game client
+     * @param pMessage the message to send
+     */
     public void sendRange(String pMessage) {
-        this.sendRangeOther(pMessage);
-        mSession.getAsyncRemote().sendText(pMessage);
+        this.sendRangeOther(pMessage); //send to other clients in range
+        mSession.getAsyncRemote().sendText(pMessage); //send to this client
     }
     
+    /**
+     * Send a message to all game clients within range of the current game client,
+     * except the current game client
+     * @param pMessage 
+     */
     public void sendRangeOther(String pMessage) {
+        //get the current character id
         int pID = (Integer) mSession.getUserProperties().get("char");
+        //get the current player
         Player player = mData.Players.getPlayer(pID);
-        //TODO: range
+        //for each other player loaded for this player
         for (Player p : player.getPlayers()) {
+            //send the message
             p.getClient().send(pMessage);
         }
     }
     
+    /**
+     * Send a message to a specific game client
+     * @param pIndex the ID if the client's character
+     * @param pMessage the message to send
+     */
     public void sendTo(int pIndex, String pMessage) {
+        //for each client
         for (Session a : mClients) {
+            //if the client has a character selected
             if (a.getUserProperties().containsKey("char")) {
+                //and the character is the intended recipient
                 if (a.getUserProperties().get("char").equals(pIndex))
+                    //send the message
                     a.getAsyncRemote().sendText(pMessage);
             }
         }

@@ -20,32 +20,60 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- *
+ * A HashBag (HashMultiSet) class.
+ * 
+ * My professor called this class an abomination, and it certainly sounds like it should be.
+ * But a "bag" is simply a set that can have multiple elements.
+ * 
+ * If we know that we won't be trying to add any duplicates, using this means that
+ * we don't have to search through each bucket for duplicates on each add() call.
+ * 
  * @author Bryce
  */
 public class HashBag<E> implements Set<E>, Cloneable, Serializable {
     private int mSize;
     private Object[] mHashSet;
     
+    /**
+     * Constructor
+     * (10 buckets)
+     */
     public HashBag() {
         this(10);
     }
     
+    /**
+     * Constructor
+     * @param pHashSize the number of buckets to use
+     */
     public HashBag(int pHashSize) {
         mHashSet = new Object[pHashSize];
         mSize = 0;
     }
     
+    /**
+     * Get the size of the bag
+     * @return the size
+     */
     @Override
     public int size() {
         return mSize;
     }
 
+    /**
+     * Check if the bag is empty
+     * @return true if the bag is empty, false otherwise
+     */
     @Override
     public boolean isEmpty() {
         return (mSize == 0);
     }
 
+    /**
+     * Check if the bag contains an element
+     * @param o the object to check for
+     * @return true if the bag contains o, false otherwise
+     */
     @Override
     public boolean contains(Object o) {
         Node node = (Node)mHashSet[o.hashCode() % mHashSet.length];
@@ -57,11 +85,19 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return false;
     }
 
+    /**
+     * Get the iterator for this bag.
+     * @return the iterator
+     */
     @Override
     public Iterator iterator() {
         return new MyIterator();
     }
 
+    /**
+     * Convert this bag to an array
+     * @return an array containing all elements in this bag
+     */
     @Override
     public Object[] toArray() {
         Object[] a = new Object[mSize];
@@ -75,11 +111,19 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return a;
     }
 
+    /**
+     * Unsupported
+     */
     @Override
     public <T> T[] toArray(T[] a) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * Add an element to the bag
+     * @param e the object to add
+     * @return true if successful (always true)
+     */
     @Override
     public boolean add(E e) {
         Node node = new Node();
@@ -92,6 +136,11 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return true;
     }
 
+    /**
+     * Remove an element from the bag
+     * @param o the object to remove
+     * @return true if something was removed, false otherwise
+     */
     @Override
     public boolean remove(Object o) {
         Node node = (Node) mHashSet[o.hashCode() % mHashSet.length];
@@ -114,6 +163,11 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return false;
     }
 
+    /**
+     * Check if this bag contains all all elements on a collection
+     * @param c the collection to check against this bag
+     * @return true if this bag contains all elements in c, false otherwise
+     */
     @Override
     public boolean containsAll(Collection<?> c) {
         java.util.Iterator<?> itr = c.iterator();
@@ -123,6 +177,11 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return true;
     }
 
+    /**
+     * Add all elements in a collection to this bag
+     * @param c the collection of lements to add
+     * @return true if successful (always true)
+     */
     @Override
     public boolean addAll(Collection<? extends E> c) {
         java.util.Iterator<? extends E> itr = c.iterator();
@@ -131,6 +190,11 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return true;
     }
 
+    /**
+     * Retain all elements in a collection
+     * @param c the collection of elements
+     * @return true if this bag was changed, false otherwise
+     */
     @Override
     public boolean retainAll(Collection<?> c) {
         Iterator<E> itr = this.iterator();
@@ -145,6 +209,11 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return changed;
     }
 
+    /**
+     * Remove all elements in a collection from this bag
+     * @param c the collection of elements to remove
+     * @return true if anything was removed, false otherwise
+     */
     @Override
     public boolean removeAll(Collection<?> c) {
         java.util.Iterator<?> itr = c.iterator();
@@ -154,12 +223,18 @@ public class HashBag<E> implements Set<E>, Cloneable, Serializable {
         return changed;
     }
 
+    /**
+     * remove all elements from this bag
+     */
     @Override
     public void clear() {
         mHashSet = new Object[mHashSet.length];
         mSize = 0;
     }
     
+    /**
+     * A class representing a Node in a bucket
+     */
     private class Node {
         protected Node mNext;
         protected E mData;

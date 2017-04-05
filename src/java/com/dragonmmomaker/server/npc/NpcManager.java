@@ -42,20 +42,24 @@ import com.dragonmmomaker.server.handler.ClientHandler;
 import com.dragonmmomaker.server.util.SocketUtils;
 
 /**
- *
+ * A class to manage all NPCs
  * @author Bryce
  */
 public class NpcManager {
 
-    private final ServData mData;
-    private Timer mTimer;
-    private NpcUpdateTask mUpdateTask;
-    private Map<String,Npc> mNpcData;
-    private HashMap<Integer,Npc> mNpcList;
-    private Queue<Npc> mRespawn;
+    private final ServData mData; //current server data
+    private Timer mTimer; //timer to manager NPCs
+    private NpcUpdateTask mUpdateTask; //the task to use for the timer
+    private Map<String,Npc> mNpcData; //a list of all NPCs by the tile they spawn on
+    private HashMap<Integer,Npc> mNpcList; //a list of all NPCs by the order they spawned
+    private Queue<Npc> mRespawn; //a queue of NPCs to respawn
 
-    private int mCount;
+    private int mCount; //the current number of NPCs in the game
 
+    /**
+     * Constructor
+     * @param pServData the current server data
+     */
     public NpcManager(final ServData pServData) {
         mData = pServData;
         mNpcData = new ConcurrentHashMap();
@@ -64,6 +68,7 @@ public class NpcManager {
         
         mCount = 1;
 
+        //set up the NPC update task
         mUpdateTask = new NpcUpdateTask();
         mTimer = new Timer(true);
         
@@ -72,17 +77,30 @@ public class NpcManager {
         new JSONObject().put("a", 1).toString(); //pre-load JSONObject and sub-classes
     }
     
+    /**
+     * Start the NPC update task
+     */
     public void start() {
         mTimer.scheduleAtFixedRate(mUpdateTask, 250, 250);
     }
     
+    /**
+     * Stop the NPC Update Task
+     */
     public void stop() {
         mTimer.cancel();
     }
     
+    /**
+     * Spawn all NPCs (should be called on server start)
+     * @param pSpawns list of tiles and the NPCs they spawn
+     */
     public void spawnAll(Map<Tile, Integer> pSpawns) {
+        //cache of all NPCs' data from the database
         ArrayMap<DRow> cache = new ArrayMap(mData.Data.get("npcs").entrySet());
+        //for each tile
         for (Map.Entry<Tile, Integer> spawn : pSpawns.entrySet()) {
+            //spawn the NPC that spawns on that tile
             int id = spawn.getValue();
             if (cache.containsKey(id)) {
                 spawnNPC(spawn.getKey(), id, cache.get(id));
@@ -90,74 +108,110 @@ public class NpcManager {
         }
     }
     
+    /**
+     * Spawn a single NPC
+     * @param pTile the tile tp spawn on
+     * @param pNpc the ID of the NPC to spawn
+     * @param pInfo the DRow containing the NPC information
+     */
     public void spawnNPC(Tile pTile, int pNpc, Map<Object,Object> pInfo) {
-        Npc npc = new Npc(mCount);
-        mNpcList.put(mCount, npc);
+        Npc npc = new Npc(mCount); //new NPC object
+        mNpcList.put(mCount, npc); //add it to the list
+        //set NPC location information
         npc.setId(pNpc);
         npc.setX(pTile.getX());
         npc.setY(pTile.getY());
         npc.setFloor(pTile.getFloor());
-        
+        //set NPC data
         npc.setSprite((Integer)pInfo.get("sprite"));
         npc.setName((String)pInfo.get("name"));
         npc.setSpawn(pTile);
         npc.setHealth(100); //TODO: Health
         npc.setLastMove(new Date().getTime());
-        mNpcData.put(Tile.key(pTile), npc);
         
-        mCount++;
+        mNpcData.put(Tile.key(pTile), npc); //put the NPC on the map
         
+        mCount++; //incrememnt NPC count
+        
+        //call the npc_spawn hook for modules
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
         mData.Module.doHook("npc_spawn", args, new SocketUtils(mData));
     }
     
+    /**
+     * Respawn a dead NPC
+     * @param pNpc the NPC to respawn
+     */
     public void respawnNpc(Npc pNpc) {
+        //reset the NPC's current tile to it's spawn location
         Tile tile = pNpc.getSpawn();
         pNpc.setX(tile.getX());
         pNpc.setY(tile.getY());
         pNpc.setFloor(tile.getFloor());
         
+        //reset the NPC's data
         pNpc.setHealth(100); //TODO: Health
         pNpc.setLastMove(new Date().getTime());
-        mNpcData.put(Tile.key(tile), pNpc);
+        mNpcData.put(Tile.key(tile), pNpc); //re-add NPC to the data list
         
+        //send a messsage to all clients within range that the NPC has respawned
         ClientHandler.sendAllWithTest("npc-res:" + pNpc.toString(), (charID) -> {
+            //get current character
             DRow pchar = mData.Data.get("characters").get(charID);
+            //get draw distance
             int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
+            //get player location
             int pX = (Integer) pchar.get("x");
             int pY = (Integer) pchar.get("y");
+            //check distance
             if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
                 if (pNpc.getY() - dist <= pY && pNpc.getY() + dist >= pY) {
+                    //within range
                     return true;
                 }
             }
+            //not within range
             return false;
         });
         
+        //call the npc_spawn hook for modules
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
         mData.Module.doHook("npc_spawn", args, new SocketUtils(mData));
     }
     
+    /**
+     * Kill an NPC (usually called because it's health drops to 0)
+     * @param pNpc the NPC to kill
+     */
     public void killNpc(Npc pNpc) {
-        pNpc.setRespawn(20);
-        mRespawn.offer(pNpc);
+        pNpc.setRespawn(20); //set respawn count
+        mRespawn.offer(pNpc); //add to respawn queue
+        //remove NPC from data list
         mNpcData.remove(Tile.key(pNpc.getX(), pNpc.getY(), pNpc.getFloor()));
         
+        //send a messsage to all clients within range that the NPC has died
         ClientHandler.sendAllWithTest("npc-die:" + pNpc.getIid(), (charID) -> {
+            //get current character
             DRow pchar = mData.Data.get("characters").get(charID);
+            //get draw distance
             int dist = Integer.parseInt(mData.Config.get("Game").get("draw_distance"));
+            //get player location
             int pX = (Integer) pchar.get("x");
             int pY = (Integer) pchar.get("y");
+            //check distance
             if (pNpc.getX() - dist <= pX && pNpc.getX() + dist >= pX) {
                 if (pNpc.getY() - dist <= pY && pNpc.getY() + dist >= pY) {
+                    //within range
                     return true;
                 }
             }
+            //not within range
             return false;
         });
         
+        //call the npc_die hook for modules
         Map<String,Object> args = new HashMap();
         args.put("npc", pNpc);
         mData.Module.doHook("npc_die", args, new SocketUtils(mData));
@@ -167,6 +221,11 @@ public class NpcManager {
         //TODO: respawn all NPCs (for map editing)
     }
     
+    /**
+     * Get a NPC from the NPC list
+     * @param pID the location on the list
+     * @return the NPC at that location
+     */
     public Npc getNpc(int pID) {
         try {
             return mNpcList.get(pID);
@@ -175,6 +234,13 @@ public class NpcManager {
         }
     }
     
+    /**
+     * Gt a NPC from the NPC data
+     * @param pX the x of the npc
+     * @param pY the y of the npc
+     * @param pFloor the floor of the npc
+     * @return the npc at that location
+     */
     public Npc getNpc(int pX, int pY, short pFloor) {
         if (mNpcData.containsKey(Tile.key(pX, pY, pFloor))) {
             return mNpcData.get(Tile.key(pX, pY, pFloor));
@@ -182,15 +248,30 @@ public class NpcManager {
         return null;
     }
     
+    /**
+     * get all npcs that exist (alive or dead) in-game
+     * @return 
+     */
     public Map<Integer,Npc> getAll() {
         return mNpcList;
     }
 
+    /**
+     * Check the attributes of a tile to see if an NPC can move there
+     * @param pX the X position that the NPC wants to move to
+     * @param pY the Y position that the NPC wants to move to
+     * @param pFloor the floor that the NPC wants to move to
+     * @param pNpc the NPC that wants to move
+     * @param pPlayerData a set of all the current players
+     * @return true if the NPC can move there, false otherwise
+     */
     public boolean checkAttr(int pX, int pY, short pFloor, Npc pNpc, Set<String> pPlayerData) {
+        //get the tile
         Tile tile = mData.Utils.getTile(pX, pY, pFloor);
         if (tile == null) {
             return false; //cannot walk off the map
         }
+        //get tile attributes
         int attr1 = tile.getAttr1();
         int attr2 = tile.getAttr2();
 
@@ -219,6 +300,9 @@ public class NpcManager {
         return true;
     }
     
+    /**
+     * TimerTask that handles NPC movement, death, and respawn
+     */
     private class NpcUpdateTask extends TimerTask {
         @Override
         public void run() {

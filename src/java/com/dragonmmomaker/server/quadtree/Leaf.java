@@ -18,7 +18,7 @@ import com.dragonmmomaker.server.quadtree.HashBag;
 import com.dragonmmomaker.server.quadtree.QuadTree;
 
 /**
- *
+ * A leaf in the QuadTree
  * @author Bryce
  */
 public class Leaf<E> {
@@ -27,11 +27,15 @@ public class Leaf<E> {
     public HashBag<E> mData;
     public Leaf<E> mN, mS, mE, mW;
 
+    /**
+     * Constructor
+     * @param pParent th QuadTree.Node to be this leaf's parent
+     * @param pLoc the location of this leaf
+     */
     public Leaf(QuadTree.Node pParent, int pLoc) {
         mParent = pParent;
         mLoc = pLoc;
         mData = new HashBag();
     }
-    
     
 }

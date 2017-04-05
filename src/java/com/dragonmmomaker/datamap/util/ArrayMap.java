@@ -27,7 +27,8 @@ import jdk.nashorn.internal.runtime.ScriptObject;
 
 
 /**
- *
+ * A class similar to an Array but utilizing the Map interface.
+ * Useful for use as JavaScript objects in Nashorn.
  * @author Bryce
  */
 public class ArrayMap<T> extends LinkedHashMap<Integer,T> implements java.lang.Iterable<T> {
@@ -53,41 +54,69 @@ public class ArrayMap<T> extends LinkedHashMap<Integer,T> implements java.lang.I
         }
     }
     
+    /**
+     * Return a ScriptObject representing this map for use with Nashorn
+     * @return a JavaScript object for use with Nashorn
+     */
     public ScriptObject toJS() {
         ScriptObject sobj = Global.newEmptyInstance();
         sobj.putAll(this, false);
         return sobj;
     }
     
+    /**
+     * Get the object at an index
+     * @param arg0 the index to check
+     * @return the object at that index
+     */
     @Override
     public T get(Object arg0) {
         Integer id = fixInt(arg0);
         return super.get(id);
     }
 
+    /**
+     * Check if an index contains any data
+     * @param arg0 the index to check
+     * @return true if there is data, false otherwise
+     */
     @Override
     public boolean containsKey(Object arg0) {
         Integer id = fixInt(arg0);
         return super.containsKey(id);
     }
 
+    /**
+     * Remove data at an index
+     * Note that this does <b>not</b> shift any elements
+     * @param arg0 the index to check
+     * @return the removed object, or null if no object was removed
+     */
     @Override
     public T remove(Object arg0) {
         Integer id = fixInt(arg0);
         return super.remove(id);
     }
     
+    /**
+     * Takes an object and convert it into an Integer
+     * This function also supports Nashorn number objects
+     * @param arg0 the object to convert
+     * @return the Integer that the object represents, or null
+     */
     public static Integer fixInt(Object arg0) {
-        if (arg0 instanceof Integer) {
+        if (arg0 instanceof Integer) { //Integer class (Java)
             return (Integer)arg0;
-        } else if (arg0 instanceof Number) {
+        } else if (arg0 instanceof Number) { //Number class (Java)
             return ((Number)arg0).intValue();
-        } else if (arg0 instanceof NativeNumber) { //nashorn
+        } else if (arg0 instanceof NativeNumber) { //NativeNumber class (Nashorn)
             return ((NativeNumber)arg0).intValue();
         } else {
+            //some other class, try to parse the Integer from the object's toString
             try {
                 return Integer.parseInt(arg0.toString());
             } catch (NumberFormatException | java.lang.NullPointerException e) {
+                //could not parse Integer, return null
                 return null;
             }
         }
@@ -98,6 +127,9 @@ public class ArrayMap<T> extends LinkedHashMap<Integer,T> implements java.lang.I
         return new ArrayMapIterator();
     }
     
+    /**
+     * Iterator class for iteration over an ArrayMap
+     */
     private class ArrayMapIterator implements java.util.Iterator<T> {
         private LinkedList<Map.Entry<Integer,T>> entryList;
         

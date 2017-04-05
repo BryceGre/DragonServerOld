@@ -27,6 +27,10 @@ import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.webresources.FileResource;
 import org.apache.catalina.webresources.StandardRoot;
 
+/**
+ * Servlet for accessing files outside of the .war file
+ * @author Bryce
+ */
 public class FileServlet extends DefaultServlet {
 
     private static final long serialVersionUID = -5671563424683507507L;
@@ -35,15 +39,18 @@ public class FileServlet extends DefaultServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        mDataDir = ServerListener.dataDir;
-        resources = new FileRoot(resources);
+        mDataDir = ServerListener.dataDir; //data directory
+        resources = new FileRoot(resources); //file root
     }
 
     @Override
     protected boolean checkIfModifiedSince(HttpServletRequest request, HttpServletResponse response, WebResource resource) {
-        return true;
+        return true; //causes problems if this is not always true
     }
 
+    /**
+     * Class that allows access to files outside the .war file, in the data directory
+     */
     private class FileRoot extends StandardRoot {
 
         public FileRoot(WebResourceRoot parent) {

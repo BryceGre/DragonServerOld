@@ -15,14 +15,20 @@ limitations under the License.*/
 package com.dragonmmomaker.server.util;
 
 /**
- *
+ * A clas represting a single position in the game world
  * @author Bryce
  */
 public class Point {
-    private int mX;
-    private int mY;
-    private short mFloor;
+    private int mX; //the x value of the position
+    private int mY; //the y value of the position
+    private short mFloor; //the floor of the position
 
+    /**
+     * Constructor
+     * @param pX the x value of the point
+     * @param pY the y value of the point
+     * @param pFloor the floor (z-value) of the point
+     */
     public Point(int pX, int pY, short pFloor) {
         this.mX = pX;
         this.mY = pY;
@@ -53,6 +59,10 @@ public class Point {
         this.mFloor = pFloor;
     }
 
+    /**
+     * Get a string key that uniquely identifies this point
+     * @return a string key for this point
+     */
     public String getKey() {
         return this.mX + "," + this.mY + "," + this.mFloor;
     }

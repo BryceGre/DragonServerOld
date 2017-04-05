@@ -20,14 +20,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * A class to manage all Player characters.
  * @author Bryce
  */
 
 //TODO: Custom Map to save memory
 public class PlayerManager {
-    private Map<Integer, Player> mPlayers;
+    private Map<Integer, Player> mPlayers; //List of players
     
+    /**
+     * Constructor
+     */
     public PlayerManager() {
         mPlayers = new HashMap();
     }

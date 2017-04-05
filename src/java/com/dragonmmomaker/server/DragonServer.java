@@ -41,70 +41,118 @@ import com.dragonmmomaker.server.util.DBDriver;
 import com.dragonmmomaker.server.util.IniLoader;
 import com.dragonmmomaker.server.util.LogCallback;
 
+/**
+ * A class representing the game server iteself.
+ * @author Bryce
+ */
 public class DragonServer {
 
     private static boolean mRunning = false;
-    private ServData mData;
+    private ServData mData; //server data
     @SuppressWarnings("unused")
     private DBDriver mDatabaseDriver;
-    private int mTimeFactor;
-            
+    private int mTimeFactor; //in-game seconds per real-world second
+    
+    /**
+     * Create a blank server
+     * @throws Exception if something goes wrong
+     */
     public DragonServer() throws Exception {
         this(null, null, null, null);
     }
     
+    /**
+     * Create a server
+     * @param pConfig configuration for the server to use
+     * @param pDataDir directory of the embedded database, if used
+     * @param pLog log callback for reporting data
+     * @throws Exception if something goes wrong
+     */
     public DragonServer(Map<String, Map<String, String>> pConfig, String pDataDir, LogCallback pLog) throws Exception {
         this(pConfig, pDataDir, pLog, null);
     }
     
-    /*private DragonServer(int pPort, String pDatabaseDriver) throws Exception {
-     this(pPort, new LogCallback() { @Override public void onLog(int pId, String pMessage) {} }, pDatabaseDriver);
-     }*/
+    /**
+     * Create a server
+     * @param pConfig  configuration for the server to use
+     * @param pDataDir directory of the embedded database, if used
+     * @param pLog log callback for reporting data
+     * @param pDriver a custom database driver
+     * @throws Exception  if something goes wrong
+     */
     private DragonServer(Map<String, Map<String, String>> pConfig, String pDataDir, LogCallback pLog, DBDriver pDriver) throws Exception {
+        //set up private vars
         if (pDataDir == null) { pDataDir = ""; }
         if (pConfig == null) { pConfig = getConfig(pDataDir); }
         if (pLog == null) { pLog = new BlankLogCallback(); }
         if (pDriver == null) { pDriver = DBDriver.DERBY; }
+        //create a ServData object for storing information about the current state of the server
         this.mData = new ServData(pConfig, pDataDir, pLog);
+        //set the Log
         this.mData.Log = pLog;
+        //store the database driver
         this.mDatabaseDriver = pDriver;
+        //pass the server data to the web handlers
         AdminHandler.setData(mData);
         ClientHandler.setData(mData);
         //this.mDatabaseDriver = pDatabaseDriver;
+        //add a shutdown hook to do cleanup when exiting the webapp
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
     }
 
+    /**
+     * Start the server
+     * @return this object. Useful for strining calls
+     * @throws Exception if somthing goes wrong
+     */
     public DragonServer start() throws Exception {
         if (mRunning) {
             throw new Exception("Only one server can be running at any time!");
         }
         mData.Log.log(000, "Server Start");
         
+        //set up game time
         mData.Time.setTime(new Date().getTime());
         mTimeFactor = Integer.parseInt(mData.Config.get("Game").get("time_factor"));
         new Timer(true).schedule(new ServerTimer(), 0, 1000);
         
+        //initialize game data, including accounts, maps, modules, and npcs
         initData();
 
+        //notify modules that the server has started
         mData.Module.doHook("server_start");
 
+        //tell the NPCManager that the server has startd
         mData.Npcs.start();
         
+        //remember that the server has started
         DragonServer.mRunning = true;
 
         return this;
     }
 
+    /**
+     * Initialize game data.
+     * This includes accounts, tiles (maps), a scene graph, modules, and npcs
+     * @throws SQLException 
+     */
     public void initData() throws SQLException {
         
+        //Load accounts
         mData.Log.log(001, "Loading Accounts");
         //if (!mData.DB.tableExists("accounts")) {
             mData.DB.createTable("accounts", Account.getStructure());
         //}
         
+        //create a map on NPC spawn tiles
         Map<Tile,Integer> spawn = new LinkedHashMap();
         
         mData.Log.log(002, "Loading Tiles");
+        //load the tiles (maps)
+        /*Note that tiles are dynamically loaded as the game is played
+         *meaning, they are not kept in memory. The reason we load them
+         *now is to check for spawn tiles so things like NPCs can spawn.*/
+        
         //if (!mData.DB.tableExists("tiles")) {
             mData.DB.createTable("tiles", Tile.getStructure());
         //}
@@ -128,6 +176,7 @@ public class DragonServer {
             tiles = null; //don't keep tiles in memory
         }
         
+        //initialize the dynamic QuadTree
         mData.Tree.init();
         
         mData.Log.log(003, "Loading Modules");
@@ -148,11 +197,16 @@ public class DragonServer {
         mData.Npcs.spawnAll(spawn);
     }
 
+    /**
+     * Shut down the server the do cleanup
+     * @return 
+     */
     public DragonServer stop() {
         if (isRunning()) {
+            //tell modules the server is shutting down
             mData.Module.doHook("server_stop");
         }
-        
+        //clean up processes, close the database, and end the serer
         mData.Npcs.stop();
         mData.DB.Disconnect();
         mRunning = false;
@@ -160,6 +214,11 @@ public class DragonServer {
         return this;
     }
 
+    /**
+     * Get the configuration map from the server files
+     * @param pDataDir the data dirctory, accessable by the end user
+     * @return a Map containing the configuration in config.ini in the data directory
+     */
     private static Map<String,Map<String,String>> getConfig(String pDataDir) {
         try {
             return new IniLoader(pDataDir + "/config.ini").load();
@@ -176,10 +235,17 @@ public class DragonServer {
         }
     }
 
+    /**
+     * Check if a server is running
+     * @return true if a server instance is running, false otherwise
+     */
     public static boolean isRunning() {
         return mRunning;
     }
     
+    /**
+     * Default log callback in case none is supplied
+     */
     private static class BlankLogCallback extends LogCallback {
         @Override
         public void log(int pId, String pMessage) {
@@ -187,6 +253,9 @@ public class DragonServer {
         }
     }
     
+    /**
+     * A timer that keeps track of server/game time
+     */
     private class ServerTimer extends TimerTask {
         public static final int GC_FREQ = 5; //seconds
         private int count = 0;
