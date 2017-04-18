@@ -4,7 +4,7 @@ Dragon MMO Maker is an open source toolkit for creating MMORPGs and MMOs that ru
 
 The server is written in Java (Tomcat) and the client is web based (HTML5/CSS3/JavaScript). A demo can be found [here](http://dragonmmomaker.com/). If it doesn't load (you get a 5XX error code) wait for a few second and refresh the page.
 
-Can be hosted on OpenShift using a QuickStart that runs Tomcat8 and Java8 [such as this one] (http://github.com/BryceGre/openshift-tomcat8-quickstart).
+Can be hosted on OpenShift using a QuickStart that runs Tomcat8 and Java8 [such as this one](http://github.com/BryceGre/openshift-tomcat8-quickstart).
 
 ## Features
 
@@ -43,8 +43,8 @@ A pre-build DragonServer.war file is included in the base directory. Otherwise, 
 1. Run the DragonServer WebApp in Tomcat8.
 2. Open the WebApp in your browser. The server will automatically use to the /client path.
 3. Create an account by typing in a username and password, and clicking "Create".
-  * Log in if you like, you won't see much but your character and a blank world.
-4. Change the path to /admin path by adding "/admin" to the domain.
-5. Log in using the account you created.
-6. Open the game menu in the lower-left to access the game editors.
-7. Create your game! I suggest starting with the MapEditor.
+4. Log in if you like, you won't see much but your character and a blank world.
+5. Change the path to /admin path by adding "/admin" to the domain.
+6. Log in using the account you created.
+7. Open the game menu in the lower-left to access the game editors.
+8. Create your game! I suggest starting with the MapEditor.
