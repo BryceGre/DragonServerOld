@@ -12,6 +12,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
+/**
+ * Data.js contains default data objects that can be read and modified by modules.
+ */
+
 Data = new Object();
 
 // rough idea of colors:
@@ -20,7 +24,7 @@ Data = new Object();
 // green = environment (roof)
 // yellow = spawn (npc)
 // white =
-Data.map_attr = {
+Data.map_attr = { //default map attributes
     "0": {"name": "None", "display": "", "color": ""},
     "1": {"name": "Block", "display": "B", "color": "red"},
     "2": {"name": "Warp", "display": "W", "color": "blue"},
@@ -31,10 +35,10 @@ Data.map_attr = {
     "7": {"name": "NPC Avoid", "display": "A", "color": "yellow"},
 };
 
-Data.npc_actions = {
+Data.npc_actions = { //default NPC actions
     none: {name: "None"},
 };
 
-Data.npc_behaviors = {
+Data.npc_behaviors = { //default NPC behaviors
     still: {name: "Stationary"},
 }

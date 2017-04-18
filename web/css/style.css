@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
+/* UI Container */
 #ui {
   position:fixed;
   top:0px;
@@ -21,6 +22,8 @@ limitations under the License.*/
   overflow:visible;
 }
 
+/* Used for JQuery UI Windows/Dialogs */
+/* See UI.js */
 .filler {
   position:absolute;
   top:0px;
@@ -33,6 +36,7 @@ limitations under the License.*/
     opacity: 0.5;
 }
 
+/* Used for transparecy slider on UI windows */
 .opaque-0 { opacity: 0; }
 .opaque-1 { opacity: 0.1; }
 .opaque-2 { opacity: 0.2; }
@@ -45,14 +49,17 @@ limitations under the License.*/
 .opaque-9 { opacity: 0.9; }
 .opaque-10 { opacity: 1.0; }
 
+/* Used to leave room for the transparency slider */
 span.ui-dialog-title {
     width:50% !important;
 }
 
+/* Hide the close button on the loading dialog */
 #load-dialog .ui-dialog-titlebar-close {
     display: none;
 }
 
+/* "game" canvas where the game is rendered */
 #game {
   position:absolute;
   z-index: 0;
@@ -63,6 +70,7 @@ span.ui-dialog-title {
   right: 0;
 }
 
+/* "HUD" canvas where the HUD overlay is rendered */
 #HUD {
   position:absolute;
   z-index: 0;
@@ -72,6 +80,7 @@ span.ui-dialog-title {
   right: 0;
 }
 
+/* Lower-Right button to bring up game menu */
 #menubutton {
   position:absolute;
   bottom:0px;
@@ -79,12 +88,14 @@ span.ui-dialog-title {
   height: 28px;
 }
 
+/* Game menu opened from lower-right button */
 #menu {
   position:absolute;
   bottom:32px;
   left:0px;
 }
 
+/* controls at the bottom for the map editor */
 #controls {
   position:absolute;
   bottom:0px;
@@ -92,11 +103,13 @@ span.ui-dialog-title {
   right:0px;
 }
 
+/* a single control for the map editor */
 .control {
   position:absolute;
   bottom:0px;
 }
 
+/* some defaults for the html/body tags */
 html, body {
   margin: 0;
   padding: 0;

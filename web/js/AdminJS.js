@@ -12,72 +12,101 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-var isAdmin = true;
-_Game.updateTime = 0;
+/*
+ * AdminJS.js is the core game functions specific to /admin.html
+ * For core game functions that are shared between admin and game, see Game.js
+ */
+
+var isAdmin = true; //let other scripts know this is admin
+_Game.updateTime = 0; //statistics
 // Game Variables
-_Game.lastTime = $.now();
-_Game.canvas;
-_Game.context;
-_Game.curKey = 0;
+_Game.lastTime = $.now(); //last time for game loop
+_Game.canvas; //game canvas
+_Game.context; //game canvas context
+_Game.curKey = 0; //current keyboard key being held down
 // Debug Variables
 _Game.frameCount = 0;
 _Game.FPS = 0;
 _Game.lastSecond = 0;
 // Admin Variables
-_Game.editX = 1000000000;
-_Game.editY = 1000000000;
-_Game.editFloor = 3;
-_Game.tileX = 0;
-_Game.tileY = 0;
-_Game.gridW = 0;
-_Game.gridH = 0;
+_Game.editX = 1000000000; //x location of admin map editor window
+_Game.editY = 1000000000; //y location of admin map editor window
+_Game.editFloor = 3; //floor of admin map editor window
+_Game.tileX = 0; //x location of current tile
+_Game.tileY = 0; //y location of current tile
+_Game.gridW = 0; //width of map editor grid
+_Game.gridH = 0; //height of map editor grid
+//layers to hide in map editor
 _Game.hide = {gr: false, m1: false, m2: false, ma: false, f1: false, f2: false, fa: false, li: false}
 
+/**
+ * Called when the page (not game) loads.
+ */
 _Game.onLoaded = function() {
-    Module.doHook("game_load", {admin: true});
+    Module.doHook("game_load", {admin: true}); //do module hook
+    //get the saved preferences
     _Game.gridW = _Game.getPref("GridW");
     _Game.gridH = _Game.getPref("GridH");
-
+    
+    //set up UI
     _Game.setupMenu();
     _Game.addContorls();
 
+    //set up login form
     $("#login-form").dialog({autoOpen: false, height: 300, width: 350, modal: true, buttons: {"Log In": function() {
                 var JSONObject = {"user": $("#name").val(), "pass": SHA256($("#password").val())}
                 _Game.socket.send("login:" + JSON.stringify(JSONObject));
                 $(this).dialog("close");
             }}});
-
+    //connect to server
     _Game.connect("admin");
 }
 
+/**
+ * onUpdate function of the game loop
+ * Updates game logic and data
+ * @param {float} elapsed time elapsed since end of last game loop
+ */
 _Game.onUpdate = function(elapsed) {
-    _Game.updateTime += elapsed;
-    var intervalTime = 1000 / FRAME_RATE;
+    _Game.updateTime += elapsed; //add elapsed time to update time
+    var intervalTime = 1000 / FRAME_RATE; //ideal time for a frame
+    //for each frame that was skipped until now
     while (_Game.updateTime > intervalTime) {
-        Module.doHook("on_update", {admin: true});
-        _Game.updateTime -= intervalTime;
+        Module.doHook("on_update", {admin: true}); //do module hook
+        _Game.updateTime -= intervalTime; //decrement update time
     }
+    //also do a hook for raw_update, which may be inconsistant
     Module.doHook("raw_update", {admin: true, elapsed: elapsed});
 }
 
+/**
+ * onDraw function of the game loop
+ * draws game data to canvas
+ * @param {float} elapsed time elapsed since end of last game loop
+ */
 _Game.onDraw = function(elapsed) {
     var nowTime = $.now();
+    //clear the canvas
     _Game.context.clearRect(0, 0, _Game.canvas.width, _Game.canvas.height);
 
+    //get the middle of the canvas
     var middleX = (_Game.canvas.width / 2);
     var middleY = (_Game.canvas.height / 2);
-    var night = 0;
+    var night = 0; //TODO: re-add day/night cycle
+    //do pre_draw module hook
     Module.doHook("pre_draw", {admin: true, elapsed: elapsed});
 
     // Draw objects under player
-    for (var f = 0; f <= _Game.editFloor; f++) {
-        var destsize = TILE_SIZE - (2 * (_Game.editFloor - f));
+    for (var f = 0; f <= _Game.editFloor; f++) { //for each floor below the player
+        var destsize = TILE_SIZE - (2 * (_Game.editFloor - f)); //destination size (lower floors are smaller)
+        //for each tile to draw
         for (var x = (_Game.editX - DRAW_DISTANCE); x < (_Game.editX + DRAW_DISTANCE); x++) {
-            var destx = ((x - _Game.editX) * destsize) + middleX;
+            var destx = ((x - _Game.editX) * destsize) + middleX; //x destination of this tile
             for (var y = (_Game.editY - DRAW_DISTANCE); y < (_Game.editY + DRAW_DISTANCE); y++) {
-                var desty = ((y - _Game.editY) * destsize) + middleY;
-                var tile = _Game.getTile(x, y, f)
+                var desty = ((y - _Game.editY) * destsize) + middleY; //y destination of this tile
+                var tile = _Game.getTile(x, y, f) //get the tile at this location
                 if (tile) {
+                    //do the pre_draw_tile module hook
                     Module.doHook("pre_draw_tile", {admin: true, "x": x, "y": y, "floor": f, "tile": tile});
 
                     // draw ground
@@ -148,14 +177,16 @@ _Game.onDraw = function(elapsed) {
                             }
                         }
                     }
-
+                    //do the post_draw_tile module hook
                     Module.doHook("post_draw_tile", {admin: true, "x": x, "y": y, "floor": f, "tile": tile});
                 }
             }
         }
     }
+    //do the post_draw module hook
     Module.doHook("post_draw", {admin: true, elapsed: elapsed});
 
+    //draw the grid onto the canvas
     for (var x = (_Game.editX - DRAW_DISTANCE); x < (_Game.editX + DRAW_DISTANCE); x++) {
         var destx = ((x - _Game.editX) * TILE_SIZE) + middleX;
         if (((x - 1000000000) % _Game.gridW) == 0) {
@@ -188,9 +219,7 @@ _Game.onDraw = function(elapsed) {
             _Game.context.stroke();
         }
     }
-
-    // draw grid
-
+    
     // keep track of the last second and _Game.FPS even if not debugging.
     _Game.frameCount++;
     var nowSecond = Math.floor(nowTime / 1000);
@@ -200,15 +229,20 @@ _Game.onDraw = function(elapsed) {
         _Game.lastSecond = nowSecond;
     }
     
+    //draw debug information, if DEBUG is enabled
     _Game.context.fillStyle = "Black";
     if (DEBUG) {
         _Game.drawDebug();
     }
+    //also draw information about the admin's current location
     _Game.context.fillText("Tile X: " + (_Game.tileX - 1000000000), middleX - 64, 10);
     _Game.context.fillText("Tile Y: " + (_Game.tileY - 1000000000), middleX - 64, 20);
     _Game.context.fillText("Floor: " + _Game.editFloor, middleX - 64, 30);
 }
 
+/**
+ * Draw debug information to the upper-left of the screen
+ */
 _Game.drawDebug = function() {
     _Game.context.fillText("FPS: " + _Game.FPS, 0, 10);
     _Game.context.fillText("Edit X: " + (_Game.editX - 1000000000), 0, 20);
@@ -216,16 +250,23 @@ _Game.drawDebug = function() {
     _Game.context.fillText("Edit Floor: " + _Game.editFloor, 0, 40);
 }
 
+/**
+ * Handle a keyboard keyDown event
+ * @param {type} e event data
+ */
 _Game.keyDown = function(e) {
+    //check to make sure that the user isn't typing text
     if ($(":focus").length > 0 && $(":focus").prop("tagName") == "INPUT") {
         var type = $(":focus").attr('type');
         //anything text entry where the user may want to back up via arrow keys
         if (type == "input" || type == "date" || type == "datetime" || type == "time" || type == "email" || type == "number" || type == "search" || type == "tel" || type == "url") {
+            //user is typing text, don't process key events
             return;
         }
     }
+    //if the key pressed in an arrow key
     if (e.which >= 37 && e.which <= 40) {
-        e.preventDefault();
+        e.preventDefault(); //prevent page scrolling
         if (e.which == 37) { // left
             if (_Game.editX > 0) {
                 _Game.editX--;
@@ -243,33 +284,52 @@ _Game.keyDown = function(e) {
                 _Game.editY++;
             }
         }
+        //send move message
         var JSONObject = {"x": _Game.editX, "y": _Game.editY, "dir": e.which};
         _Game.socket.send("move:" + JSON.stringify(JSONObject));
     }
+    //do key_down module hook
     Module.doHook("key_down", {admin: true, key: e.which});
 }
 
+/**
+ * Handle a keyboard keyUp event
+ * @param {type} e event data
+ */
 _Game.keyUp = function(e) {
+    //check to make sure that the user isn't typing text
     if ($(":focus").length > 0) {
         if ($(":focus").prop("tagName") == "INPUT") {
+            //user is typing text, don't process key events
             return;
         }
     }
+    //if the key pressed in an arrow key
     if (e.which >= 37 && e.which <= 40) {
-        e.preventDefault();
+        e.preventDefault(); //prevent scrolling
     }
+    //do key_up module hook
     Module.doHook("key_up", {admin: true, key: e.which});
 }
 
+/**
+ * handle a canvas onClick event
+ * @param {type} e event data
+ */
 _Game.onClick = function(e) {
-    _UI.HideMenu();
+    _UI.HideMenu(); //hide any open menu
 }
 
+/**
+ * Handle a WebSocket message event
+ * @param {type} data the message
+ */
 _Game.onMessage = function(data) {
-    var n = data.split(":");
-    var message = n.splice(0, 1);
-    message.push(n.join(':'));
+    var n = data.split(":"); //split the message
+    var message = n.splice(0, 1); //splice out first word
+    message.push(n.join(':')); //join remaining words
 
+    //switch message head
     switch (message[0]) {
         case "login":
             if (message[1] == "1") {
@@ -284,9 +344,12 @@ _Game.onMessage = function(data) {
             break;
         case "load":
             console.log("Loading game");
+            //send tile data to the world
             _Game.updateWorld(JSON.parse(message[1]).tiles);
+            //load the game
             _Game.loadGame();
 
+            //create move move event
             $("#game").mousemove(function(e) {
                 _Game.tileX = _Game.getClickedX(e);
                 _Game.tileY = _Game.getClickedY(e);
@@ -294,13 +357,19 @@ _Game.onMessage = function(data) {
             break;
         case "more":
             console.log("Loading more");
+            //send tile data to the world
             _Game.updateWorld(JSON.parse(message[1]).tiles);
             break;
     }
+    //do message module hook
     Module.doHook("message", {admin: true, "head": message[0], "body": message[1]});
 }
 
+/**
+ * Add on-screen controls to the game window
+ */
 _Game.addContorls = function() {
+    //floor slider
     $("#control-floor").slider({min: 0, max: 9, range: "min", value: _Game.editFloor, slide: function(event, ui) {
             _Game.editFloor = ui.value;
             $("#control-ftext").text("Floor: " + ui.value);
@@ -309,9 +378,10 @@ _Game.addContorls = function() {
     }});
     $("#control-ftext").text("Floor: " + _Game.editFloor);
 
+    //warp input x and y
     $("#control-warp-x").val(_Game.editX - 1000000000);
     $("#control-warp-y").val(_Game.editY - 1000000000);
-
+    //warp button
     $("#control-warp-go").button().click(function(e) {
         e.preventDefault();
         _Game.editX = parseInt($("#control-warp-x").val()) + 1000000000;
@@ -320,9 +390,10 @@ _Game.addContorls = function() {
         _Game.socket.send("warp:" + JSON.stringify(JSONObject));
     });
     
+    //grid size x and y
     $("#control-grid-w").val(_Game.gridW);
     $("#control-grid-h").val(_Game.gridH);
-
+    //grid set button
     $("#control-grid-go").button().click(function(e) {
         e.preventDefault();
         _Game.gridW = ($("#control-grid-w").val());
@@ -331,6 +402,7 @@ _Game.addContorls = function() {
         _Game.setPref("GridH", _Game.gridH);
     });
 
+    //check boxes to show/hide layers
     $("#control-hide-gr").click(function(e) {
         _Game.hide.gr = this.checked;
     });
@@ -357,22 +429,42 @@ _Game.addContorls = function() {
     });
 }
 
+/**
+ * Get the x location on the screen in pixels from a tile x position
+ * @param {type} x the x position of the tile
+ * @returns {Number} the x location relative to the canvas's upper-left
+ */
 _Game.getTileX = function(x) {
     var tileX = ((x - _Game.editX) * TILE_SIZE) + (_Game.canvas.width / 2);
     return Math.floor(tileX);
 }
 
+/**
+ * Get the y location on the screen in pixels from a tile x position
+ * @param {type} y the y position of the tile
+ * @returns {Number} the y location relative to the canvas's upper-left
+ */
 _Game.getTileY = function(y) {
     var tileY = ((y - _Game.editY) * TILE_SIZE) + (_Game.canvas.height / 2);
     return Math.floor(tileY);
 }
 
+/**
+ * Get the tile x position from a mouse even on the screen
+ * @param {type} e the mouse event on the screen
+ * @returns {Number} the clicked tile's x position
+ */
 _Game.getClickedX = function(e) {
     var middleX = ($("#game").width() / 2);
     var tileRatio = $("#game").width() / CLIENT_WIDTH;
     return _Game.editX + Math.floor((((e.pageX - $("#game").offset().left) - middleX) / tileRatio) / TILE_SIZE);
 }
 
+/**
+ * Get the tile y position from a mouse even on the screen
+ * @param {type} e the mouse event on the screen
+ * @returns {Number} the clicked tile's y position
+ */
 _Game.getClickedY = function(e) {
     var middleY = ($("#game").height() / 2);
     var tileRatio = $("#game").height() / CLIENT_HEIGHT;
