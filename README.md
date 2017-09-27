@@ -37,7 +37,8 @@ Can be hosted on OpenShift using a QuickStart that runs Tomcat8 and Java8 [such 
 ## Installation
 A pre-build DragonServer.war file is included in the base directory. Otherwise, NetBeans can build it for Tomcat8 using Java8.
 1. Download the DragonServer.war file. Place it in the WebApps directory of a Tomcat8 server.
-2. Download everything in the "GFX", "SFX", and "modules" folders. Place the 3 folders in Tomcat8's catalina.base or catalina.home.
+2. Download everything in the "GFX", "SFX", and "modules" folders, as well as the config.ini and layout.xml files.
+3. Place the 3 folders and 2 files in a folder named DragonServer" in Tomcat8's catalina.base or catalina.home.
 
 ## Usage
 1. Run the DragonServer WebApp in Tomcat8.
