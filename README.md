@@ -31,14 +31,14 @@ Can be hosted on OpenShift using a QuickStart that runs Tomcat8 and Java8 [such 
 
 ## Requirements
 * Java8 runtime and a Tomcat8 application server for the server.
-  * A Tomcat hosting service (such as OpenShift) will work until you're ready to invite the masses of players.
 * Any HTML5 browser for the client.
 
 ## Installation
 A pre-build DragonServer.war file is included in the base directory. Otherwise, NetBeans can build it for Tomcat8 using Java8.
 1. Download the DragonServer.war file. Place it in the WebApps directory of a Tomcat8 server.
 2. Download everything in the "GFX", "SFX", and "modules" folders, as well as the config.ini and layout.xml files.
-3. Place the 3 folders and 2 files in a folder named DragonServer" in Tomcat8's catalina.base or catalina.home.
+3. (Optional) Replace/Add any files in "GFX" and "SFX" with your own custom resources. Add your own modules to "modules".
+4. Place the 3 folders and 2 files in a folder named "DragonServer" in Tomcat8's catalina.base or catalina.home.
 
 ## Usage
 1. Run the DragonServer WebApp in Tomcat8.

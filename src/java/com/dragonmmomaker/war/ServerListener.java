@@ -28,9 +28,9 @@ import javax.servlet.annotation.WebListener;
 import com.dragonmmomaker.server.DragonServer;
 import com.dragonmmomaker.server.handler.AdminHandler;
 import com.dragonmmomaker.server.handler.ClientHandler;
+import com.dragonmmomaker.server.util.Callback;
 import com.dragonmmomaker.server.util.IniLoader;
 import com.dragonmmomaker.server.util.LogCallback;
-import javafx.util.Callback;
 
 /**
  * DragonServer listener to start and stop the server when the webapp is started and stopped
@@ -84,8 +84,8 @@ public class ServerListener implements ServletContextListener {
         }
         //set up some final variables for use within the Log class
         final boolean DEBUG = debug;
-        final Callback LogCallback = (Callback) arg0.getServletContext().getAttribute("LogCallback");
-
+        final Callback<String> callback = (Callback) arg0.getServletContext().getAttribute("LogCallback");
+        
         // ===== Start up the game server, and ready it =====
         try {
             //create the server
@@ -100,8 +100,8 @@ public class ServerListener implements ServletContextListener {
                     String out = "(" + time + ") " + pMessage;
                     arg0.getServletContext().log(out);
                     //also call the log in the parameters, if given
-                    if (LogCallback != null) {
-                        LogCallback.call(out);
+                    if (callback != null) {
+                        callback.call(out);
                     }
                 }
 
@@ -116,8 +116,8 @@ public class ServerListener implements ServletContextListener {
                         String out = "DEBUG: (" + time + ") " + pMessage;
                         arg0.getServletContext().log(out);
                         //also call the log in the parameters, if given
-                        if (LogCallback != null) {
-                            LogCallback.call(out);
+                        if (callback != null) {
+                            callback.call(out);
                         }
                     }
                 }

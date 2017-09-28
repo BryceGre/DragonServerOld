@@ -27,7 +27,7 @@ import java.util.Queue;
 
 import com.dragonmmomaker.datamap.DBase;
 import com.dragonmmomaker.war.ServerListener;
-import javafx.util.Callback;
+import com.dragonmmomaker.server.util.Callback;
 
 /**
  * Core Database class
@@ -98,15 +98,13 @@ public class Database {
             //get connection
             mConnection = data.getConnection();
             //set up a thread to close the database when the WebApp ends
-            mUThread = new UpdateThread(new Callback<Void,Void>() {
+            mUThread = new UpdateThread(new Callback<Void>() {
                 @Override
-                public Void call(Void param) {
+                public void call(Void... params) {
                     try {
                         mConnection.close();
                         mConnection = null;
-                    } catch (Exception e) {
-                    }
-                    return null;
+                    } catch (Exception e) { }
                 }
             });
             //start the thread
@@ -228,9 +226,9 @@ public class Database {
 
         private boolean mDie = false;
         private Queue<String> mUpdates = new LinkedList<String>();
-        private Callback<Void,Void> pDieCallback;
+        private Callback<Void> pDieCallback;
 
-        public UpdateThread(Callback<Void,Void> pDead) {
+        public UpdateThread(Callback<Void> pDead) {
             pDieCallback = pDead;
         }
 

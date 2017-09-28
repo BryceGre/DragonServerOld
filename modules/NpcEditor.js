@@ -234,6 +234,7 @@ NpcEditor.client.createUI = function() {
     UI.AddDiv(this.window, "behavior-label", "Behaviors: ", false, {"style": 'display:block;margin:4px auto;height:16px;'});
     UI.AddCombobox(this.window, "behavior", {width: "100%"}, behaviors, function() {
         NpcEditor.client.currBehavior = $("#npc-editor-behavior").val() || [];
+        if (!(NpcEditor.client.currBehavior instanceof Array)) NpcEditor.client.currBehavior = [];
         NpcEditor.client.changed = true;
     }, false, {"style": 'display:block;margin:4px 0px;', "multiple": "multiple"});
 	

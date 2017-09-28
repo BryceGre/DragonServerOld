@@ -25,7 +25,6 @@ import com.dragonmmomaker.server.player.PlayerManager;
 import com.dragonmmomaker.server.quadtree.QuadTree;
 import com.dragonmmomaker.server.util.GameUtils;
 import com.dragonmmomaker.server.util.LogCallback;
-import java.util.HashMap;
 
 /**
  * A class to store server data that can be shared between multiple classes
@@ -44,11 +43,7 @@ public class ServData {
     public final NpcManager Npcs; //npc manager
     public final Date Time; //server/game time
     //log callback, default to nothing
-    public LogCallback Log = new LogCallback() {
-        @Override
-        public void log(int pId, String pMessage) {
-        }
-    };
+    public LogCallback Log;
 
     /**
      * Constructor
